@@ -10,3 +10,6 @@ The original archive is not modified by this conversion.
 - `extraction/SIRO48-PTseq-Extraction.py` <= `SIRO48-PTseq-Extractionv1/SIRO48-PTseq-Extraction.py`
 - `extraction/SIRO48-PTseq-Extraction-WaterRun.py` <= `SIRO48-PTseq-Extractionv1/SIRO48-PTseq-Extraction-WaterRun.py`
 - `extraction/deck.json` <= `SIRO48-PTseq-Extractionv1/deck.json`
+- `libraryprep/G99/SIRO48-PTseq-Library-pooling-DNB-G99.py` <= `接受脚本/PTseq/SIRO48-PTseq-Library&pooling&DNB-G99/SIRO48-PTseq-Library&pooling&DNB-G99.py`
+- `libraryprep/G99/deck.json` <= `接受脚本/PTseq/SIRO48-PTseq-Library&pooling&DNB-G99/deck1.json`
+- `libraryprep/G99/SIRO48-PTseq-Library-script-cut.py` <= `接受脚本/PTseq/SIRO48-PTseq-Library&pooling&DNB-G99/脚本剪切.py`
