@@ -1,0 +1,9 @@
+.DS_Store
+.Rhistory
+__pycache__/
+*.pyc
+.claude/
+.~lock.*
+*.zip
+*.xlsx
+
