@@ -14,3 +14,4 @@ The original archive is not modified by this conversion.
 - `libraryprep/G99/deck.json` <= `接受脚本/PTseq/SIRO48-PTseq-Library&pooling&DNB-G99/deck1.json`
 - `libraryprep/G99/SIRO48-PTseq-Library-script-cut.py` <= `接受脚本/PTseq/SIRO48-PTseq-Library&pooling&DNB-G99/脚本剪切.py`
 - `libraryprep/G99/SIRO48-PTseq-Library-pooling-DNB-G99.py` <= `SIRO48-PTseq-Libraryprep/历史版本/v1SIRO48-PTseq-Library&pooling&DNB-G99.py`
+- `libraryprep/G99/SIRO48-PTseq-Library-pooling-DNB-G99.py` <= `SIRO48-PTseq-Libraryprep/历史版本/v3SIRO48-PTseq-Library&pooling&DNB-G99.py`
