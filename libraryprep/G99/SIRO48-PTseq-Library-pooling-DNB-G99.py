@@ -443,11 +443,12 @@ transfer({"StartPosition":"M2_POS27","EndPosition":"M2_POS17","LoosenOffsetOfZ":
 # ===== STEP: Dispense T1 cDNA Primer from Intermediate to PCR Plate =====
 # Purpose: Use multi-channel P8 to dispense T1 primers by column (efficient)
 # T1 cDNA Primer: 2.0 µL per sample
+# Optimized: Reuse same tips across all columns (clean reagent → clean wells)
+p8_load_modified(tip_50.load(8)[0])
 for i in range(col_num):
-	p8_load_modified(tip_50.load(target_tip_num_list[i])[0])
 	p8_aspirate({"Position":"M2_POS7","Col":8,"Row":1,"PreAirVolume":4,"AspirateOffsetOfZ":0.5,"AspirateSpeed":10,"AspirateVolume":2.0,"PreAirSpeed":50,"DelayAfterAspirate":0.5,"TipTouchTimes":0,"PostAirSpeed":50,"PostAirVolume":0,"IfTrack":False,"FirstSegmentSpeed":100,"SpeedChangeOffsetOfZ":0,"SecondSegmentSpeed":80})
 	p8_empty({"Position":"M2_POS20","Col":i+1,"Row":1,"EmptyOffsetOfZ":0.5,"EmptySpeed":50,"DelayAfterEmpty":0.5,"TipTouchTimes":0,"PostAirSpeed":50,"PostAirVolume":0,"FirstSegmentSpeed":100,"SpeedChangeOffsetOfZ":0,"SecondSegmentSpeed":80})
-	p8_unload_tips({"Position":"M2_Trash","Col":None,"Row":None})
+p8_unload_tips({"Position":"M2_Trash","Col":None,"Row":None})
 
 #将样本从POS8转移到POS20
 col_num = (sample_num+7)//8
@@ -662,7 +663,8 @@ transfer({"StartPosition":"M2_POS10","EndPosition":"M2_POS26","LoosenOffsetOfZ":
 target_volume_list = [15*(c-c_2)*(SampleCount//8+1)]*(SampleCount%8)+[15*(c-c_2)*(SampleCount//8)]*(8-SampleCount%8)
 # if SampleCount <= 20:
 # Optimization: Load ONE tip for all 8 dispenses (reduces 8 tips to 1 tip)
-p1_load_modified(tip_50.load(1)[0])
+# FIX: Use 300µL tip - 48 samples require ~103.5µL per tube, exceeds 50µL tip capacity
+p1_load_modified(tip_300.load(1)[0])
 for i in range(8):
 	p1_aspirate({"Position":"M2_POS17","Col":4,"Row":2,"PreAirVolume":8,"AspirateOffsetOfZ":0.6,"AspirateSpeed":10,"AspirateVolume":target_volume_list[i],"PreAirSpeed":50,"DelayAfterAspirate":0.5,"TipTouchTimes":0,"PostAirSpeed":50,"PostAirVolume":0,"IfTrack":False,"FirstSegmentSpeed":100,"SpeedChangeOffsetOfZ":0,"SecondSegmentSpeed":80})
 	p1_empty({"Position":"M2_POS7","Col":10,"Row":i+1,"EmptyOffsetOfZ":0.5,"EmptySpeed":50,"DelayAfterEmpty":0.5,"TipTouchTimes":0,"PostAirSpeed":50,"PostAirVolume":0,"FirstSegmentSpeed":100,"SpeedChangeOffsetOfZ":0,"SecondSegmentSpeed":80})
@@ -681,7 +683,8 @@ p1_unload_tips2({"Position":"M2_Trash","Col":None,"Row":None})
 target_volume_list = [48*c*(SampleCount//8+1)]*(SampleCount%8)+[48*c*(SampleCount//8)]*(8-SampleCount%8)
 
 # Load ONE tip for all 8 dispenses (optimization: reduces 8 tips to 1 tip)
-p1_load_modified(tip_300.load(1)[0])
+# FIX: Use 1000µL tip - 48 samples require ~403µL per tube, exceeds 300µL tip capacity
+p1_load_modified(tip_1000.load(1)[0])
 for i in range(8):
 	p1_aspirate({"Position":"M2_POS24","Col":1,"Row":2,"PreAirVolume":8,"AspirateOffsetOfZ":0.8,"AspirateSpeed":30,"AspirateVolume":target_volume_list[i],"PreAirSpeed":50,"DelayAfterAspirate":0.5,"TipTouchTimes":0,"PostAirSpeed":50,"PostAirVolume":0,"IfTrack":True,"FirstSegmentSpeed":100,"SpeedChangeOffsetOfZ":0,"SecondSegmentSpeed":80})
 	p1_empty({"Position":"M2_POS7","Col":7,"Row":i+1,"EmptyOffsetOfZ":0.5,"EmptySpeed":50,"DelayAfterEmpty":0.5,"TipTouchTimes":0,"PostAirSpeed":50,"PostAirVolume":0,"FirstSegmentSpeed":100,"SpeedChangeOffsetOfZ":0,"SecondSegmentSpeed":80})
@@ -788,19 +791,6 @@ transfer({"StartPosition":"M2_POS20","EndPosition":"M2_POS26","LoosenOffsetOfZ":
 
 TA_purification_tips = tip_300.load(sample_num,8,1)
 
-# CRITICAL FIX: Add T2 Buffer BEFORE magnetic separation (SOP: 50 beads + 25 TA + 25 T2 = 100 µL)
-# T2 Buffer contains PEG/salt required for DNA binding to SPRI beads
-
-# Pre-dispense T2 Buffer from POS24 (single tube) to POS7 Col 6 (8-tube strip) using P1
-# This avoids P8 collision with single tube position
-t2_safety_factor = 1.15
-t2_volume_per_tube = 25 * col_num * t2_safety_factor
-p1_load_modified(tip_50.load(1)[0])
-for i in range(8):
-	p1_aspirate({"Position":"M2_POS24","Col":1,"Row":2,"PreAirVolume":5,"AspirateOffsetOfZ":0.8,"AspirateSpeed":30,"AspirateVolume":t2_volume_per_tube,"PreAirSpeed":50,"DelayAfterAspirate":0.5,"TipTouchTimes":0,"PostAirSpeed":50,"PostAirVolume":0,"IfTrack":True,"FirstSegmentSpeed":100,"SpeedChangeOffsetOfZ":0,"SecondSegmentSpeed":80})
-	p1_empty({"Position":"M2_POS7","Col":6,"Row":i+1,"EmptyOffsetOfZ":1.5,"EmptySpeed":30,"DelayAfterEmpty":0.5,"TipTouchTimes":0,"PostAirSpeed":50,"PostAirVolume":0,"FirstSegmentSpeed":100,"SpeedChangeOffsetOfZ":0,"SecondSegmentSpeed":80})
-p1_unload_tips2({"Position":"M2_Trash","Col":None,"Row":None})
-
 # 靶向扩增反应后纯化
 lang=get_lang()
 if lang==1: #
@@ -810,15 +800,12 @@ elif lang==2: #
 
 for i in range(col_num):
 	p8_load_modified(TA_purification_tips[i])
-	# Step 1: Transfer 25 µL TA product to beads
+	# Step 1: Aspirate 25 µL T2 Buffer FIRST (clean tips → no sample contamination of T2 strip)
+	p8_aspirate({"Position":"M2_POS7","Col":7,"Row":1,"PreAirVolume":2,"AspirateOffsetOfZ":0.5,"AspirateSpeed":40,"AspirateVolume":25,"PreAirSpeed":50,"DelayAfterAspirate":0.5,"TipTouchTimes":0,"PostAirSpeed":50,"PostAirVolume":5,"IfTrack":False,"FirstSegmentSpeed":100,"SpeedChangeOffsetOfZ":0,"SecondSegmentSpeed":80})
+	# Step 2: Aspirate 25 µL TA product (sequential aspirate, same tips)
 	p8_aspirate({"Position":"M2_POS20","Col":7+i,"Row":1,"PreAirVolume":2,"AspirateOffsetOfZ":0.5,"AspirateSpeed":40,"AspirateVolume":25,"PreAirSpeed":50,"DelayAfterAspirate":0.5,"TipTouchTimes":0,"PostAirSpeed":50,"PostAirVolume":5,"IfTrack":False,"FirstSegmentSpeed":100,"SpeedChangeOffsetOfZ":0,"SecondSegmentSpeed":80})
+	# Step 3: Dispense combined 50 µL (T2 + TA product) to beads in POS16
 	p8_empty({"Position":"M2_POS16","Col":7+i,"Row":1,"EmptyOffsetOfZ":0.5,"EmptySpeed":40,"DelayAfterEmpty":0.8,"TipTouchTimes":0,"PostAirSpeed":50,"PostAirVolume":0,"FirstSegmentSpeed":100,"SpeedChangeOffsetOfZ":0,"SecondSegmentSpeed":80, "TipTouchOffsetOfZ": 15, "TipTouchRangeOfX": 1.3, "TipTouchSpeed": 100})
-	# Step 2: Add 25 µL T2 Buffer (from pre-dispensed POS7 Col 6 intermediate strip)
-	p8_aspirate({"Position":"M2_POS7","Col":6,"Row":1,"PreAirVolume":2,"AspirateOffsetOfZ":0.5,"AspirateSpeed":40,"AspirateVolume":25,"PreAirSpeed":50,"DelayAfterAspirate":0.5,"TipTouchTimes":0,"PostAirSpeed":50,"PostAirVolume":5,"IfTrack":False,"FirstSegmentSpeed":100,"SpeedChangeOffsetOfZ":0,"SecondSegmentSpeed":80})
-	p8_empty({"Position":"M2_POS16","Col":7+i,"Row":1,"EmptyOffsetOfZ":0.5,"EmptySpeed":40,"DelayAfterEmpty":0.8,"TipTouchTimes":0,"PostAirSpeed":50,"PostAirVolume":0,"FirstSegmentSpeed":100,"SpeedChangeOffsetOfZ":0,"SecondSegmentSpeed":80, "TipTouchOffsetOfZ": 15, "TipTouchRangeOfX": 1.3, "TipTouchSpeed": 100})
-	# Step 3: Mix 50 µL beads + 25 µL TA + 25 µL T2 = 100 µL total (use 95 µL mix volume)
-	p8_mix({"Position":"M2_POS16","Col":7+i,"Row":1,"PreAirVolume":20,"MixTimes":5,"MixAspirateSpeed":80,"MixAspirateOffsetOfZ":0.5,"MixVolume":95,"MixDispenseOffsetOfZ":15,"MixDispenseSpeed":50,"DelayAfterMixLoop":2,"MixEmptyOffsetOfZ":10,"MixEmptySpeed":10,"PreAirSpeed":50,"DelayAfterMixAspirate":0.5,"DelayAfterMixDispense":0.5,"DelayAfterMixEmpty":0.5,"PostAirSpeed":50,"PostAirVolume":0,"FirstSegmentSpeed":100,"SpeedChangeOffsetOfZ":0,"SecondSegmentSpeed":80,"TipTouchTimes":0, "TipTouchOffsetOfZ": 3, "TipTouchRangeOfX": 1.2, "TipTouchSpeed": 100})
-	p8_empty({"Position":"M2_POS16","Col":7+i,"Row":1,"EmptyOffsetOfZ":0.5,"EmptySpeed":20,"DelayAfterEmpty":0.8,"TipTouchTimes":3,"PostAirSpeed":50,"PostAirVolume":0,"FirstSegmentSpeed":100,"SpeedChangeOffsetOfZ":0,"SecondSegmentSpeed":80, "TipTouchOffsetOfZ": 15, "TipTouchRangeOfX": 1.3, "TipTouchSpeed": 100})
 	# Step 4: Mix 50 µL beads + 25 µL TA + 25 µL T2 = 100 µL total (use 95 µL mix volume)
 	p8_mix({"Position":"M2_POS16","Col":7+i,"Row":1,"PreAirVolume":20,"MixTimes":5,"MixAspirateSpeed":80,"MixAspirateOffsetOfZ":0.5,"MixVolume":95,"MixDispenseOffsetOfZ":15,"MixDispenseSpeed":50,"DelayAfterMixLoop":2,"MixEmptyOffsetOfZ":10,"MixEmptySpeed":10,"PreAirSpeed":50,"DelayAfterMixAspirate":0.5,"DelayAfterMixDispense":0.5,"DelayAfterMixEmpty":0.5,"PostAirSpeed":50,"PostAirVolume":0,"FirstSegmentSpeed":100,"SpeedChangeOffsetOfZ":0,"SecondSegmentSpeed":80,"TipTouchTimes":0, "TipTouchOffsetOfZ": 3, "TipTouchRangeOfX": 1.2, "TipTouchSpeed": 100})
 	p8_empty({"Position":"M2_POS16","Col":7+i,"Row":1,"EmptyOffsetOfZ":0.5,"EmptySpeed":20,"DelayAfterEmpty":0.8,"TipTouchTimes":3,"PostAirSpeed":50,"PostAirVolume":0,"FirstSegmentSpeed":100,"SpeedChangeOffsetOfZ":0,"SecondSegmentSpeed":80, "TipTouchOffsetOfZ": 15, "TipTouchRangeOfX": 1.3, "TipTouchSpeed": 100})
@@ -1472,8 +1459,15 @@ col_num = (sample_num+7)//8
 # 本部分为获取特定位置的浓度,pos为位置元组，板列行
 def get_concentration_modified(pos):
 	# 文档要求输入为板行列，所以对位置数组做一个预处理
-	spx_concentration = find_sampling_concentration(pos[0],pos[2],pos[1])
-	return spx_concentration.Consistence
+	try:
+		spx_concentration = find_sampling_concentration(pos[0],pos[2],pos[1])
+		if spx_concentration is None:
+			print(f"  [WARNING] No concentration data at {pos}")
+			return 0.0
+		return spx_concentration.Consistence
+	except Exception as e:
+		print(f"  [WARNING] get_concentration error at {pos}: {e}")
+		return 0.0
 # 单个定量管位置，板列行
 quantification_tubes = [(quantification_tube_loc[0],quantification_tube_loc[1]+i//8,1 + i%8) for i in range(sample_num)]
 
@@ -1655,8 +1649,15 @@ col_num = (sample_num+7)//8
 # 本部分为获取特定位置的浓度,pos为位置元组，板列行
 def get_concentration_modified(pos):
 	# 文档要求输入为板行列，所以对位置数组做一个预处理
-	spx_concentration = find_sampling_concentration(pos[0],pos[2],pos[1])
-	return spx_concentration.Consistence
+	try:
+		spx_concentration = find_sampling_concentration(pos[0],pos[2],pos[1])
+		if spx_concentration is None:
+			print(f"  [WARNING] No concentration data at {pos}")
+			return 0.0
+		return spx_concentration.Consistence
+	except Exception as e:
+		print(f"  [WARNING] get_concentration error at {pos}: {e}")
+		return 0.0
 # 单个定量管位置，板列行
 quantification_tubes = [(quantification_tube_loc[0],quantification_tube_loc[1]+i//8,1 + i%8) for i in range(sample_num)]
 
@@ -1726,7 +1727,7 @@ for i in range(col_num):
 # 依次定量
 for i in range(col_num):
 	p8_load_quantification_tube({"Position": quantification_tube_loc[0], "Row": 1, "Col": quantification_tube_loc[1]+i, "Tips":8})
-	spx_quantity_result = quantity_run_sample({"Name":"","SampleType": "dsDNA_HS", "ProductType": sample_stage, "StandardToSampleRatio": 10, "DilutionRatio":1,"Label":"","DilutionAssessment": 60})
+	spx_quantity_result = quantity_run_sample({"Name":"","SampleType": "dsDNA_HS", "ProductType": sample_stage, "StandardToSampleRatio": 5, "DilutionRatio":1,"Label":"","DilutionAssessment": 60})
 	cur_concentration_list = [get_concentration_modified((quantification_tube_loc[0],quantification_tube_loc[1]+i,j)) for j in range(1,9)]
 	concentration_list += cur_concentration_list
 	p8_unload_quantification_tube({"Position": quantification_tube_loc[0], "Row": 1, "Col": quantification_tube_loc[1]+i, "Tips":8})
@@ -1785,8 +1786,8 @@ max_sample_volume = 20
 
 #单个DNB样本数
 single_dnb_sample_num = 8
-# 单个DNB投入量
-target_dna_ng = 400
+# 单个DNB投入量 (G99说明书: 1pmol ≈ 200ng for ~300bp fragments)
+target_dna_ng = 200
 #pooling总体积
 target_pooling_volume = 48
 # 质控浓度
@@ -1818,7 +1819,7 @@ Is_blank_pooling = False
 # 这里输入样本信息用于确认哪个孔是空白对照,不填无法过滤空白样本位置
 sample_info_file = 'D:\\data\\sample_info.txt'
 # 浓度不合格样本是否一起pooling，默认pooling，True为pooling，False为不pooling
-Is_unqualified_pooling = False
+Is_unqualified_pooling = True
 output_file_path = r"D:/data/PTseq_pooling_info.csv"
 
 
