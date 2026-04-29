@@ -1,37 +1,12 @@
 
 # -*- coding: utf-8 -*-
 #####################################################################
-# v5 SIRO48-PTseq Library & Pooling & DNB for G99
+# Version: v9
+# Created: 2026 Feb 10
 #####################################################################
-# PRODUCTION VERSION
-#
-# Version: v5
-# Based on: v4SIRO48-PTseq-Library-pooling-DNB-G99.py
-#
-# KEY FIXES IN V4 (inherited):
-# 1. LA purification oil addition: Changed from Col:7+i to Col:1+i
-# 2. LA purification aspiration: Changed from Col:7+i to Col:1+i
-# 3. DNB layout: Changed from single column (Col 4, Rows 1-6) to
-#    column-based layout (Cols 7-12, Rows 1-2)
-#    - Cycling reactions: Col 7+x, Row 1
-#    - DNB prep reactions: Col 7+x, Row 2
-# 4. PCR plate layout: LA uses Cols 1-6, DNB uses Cols 7-12
-#
-# KEY FIXES IN V5 (from working.py):
-# 1. PCR door sequencing: Added pcr_close_door() after lid replacement,
-#    and pcr_open_door() before lid opening
-# 2. LA mix aspiration: Slowed AspirateSpeed from 100 to 50 and
-#    FirstSegmentSpeed from 190 to 100 for T7 PCR mix (gentle tip entry)
-# 3. UDG enzyme aspiration: Slowed FirstSegmentSpeed from 190 to 100
-# 4. Trash emptying: Added TipTouch (3 touches) to p8_empty calls
-#    during TA and LA purification for cleaner waste disposal
-# 5. Dye dispensing: Changed from 199uL x 2 to 217.8uL x 1,
-#    sample volume from 2uL to 2.2uL (1:100 dilution ratio)
-#
-# Created: 2026-02-10
-#####################################################################
-#Timestamp:2024/11/18 9:46:21
+#Timestamp:2026 Apr 05 
 #Head - 共用头部，包含所有功能。
+
 from library import *
 spxsiro = globals().get("library")
 set_siro(spxsiro)
@@ -46,7 +21,7 @@ def blockA():
 	temp_set({"Name":"M2_tempB","Temp": 6.00, "Duration": -1})#4度，POS10
 
 a = parallel_block(blockA)
-a.Wait()
+a.Wait() # 确保温度达到设定值后再继续执行后续步骤
 
 '''==================================================================自动计算取枪头位置逻辑v6======================================================'''
 # 更新内容
@@ -168,6 +143,7 @@ tip_50 = Tips(tip_50_loc,backup_tip_50_loc)
 '''============================================================Shaker Swap Logic=============================================================='''
 # M2_POS16 and M2_POS23 act as shared hubs for orbital shaking and magnetization
 # This function implements temporary "shaker swap" to move plates to shaker, mix, and return to home
+# POS30 是专用的中转位，用于在换板过程中临时存放板子，以避免与其他操作产生冲突
 
 def shaker_swap(target_plate_pos, operation_callback, current_shaker_occupant=None):
 	"""
@@ -1899,8 +1875,8 @@ transfer({"StartPosition":"M2_POS17","EndPosition":"M2_POS27","LoosenOffsetOfZ":
 #配置环化反应液——D1 Buffer打入D2 Enzyme源管混合（big-into-small, D4工作管保留但不使用）
 #DNB Cycling: D1 buffer(大体积) → D2 enzyme tube → mix in D2 → 后续直接从D2分装
 p8_load_modified(tip_300.load(1)[0])
-# Step 1: 吸取D1环化反应缓冲液 (大体积: 11.6×1.3×n)
-p8_aspirate({"Position":"M2_POS17", "Col":1, "Row":4,"PreAirVolume":5,"AspirateOffsetOfZ":0.6,"AspirateSpeed":15,"AspirateVolume":11.6 * 1.3 * DNB_Num,"PreAirSpeed":30,"DelayAfterAspirate":5,"PostAirSpeed":50,"PostAirVolume":5,"IfTrack":False,"FirstSegmentSpeed":100,"SpeedChangeOffsetOfZ":0,"SecondSegmentSpeed":80,"TipTouchTimes":2, "TipTouchOffsetOfZ": 3, "TipTouchRangeOfX": 1.2, "TipTouchSpeed": 100})
+# Step 1: 吸取D1环化反应缓冲液——手工配置环化酶量 = 0.5*(DNB_Num+1) µL 在D2 enzyme管中
+p8_aspirate({"Position":"M2_POS17", "Col":1, "Row":4,"PreAirVolume":5,"AspirateOffsetOfZ":0.6,"AspirateSpeed":15,"AspirateVolume":11.6 * (DNB_Num + 1),"PreAirSpeed":30,"DelayAfterAspirate":5,"PostAirSpeed":50,"PostAirVolume":5,"IfTrack":False,"FirstSegmentSpeed":100,"SpeedChangeOffsetOfZ":0,"SecondSegmentSpeed":80,"TipTouchTimes":2, "TipTouchOffsetOfZ": 3, "TipTouchRangeOfX": 1.2, "TipTouchSpeed": 100})
 # Step 2: 打入D2 enzyme源管 (big into small, 冲洗小体积enzyme)
 p8_empty({"Position":"M2_POS17","Col":2,"Row":4,"EmptyOffsetOfZ":0.5,"EmptySpeed":10,"DelayAfterEmpty":0.5,"PostAirSpeed":50,"PostAirVolume":0,"FirstSegmentSpeed":100,"SpeedChangeOffsetOfZ":0,"SecondSegmentSpeed":80,"TipTouchTimes":2, "TipTouchOffsetOfZ": 5, "TipTouchRangeOfX": 0, "TipTouchSpeed": 100})
 # Step 3: 在D2管中混合Enzyme + Buffer
@@ -1923,16 +1899,7 @@ for x in range(DNB_Num):
 	p8_empty({"Position":"M2_POS20","Col":7,"Row":1+x,"EmptyOffsetOfZ":0.5,"EmptySpeed":5,"DelayAfterEmpty":0.5,"PostAirSpeed":50,"PostAirVolume":0,"FirstSegmentSpeed":100,"SpeedChangeOffsetOfZ":0,"SecondSegmentSpeed":80,"TipTouchTimes":2, "TipTouchOffsetOfZ": 5, "TipTouchRangeOfX": 0, "TipTouchSpeed": 100})
 	p8_unload_tips({"Position":"M2_Trash","Col":None,"Row":None})
 
-# [v7] 添加矿物油 - POS14→POS23取油, 油在POS14 Col 8
-transfer({"StartPosition":"M2_POS14","EndPosition":"M2_POS23","LoosenOffsetOfZ":0})  # POS14 → POS23
-oil_dnb = tip_300.load(DNB_Num,1)
-for x in range(DNB_Num):
-	p8_load_modified(oil_dnb[x])
-	p8_aspirate({"Position":"M2_POS23","Col":8,"Row":1,"PreAirVolume":20,"AspirateOffsetOfZ":0.5,"AspirateSpeed":10,"AspirateVolume":15,"PreAirSpeed":50,"DelayAfterAspirate":1,"PostAirSpeed":50,"PostAirVolume":0,"IfTrack":False,"FirstSegmentSpeed":100,"SpeedChangeOffsetOfZ":0,"SecondSegmentSpeed":80, "TipTouchTimes": 2, "TipTouchOffsetOfZ": 14, "TipTouchRangeOfX": 1.5, "TipTouchSpeed": 100})
-	# Oil to cycling wells - Col 7, Row 1+x (每管覆盖15µL矿物油)
-	p8_empty({"Position":"M2_POS20","Col":7,"Row":1+x,"EmptyOffsetOfZ":8,"EmptySpeed":30,"DelayAfterEmpty":0.5,"TipTouchTimes":0,"PostAirSpeed":50,"PostAirVolume":0,"FirstSegmentSpeed":100,"SpeedChangeOffsetOfZ":0,"SecondSegmentSpeed":80})
-	p8_unload_tips({"Position":"M2_Trash","Col":None,"Row":None})
-transfer({"StartPosition":"M2_POS23","EndPosition":"M2_POS14","LoosenOffsetOfZ":0})  # POS23 → POS14 (恢复)
+# [已移除] MakeDNB环节不添加矿物油（与CNVseq/PTseq Plus/NIFTY保持一致）
 
 ###PCR关门
 transfer({"StartPosition":"M2_POS26","EndPosition":"M2_POS20","LoosenOffsetOfZ":0}) #PCR盖板
@@ -1999,8 +1966,8 @@ d1 = parallel_block(blockD1)
 #配置DNB制备体系2——E1 Mix I打入E2 Mix II源管混合（big-into-small, E5工作管保留但不使用）
 #DNB Polymerase: E1 Mix I(大体积) → E2 Mix II tube → mix in E2 → 后续直接从E2分装
 p8_load_modified(tip_300.load(1)[0])
-# Step 1: 吸取E1 DNB聚合酶混合液I (大体积: 20×1.3×n)
-p8_aspirate({"Position":"M2_POS17", "Col":1, "Row":5,"PreAirVolume":5,"AspirateOffsetOfZ":0.6,"AspirateSpeed":15,"AspirateVolume":20 * 1.3 * DNB_Num,"PreAirSpeed":30,"DelayAfterAspirate":5,"PostAirSpeed":50,"PostAirVolume":5,"IfTrack":False,"FirstSegmentSpeed":100,"SpeedChangeOffsetOfZ":0,"SecondSegmentSpeed":80,"TipTouchTimes":2, "TipTouchOffsetOfZ": 3, "TipTouchRangeOfX": 1.2, "TipTouchSpeed": 100})
+# Step 1: 吸取E1 DNB聚合酶混合液I——手工配置DNB聚合酶混合液II = 2*(DNB_Num+0.5) µL 在E2 Mix II管中
+p8_aspirate({"Position":"M2_POS17", "Col":1, "Row":5,"PreAirVolume":5,"AspirateOffsetOfZ":0.6,"AspirateSpeed":15,"AspirateVolume":20 * (DNB_Num + 0.5),"PreAirSpeed":30,"DelayAfterAspirate":5,"PostAirSpeed":50,"PostAirVolume":5,"IfTrack":False,"FirstSegmentSpeed":100,"SpeedChangeOffsetOfZ":0,"SecondSegmentSpeed":80,"TipTouchTimes":2, "TipTouchOffsetOfZ": 3, "TipTouchRangeOfX": 1.2, "TipTouchSpeed": 100})
 # Step 2: 打入E2 Mix II源管 (big into small, 冲洗小体积Mix II)
 p8_empty({"Position":"M2_POS17","Col":2,"Row":5,"EmptyOffsetOfZ":0.5,"EmptySpeed":10,"DelayAfterEmpty":0.5,"PostAirSpeed":50,"PostAirVolume":0,"FirstSegmentSpeed":100,"SpeedChangeOffsetOfZ":0,"SecondSegmentSpeed":80,"TipTouchTimes":2, "TipTouchOffsetOfZ": 5, "TipTouchRangeOfX": 0, "TipTouchSpeed": 100})
 # Step 3: 在E2管中混合Mix I + Mix II
