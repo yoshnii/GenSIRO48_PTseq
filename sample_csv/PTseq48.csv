@@ -1,0 +1,9 @@
+SampleNumber,PreptreatmentWell,PreptreatmentPlate,QcType,ProductName,BarcodeId,SampleType
+Sample01,A1,P20260317000000,S,PTseq,1,Cerebrospinal Fluid(CSF)
+Sample02,B1,P20260317000000,S,PTseq,2,Cerebrospinal Fluid(CSF)
+Sample03,C1,P20260317000000,S,PTseq,3,Cerebrospinal Fluid(CSF)
+Sample04,D1,P20260317000000,S,PTseq,4,Cerebrospinal Fluid(CSF)
+Sample05,E1,P20260317000000,S,PTseq,5,Cerebrospinal Fluid(CSF)
+Sample06,F1,P20260317000000,S,PTseq,6,Cerebrospinal Fluid(CSF)
+Sample07,G1,P20260317000000,S,PTseq,7,Cerebrospinal Fluid(CSF)
+Sample08,H1,P20260317000000,S,PTseq,8,Cerebrospinal Fluid(CSF)

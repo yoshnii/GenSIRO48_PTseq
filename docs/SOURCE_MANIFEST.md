@@ -36,3 +36,10 @@ The original archive is not modified by this conversion.
 - `libraryprep/E25/deck.json` <= `SIRO48-PTseq-Libraryprep/E25/deck.json`
 - `libraryprep/2002000/SIRO48-PTseq-Library-pooling-DNB-2000-and-200.py` <= `SIRO48-PTseq-Libraryprep/2002000/v1SIRO48-PTseq-Library-pooling-DNB-2000&200.py`
 - `libraryprep/2002000/SIRO48-PTseq-SequencingPrep-2000-and-200.py` <= `SIRO48-PTseq-Libraryprep/2002000/SIRO48-PTseq-SequencingPrep-2000&200.py`
+- `pcr_methods/SIRO48_PTplus_Libprep&hybrid_remove_overshoot.xml` <= `PCR/SIRO48_PTplus_Libprep&hybrid_remove_overshoot.xml`
+- `pcr_methods/SIRO48_PTseq_DNB_2000&200.xml` <= `PCR/SIRO48_PTseq_DNB_2000&200.xml`
+- `pcr_methods/SIRO48_PTseq_DNB_E25.xml` <= `PCR/SIRO48_PTseq_DNB_E25.xml`
+- `pcr_methods/SIRO48_PTseq_DNB_G99_3min.xml` <= `PCR/SIRO48_PTseq_DNB_G99_3min.xml`
+- `pcr_methods/SIRO48_PTseq_Libprep.xml` <= `PCR/SIRO48_PTseq_Libprep.xml`
+- `sample_csv/PTseq24_test.csv` <= `PTseq24_test.csv`
+- `sample_csv/PTseq48.csv` <= `PTseq48.csv`
