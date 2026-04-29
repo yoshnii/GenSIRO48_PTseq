@@ -7,20 +7,12 @@
 # 删除pooling和DNB部分，产物保留在POS20 Col 7-12
 # 定量后POS20密封4度保存
 #
-# KEY FIXES IN V4 (inherited):
-# 1. LA purification oil addition: Changed from Col:7+i to Col:1+i
-# 2. LA purification aspiration: Changed from Col:7+i to Col:1+i
-#
-# KEY FIXES IN V5 (from working.py):
-# 1. PCR door sequencing: Added pcr_close_door() after lid replacement,
-#    and pcr_open_door() before lid opening
-# 2. LA mix aspiration: Slowed AspirateSpeed from 100 to 50 and
-#    FirstSegmentSpeed from 190 to 100 for T7 PCR mix (gentle tip entry)
-# 3. UDG enzyme aspiration: Slowed FirstSegmentSpeed from 190 to 100
-# 4. Trash emptying: Added TipTouch (3 touches) to p8_empty calls
-#    during TA and LA purification for cleaner waste disposal
-# 5. Dye dispensing: Changed from 199uL x 2 to 217.8uL x 1,
-#    sample volume from 2uL to 2.2uL (1:100 dilution ratio)
+# Current behavior summary (library prep + quantification only):
+# - LA purification: oil and aspirations target POS20 Cols 1-6 (LA wells on the fresh plate after the POS9 swap).
+# - PCR door management: pcr_close_door() runs after every lid replacement; pcr_open_door() runs before every lid opening.
+# - LA mix aspirations: T7 PCR mix uses slowed FirstSegmentSpeed for gentle tip entry; UDG enzyme uses the same gentle entry profile.
+# - TA/LA purification waste: p8_empty calls use TipTouch (3 touches) for cleaner waste disposal.
+# - Dye dispensing: 217.8 µL × 1 with 2.2 µL sample (1:100 dilution ratio for Qubit dsDNA HS).
 #
 # Created: 2026-02-10
 #####################################################################
@@ -250,8 +242,12 @@ PostAirSpeed= 50.0, PostAirVolume= 5.0,liquid = 0):
 		p1_empty({"Position": Position, "Row": Row, "Col": Col}.update(liquid.empty()))
 
 
-# v12 sync: POS7 reaction-mix dead-volume helpers (capped curve: 20% proportional, min 10 µL, max 30 µL).
-# Used by Col 9 cDNA mix, Col 10 TA mix, Col 11 LA/PCR mix.
+# v12: POS7 reaction-mix capped dead-volume curve.
+# Used by POS7 Col 9 cDNA synthesis mix, Col 10 TA Master Mix, and Col 11 LA/PCR Master Mix.
+#   downstream_total = p8_volume_per_column * active_col_count_for_row
+#   extra            = clamp(downstream_total * 0.2, min=10, max=30)
+#   pos7_dispense    = downstream_total + extra
+# NOT applied to magnetic beads, ethanol, mineral oil, T2/elution buffer, Qubit, or DNB.
 def clamp_value(value, lower, upper):
 	return max(lower, min(value, upper))
 
@@ -438,6 +434,7 @@ col_num = (sample_num+7)//8  # Number of sample columns
 transfer({"StartPosition":"M2_POS17","EndPosition":"M2_POS27","LoosenOffsetOfZ":0}) #开试剂盖
 
 # v12 sync: RT first-step 2 µL T1 primer 转移 — 参数对齐 PTplus 16+2 system 的 2 µL 模式
+# v12 sync: PTplus 16+2 system 2 µL pattern; P1 head retained, sample-loop and POS20 destination mapping unchanged.
 p1_load_modified(tip_50.load(1)[0])
 for i in range(col_num):
 	last_row = 8 if (i < col_num - 1 or sample_num % 8 == 0) else sample_num % 8
@@ -667,7 +664,7 @@ p8_unload_tips({"Position":"M2_Trash","Col":None,"Row":None})
 # v12 sync: POS7 Col 10 per-row dispense list comes from the capped dead-volume curve above.
 target_volume_list = pos7_col10_volumes
 # Optimization: Load ONE tip for all 8 dispenses (reduces 8 tips to 1 tip)
-# FIX: Use 300µL tip - 48 samples require ~103.5µL per tube, exceeds 50µL tip capacity
+# Use 300 µL tips because the maximum required volume per tube exceeds the 50 µL tip range.
 p1_load_modified(tip_300.load(1)[0])
 for i in range(8):
 	p1_aspirate({"Position":"M2_POS17","Col":4,"Row":2,"PreAirVolume":8,"AspirateOffsetOfZ":0.6,"AspirateSpeed":10,"AspirateVolume":target_volume_list[i],"PreAirSpeed":50,"DelayAfterAspirate":0.5,"TipTouchTimes":0,"PostAirSpeed":50,"PostAirVolume":0,"IfTrack":False,"FirstSegmentSpeed":100,"SpeedChangeOffsetOfZ":0,"SecondSegmentSpeed":80})
@@ -687,7 +684,7 @@ p1_unload_tips2({"Position":"M2_Trash","Col":None,"Row":None})
 target_volume_list = [48*c*(SampleCount//8+1)]*(SampleCount%8)+[48*c*(SampleCount//8)]*(8-SampleCount%8)
 
 # Load ONE tip for all 8 dispenses (optimization: reduces 8 tips to 1 tip)
-# FIX: Use 1000µL tip - 48 samples require ~403µL per tube, exceeds 300µL tip capacity
+# Use 1000 µL tips because the maximum required volume per tube exceeds the 300 µL tip range.
 p1_load_modified(tip_1000.load(1)[0])
 for i in range(8):
 	p1_aspirate({"Position":"M2_POS24","Col":1,"Row":2,"PreAirVolume":8,"AspirateOffsetOfZ":0.8,"AspirateSpeed":30,"AspirateVolume":target_volume_list[i],"PreAirSpeed":50,"DelayAfterAspirate":0.5,"TipTouchTimes":0,"PostAirSpeed":50,"PostAirVolume":0,"IfTrack":True,"FirstSegmentSpeed":100,"SpeedChangeOffsetOfZ":0,"SecondSegmentSpeed":80})
@@ -714,7 +711,7 @@ for i in range(col_num):
 	p8_mix({"Position":"M2_POS20","Col":i+7,"Row":1,"PreAirVolume":10,"MixTimes":15,"MixAspirateSpeed":50,"MixAspirateOffsetOfZ":0.5,"MixVolume":22,"MixDispenseOffsetOfZ":5,"MixDispenseSpeed":50,"DelayAfterMixLoop":2,"MixEmptyOffsetOfZ":3,"MixEmptySpeed":50,"PreAirSpeed":50,"DelayAfterMixAspirate":0.5,"DelayAfterMixDispense":0.5,"DelayAfterMixEmpty":0.5,"TipTouchTimes":0,"PostAirSpeed":50,"PostAirVolume":0,"FirstSegmentSpeed":100,"SpeedChangeOffsetOfZ":0,"SecondSegmentSpeed":80})
 	p8_unload_tips({"Position":"M2_Trash","Col":None,"Row":None})
 
-# 添加矿物油到TA PCR柱 (AFTER all reagents are added - Add mineral oil to TA PCR columns 7-12)
+# v12: Mineral oil overlay on TA PCR wells (POS20 Cols 7-12) before PTseq_TA. New wells, no prior oil.
 if SampleCount%8 == 0:
 	last_row = 1
 else:
@@ -801,7 +798,7 @@ elif lang==2: #
 for i in range(col_num):
 	p8_load_modified(TA_purification_tips[i])
 	# Step 1: Aspirate 25 µL T2 Buffer FIRST (clean tips → no sample contamination of T2 strip)
-	p8_aspirate({"Position":"M2_POS7","Col":7,"Row":1,"PreAirVolume":2,"AspirateOffsetOfZ":0.5,"AspirateSpeed":40,"AspirateVolume":25,"PreAirSpeed":50,"DelayAfterAspirate":0.5,"TipTouchTimes":0,"PostAirSpeed":50,"PostAirVolume":5,"IfTrack":False,"FirstSegmentSpeed":100,"SpeedChangeOffsetOfZ":0,"SecondSegmentSpeed":80})
+	p8_aspirate({"Position":"M2_POS7","Col":7,"Row":1,"PreAirVolume":5,"AspirateOffsetOfZ":0.5,"AspirateSpeed":30,"AspirateVolume":25,"PreAirSpeed":50,"DelayAfterAspirate":2,"TipTouchTimes":0,"PostAirSpeed":50,"PostAirVolume":10,"IfTrack":True,"FirstSegmentSpeed":100,"SpeedChangeOffsetOfZ":0,"SecondSegmentSpeed":80})
 	# Step 2: Aspirate 25 µL TA product (sequential aspirate, same tips)
 	p8_aspirate({"Position":"M2_POS20","Col":7+i,"Row":1,"PreAirVolume":2,"AspirateOffsetOfZ":0.5,"AspirateSpeed":40,"AspirateVolume":25,"PreAirSpeed":50,"DelayAfterAspirate":0.5,"TipTouchTimes":0,"PostAirSpeed":50,"PostAirVolume":5,"IfTrack":False,"FirstSegmentSpeed":100,"SpeedChangeOffsetOfZ":0,"SecondSegmentSpeed":80})
 	# Step 3: Dispense combined 50 µL (T2 + TA product) to beads in POS16
@@ -816,7 +813,7 @@ temp_shaker_set({"TempParameters": {"IsEnable": False, "Temp": 25.00, "Duration"
 delay({"Duration": 300})
 
 transfer({"StartPosition":"M2_POS26","EndPosition":"M2_POS20","LoosenOffsetOfZ":0})#关PCR盖板
-pcr_close_door()  # FIXED: Close door after putting lid back
+pcr_close_door()  # Close PCR door after lid replacement
 
 
 ###48μL磁珠1振荡位置转移到磁吸位置
@@ -842,7 +839,7 @@ for i in range(col_num):
 	p8_empty({"Position":"M2_POS13","Col":waste_col_start+i,"Row":1,"EmptyOffsetOfZ":0.8,"EmptySpeed":50,"DelayAfterEmpty":0.8,"TipTouchTimes":3,"TipTouchOffsetOfZ":15,"TipTouchRangeOfX":1.2,"TipTouchSpeed":100,"PostAirSpeed":50,"PostAirVolume":5,"FirstSegmentSpeed":100,"SpeedChangeOffsetOfZ":0,"SecondSegmentSpeed":80})
 	p8_unload_tips({"Position":"M2_Trash","Col":None,"Row":None})
 
-MB_mix = tip_300.load(8,8,0)  # FIXED: reuse_index=0 (tips discarded to trash)
+MB_mix = tip_300.load(8,8,0)  # reuse_index=0: tips discarded to trash, not returned to rack
 p8_load_modified(MB_mix[0])
 #if SampleCount < 16: 
 	#p8_mix({"Position":"M2_POS7","Col":12,"Row":1,"PreAirVolume":20,"MixTimes":10,"MixAspirateSpeed":200,"MixAspirateOffsetOfZ":0.5,"MixVolume":90,"MixDispenseOffsetOfZ":15,"MixDispenseSpeed":200,"DelayAfterMixLoop":2,"MixEmptyOffsetOfZ":5,"MixEmptySpeed":50,"PreAirSpeed":50,"DelayAfterMixAspirate":0.5,"DelayAfterMixDispense":0.5,"DelayAfterMixEmpty":0.5,"PostAirSpeed":50,"PostAirVolume":0,"FirstSegmentSpeed":100,"SpeedChangeOffsetOfZ":0,"SecondSegmentSpeed":80,"TipTouchTimes":2, "TipTouchOffsetOfZ": 14, "TipTouchRangeOfX": 1.2, "TipTouchSpeed": 100})
@@ -852,7 +849,7 @@ p8_mix({"Position":"M2_POS7","Col":12,"Row":1,"PreAirVolume":20,"MixTimes":10,"M
 p8_unload_tips({"Position":"M2_Trash","Col":None,"Row":None})
 
 
-Ligation_purification_tips2 = tip_300.load(sample_num,8,0)  # FIXED: reuse_index=0 (tips discarded at line 1043)
+Ligation_purification_tips2 = tip_300.load(sample_num,8,0)  # reuse_index=0: tips discarded after the LA wash supernatant-removal block
 # NOTE: T2 Buffer is now added BEFORE magnetic separation (see line ~875-880)
 # The previous step here that added T2 after supernatant removal was INCORRECT
 # and caused DNA loss (DNA needs PEG/salt buffer to bind to SPRI beads)
@@ -880,7 +877,7 @@ la_t2_vol = mix_total_col11 * 9 / 30
 transfer({"StartPosition":"M2_POS17","EndPosition":"M2_POS27","LoosenOffsetOfZ":0})
 if SampleCount > 20:
 	p1_load_modified(tip_1000.load(1)[0])
-	#吸T7 PCR mix (FIXED: slowed FirstSegmentSpeed from 190 to 100 for gentle tip entry)
+	#吸T7 PCR mix (slowed FirstSegmentSpeed for gentle tip entry)
 	p1_aspirate({"Position":"M2_POS17","Col":1,"Row":3,"PreAirVolume":5,"AspirateOffsetOfZ":0.6,"AspirateSpeed":50,"AspirateVolume":la_t7_vol/2,"PreAirSpeed":100,"DelayAfterAspirate":0.5,"TipTouchTimes":3,"PostAirSpeed":100,"PostAirVolume":5,"IfTrack":True,"FirstSegmentSpeed":100,"SpeedChangeOffsetOfZ":0,"SecondSegmentSpeed":100, "TipTouchOffsetOfZ": 35, "TipTouchRangeOfX": 3.5, "TipTouchSpeed": 100})
 	p1_empty({"Position":"M2_POS17","Col":4,"Row":3,"EmptyOffsetOfZ":2,"LiquidLevelDetection":"None","EmptySpeed":50,"DelayAfterEmpty":0.5,"TipTouchTimes":5,"PostAirSpeed":100,"PostAirVolume":0,"FirstSegmentSpeed":190,"SpeedChangeOffsetOfZ":0,"SecondSegmentSpeed":100,"TipTouchOffsetOfZ": 35, "TipTouchRangeOfX": 3.5, "TipTouchSpeed": 100})
 	delay({"Duration": 10})
@@ -901,7 +898,7 @@ if SampleCount > 20:
 	p8_unload_tips({"Position":"M2_Trash","Col":None,"Row":None})
 
 	#吸T2 溶解液 (Updated to 9 µL per well for 30 µL total LA Mix)
-	# CRITICAL FIX: Changed Row 1 (beads) to Row 2 (T2 buffer)
+	# Use POS24 Row 2 for T2 buffer; Row 1 is reserved for beads.
 	p1_load_modified(tip_1000.load(1)[0])
 	p1_aspirate({"Position":"M2_POS24","Col":1,"Row":2,"PreAirVolume":5,"AspirateOffsetOfZ":0.8,"AspirateSpeed":150,"AspirateVolume":la_t2_vol/2,"PreAirSpeed":100,"DelayAfterAspirate":0.5,"TipTouchTimes":0,"PostAirSpeed":100,"PostAirVolume":5,"IfTrack":True,"FirstSegmentSpeed":190,"SpeedChangeOffsetOfZ":0,"SecondSegmentSpeed":100})
 	p1_empty({"Position":"M2_POS17","Col":4,"Row":3,"EmptyOffsetOfZ":2,"LiquidLevelDetection":"None","EmptySpeed":100,"DelayAfterEmpty":0.5,"TipTouchTimes":0,"PostAirSpeed":100,"PostAirVolume":0,"FirstSegmentSpeed":190,"SpeedChangeOffsetOfZ":0,"SecondSegmentSpeed":100})
@@ -912,19 +909,19 @@ if SampleCount > 20:
 	p1_unload_tips2({"Position":"M2_Trash","Col":None,"Row":None})
 else:
 	p1_load_modified(tip_1000.load(1)[0])
-	#吸T7 PCR mix (Updated to 20 µL per well for 30 µL total LA Mix, FIXED: slowed FirstSegmentSpeed from 190 to 100)
+	#吸T7 PCR mix (20 µL per well, slowed FirstSegmentSpeed for gentle tip entry)
 	p1_aspirate({"Position":"M2_POS17","Col":1,"Row":3,"PreAirVolume":5,"AspirateOffsetOfZ":0.6,"AspirateSpeed":50,"AspirateVolume":la_t7_vol,"PreAirSpeed":100,"DelayAfterAspirate":0.5,"TipTouchTimes":3,"PostAirSpeed":100,"PostAirVolume":5,"IfTrack":True,"FirstSegmentSpeed":100,"SpeedChangeOffsetOfZ":0,"SecondSegmentSpeed":100, "TipTouchOffsetOfZ": 35, "TipTouchRangeOfX": 3.5, "TipTouchSpeed": 100})
 	p1_empty({"Position":"M2_POS17","Col":4,"Row":3,"EmptyOffsetOfZ":2,"LiquidLevelDetection":"None","EmptySpeed":50,"DelayAfterEmpty":0.5,"TipTouchTimes":3,"PostAirSpeed":100,"PostAirVolume":0,"FirstSegmentSpeed":190,"SpeedChangeOffsetOfZ":0,"SecondSegmentSpeed":100,"TipTouchOffsetOfZ": 35, "TipTouchRangeOfX": 3.5, "TipTouchSpeed": 100})
 	delay({"Duration": 10})
 	p1_empty({"Position":"M2_POS17","Col":4,"Row":3,"EmptyOffsetOfZ":2,"LiquidLevelDetection":"None","EmptySpeed":50,"DelayAfterEmpty":0.5,"TipTouchTimes":3,"PostAirSpeed":100,"PostAirVolume":0,"FirstSegmentSpeed":190,"SpeedChangeOffsetOfZ":0,"SecondSegmentSpeed":100,"TipTouchOffsetOfZ": 35, "TipTouchRangeOfX": 3.5, "TipTouchSpeed": 100})
 	p1_unload_tips2({"Position":"M2_Trash","Col":None,"Row":None})
-	#吸T8 UDG 酶 (Updated to 1 µL per well for 30 µL total LA Mix, FIXED: slowed FirstSegmentSpeed)
+	#吸T8 UDG 酶 (1 µL per well, slowed FirstSegmentSpeed for gentle tip entry)
 	p1_load_modified(tip_300.load(1)[0])
 	p1_aspirate({"Position":"M2_POS17","Col":2,"Row":3,"PreAirVolume":5,"AspirateOffsetOfZ":0.6,"AspirateSpeed":50,"AspirateVolume":la_t8_vol,"PreAirSpeed":100,"DelayAfterAspirate":0.5,"TipTouchTimes":0,"PostAirSpeed":100,"PostAirVolume":5,"IfTrack":True,"FirstSegmentSpeed":100,"SpeedChangeOffsetOfZ":0,"SecondSegmentSpeed":100})
 	p1_empty({"Position":"M2_POS17","Col":4,"Row":3,"EmptyOffsetOfZ":2,"LiquidLevelDetection":"None","EmptySpeed":100,"DelayAfterEmpty":0.5,"TipTouchTimes":0,"PostAirSpeed":100,"PostAirVolume":0,"FirstSegmentSpeed":190,"SpeedChangeOffsetOfZ":0,"SecondSegmentSpeed":100})
 	p1_unload_tips2({"Position":"M2_Trash","Col":None,"Row":None})
 	#吸T2 溶解液 (Updated to 9 µL per well for 30 µL total LA Mix)
-	# CRITICAL FIX: Changed Row 1 (beads) to Row 2 (T2 buffer)
+	# Use POS24 Row 2 for T2 buffer; Row 1 is reserved for beads.
 	p1_load_modified(tip_1000.load(1)[0])
 	p1_aspirate({"Position":"M2_POS24","Col":1,"Row":2,"PreAirVolume":5,"AspirateOffsetOfZ":0.8,"AspirateSpeed":150,"AspirateVolume":la_t2_vol,"PreAirSpeed":100,"DelayAfterAspirate":0.5,"TipTouchTimes":0,"PostAirSpeed":100,"PostAirVolume":5,"IfTrack":True,"FirstSegmentSpeed":190,"SpeedChangeOffsetOfZ":0,"SecondSegmentSpeed":100})
 	p1_empty({"Position":"M2_POS17","Col":4,"Row":3,"EmptyOffsetOfZ":2,"LiquidLevelDetection":"None","EmptySpeed":100,"DelayAfterEmpty":0.5,"TipTouchTimes":0,"PostAirSpeed":100,"PostAirVolume":0,"FirstSegmentSpeed":190,"SpeedChangeOffsetOfZ":0,"SecondSegmentSpeed":100})
@@ -951,7 +948,7 @@ else:
 
 transfer({"StartPosition":"M2_POS27","EndPosition":"M2_POS17","LoosenOffsetOfZ":0})
 
-# 分装酒精
+# v12: POS3 → POS7 ethanol pre-dispense, PTplus-style (5 cycles × 195 µL = 975 µL/well; staged height 0.5 + 4*tt). Capped at range(5) so 48-sample demand stays under 50 mL POS3 reservoir.
 Alcohol_1 = tip_1000.load(8,8)
 p8_load_modified(Alcohol_1[0])
 for x in range(col_num):
@@ -986,7 +983,7 @@ for i in range(2):
 		p8_load_modified_BubblePurge(Ligation_purification_tips2[x])
 		p8_aspirate({"Position":"M2_POS23","Col":7+x,"Row":1,"PreAirVolume":2,"AspirateOffsetOfZ":0,"AspirateSpeed":10,"AspirateVolume":220,"PreAirSpeed":50,"DelayAfterAspirate":0.5,"TipTouchTimes":0,"PostAirSpeed":50,"PostAirVolume":5,"IfTrack":False,"FirstSegmentSpeed":100,"SpeedChangeOffsetOfZ":0,"SecondSegmentSpeed":80})
 		p8_empty({"Position":"M2_POS13","Col":waste_col_start+x,"Row":1,"EmptyOffsetOfZ":0.8,"EmptySpeed":50,"DelayAfterEmpty":0.8,"TipTouchTimes":3,"TipTouchOffsetOfZ":15,"TipTouchRangeOfX":1.2,"TipTouchSpeed":100,"PostAirSpeed":50,"PostAirVolume":5,"FirstSegmentSpeed":100,"SpeedChangeOffsetOfZ":0,"SecondSegmentSpeed":80})
-		# FIXED: 只在最后一轮丢弃枪头，第一轮放回原位
+		# 只在最后一轮丢弃枪头，第一轮放回原位
 		if i == 1:
 			p8_unload_tips({"Position":"M2_Trash","Col":None,"Row":None})
 		else:
@@ -1049,8 +1046,8 @@ LA_dispense_tips = tip_300.load(sample_num,8,1)
 for i in range(col_num):
 	p8_load_modified(LA_dispense_tips[i])
 	# Aspirate 30 µL LA Master Mix from pre-dispensed reservoir
-	# FIX (Task 5): DelayAfterAspirate 0.5→3s to let liquid settle in tip, reduces uneven aspiration across 8 channels
-	p8_aspirate({"Position":"M2_POS7","Col":11,"Row":1,"PreAirVolume":5,"AspirateOffsetOfZ":0.5,"AspirateSpeed":50,"AspirateVolume":30,"PreAirSpeed":50,"DelayAfterAspirate":3,"TipTouchTimes":0,"PostAirSpeed":50,"PostAirVolume":5,"IfTrack":False,"FirstSegmentSpeed":100,"SpeedChangeOffsetOfZ":0,"SecondSegmentSpeed":80})
+	# v12: Conservative POS7 P8-300 aqueous aspiration style for small-volume transfers; keep AspirateOffsetOfZ unchanged per validation decision.
+	p8_aspirate({"Position":"M2_POS7","Col":11,"Row":1,"PreAirVolume":5,"AspirateOffsetOfZ":0.5,"AspirateSpeed":30,"AspirateVolume":30,"PreAirSpeed":50,"DelayAfterAspirate":3,"TipTouchTimes":0,"PostAirSpeed":50,"PostAirVolume":10,"IfTrack":True,"FirstSegmentSpeed":100,"SpeedChangeOffsetOfZ":0,"SecondSegmentSpeed":80})
 	# Dispense onto dried beads at M2_POS23 (on magnet)
 	p8_empty({"Position":"M2_POS23","Col":7+i,"Row":1,"EmptyOffsetOfZ":0.5,"EmptySpeed":20,"DelayAfterEmpty":0.5,"TipTouchTimes":0,"PostAirSpeed":50,"PostAirVolume":0,"FirstSegmentSpeed":100,"SpeedChangeOffsetOfZ":0,"SecondSegmentSpeed":80})
 	p8_unload_modified(LA_dispense_tips[i])
@@ -1086,12 +1083,12 @@ for i in range(col_num):
 
 transfer({"StartPosition":"M2_POS27","EndPosition":"M2_POS10","LoosenOffsetOfZ":0})#关盖板 - Close POS10 lid after T9 primer
 
-# 添加矿物油到LA PCR柱 (AFTER all reagents are added - Add 20 µL mineral oil to LA PCR columns 7-12)
+# v12: 20 µL mineral oil overlay on LA PCR wells (POS20 Cols 1-6, fresh plate after POS9 swap) before PTseq_LA.
 if SampleCount%8 == 0:
 	last_row =1
 else:
 	last_row = 9-SampleCount%8
-oil_3 = tip_300.load(8,8,0)  # FIXED: reuse_index=0 (tips discarded to trash)
+oil_3 = tip_300.load(8,8,0)  # reuse_index=0: oil tips discarded to trash
 
 # Plate swap: Move POS14 to POS13 (P8 cannot reach POS14)
 transfer({"StartPosition":"M2_POS14","EndPosition":"M2_POS30","LoosenOffsetOfZ":0})
@@ -1217,6 +1214,7 @@ for i in range(col_num-1,-1,-1):
 		p8_load_modified((temp[0],temp[1],temp[2]+8-sample_num%8))
 	elif i == col_num-1:
 		p8_load_modified(temp)
+	# v12: Conservative PTplus second-bead-transfer style for the LA-product 32 µL aliquot (avoids middle-of-tip air bubble seen in production).
 	p8_aspirate({"Position":magetic_beads_pre_dispense_pos["Position"], "Col":magetic_beads_pre_dispense_pos["Col"], "Row":1,"PreAirVolume":5,"AspirateOffsetOfZ":0.6,"AspirateSpeed":30,"AspirateVolume":magetic_beads_volume1,"PreAirSpeed":50,"DelayAfterAspirate":2,"PostAirSpeed":50,"PostAirVolume":0,"IfTrack":True,"FirstSegmentSpeed":100,"SpeedChangeOffsetOfZ":0,"SecondSegmentSpeed":80, "TipTouchTimes": 0, "TipTouchOffsetOfZ": 15, "TipTouchRangeOfX":1.4, "TipTouchSpeed": 100})
 	p8_dispense({"Position":magetic_beads_dispense_pos1["Position"], "Col":magetic_beads_dispense_pos1["Col"]+i, "Row":1,"FirstSegmentSpeed": 100, "SpeedChangeOffsetOfZ": 0, "SecondSegmentSpeed": 80, "DispenseOffsetOfZ": 0.8, "DispenseSpeed": 30, "DispenseVolume":magetic_beads_volume1,"DelayAfterDispense": 1, "IsEmpty": True, "EmptyOffsetOfZ": 2, "EmptySpeed": 30, "DelayAfterEmpty": 0.5, "TipTouchTimes": 0, "TipTouchOffsetOfZ": 5, "TipTouchRangeOfX": 1.2, "TipTouchSpeed": 100})
 
@@ -1310,7 +1308,7 @@ for i in range(2):
 		p8_load_modified_BubblePurge(temp[x])
 		p8_aspirate({"Position":"M2_POS23","Col":magetic_beads_dispense_pos1["Col"]+x, "Row":1,"PreAirVolume":2,"AspirateOffsetOfZ":0,"AspirateSpeed":10,"AspirateVolume":220,"PreAirSpeed":50,"DelayAfterAspirate":0.5,"TipTouchTimes":0,"PostAirSpeed":50,"PostAirVolume":5,"IfTrack":False,"FirstSegmentSpeed":100,"SpeedChangeOffsetOfZ":0,"SecondSegmentSpeed":80})
 		p8_empty({"Position":"M2_POS13","Col":waste_col_start+x,"Row":1,"EmptyOffsetOfZ":0.8,"EmptySpeed":50,"DelayAfterEmpty":0.8,"TipTouchTimes":3,"TipTouchOffsetOfZ":15,"TipTouchRangeOfX":1.2,"TipTouchSpeed":100,"PostAirSpeed":50,"PostAirVolume":5,"FirstSegmentSpeed":100,"SpeedChangeOffsetOfZ":0,"SecondSegmentSpeed":80})
-		# FIXED: 只在最后一轮丢弃枪头，第一轮放回原位
+		# 只在最后一轮丢弃枪头，第一轮放回原位
 		if i == 1:
 			p8_unload_tips({"Position":"M2_Trash","Col":None,"Row":None})
 		else:
