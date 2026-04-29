@@ -1,0 +1,313 @@
+[
+    {
+    "Position": "M1_Lane1",
+    "Description": null,
+    "TubeCarrierInfo": {
+      "Name": "Tube Carrier C (24)",
+      "WellInfo": [
+              {
+                "Wells": "*",
+                "ConsumableInfo": {
+                  "ConsumableType": "CentrifugeTube",
+                  "ConsumableName": "2mL Microcentrifuge Tube",
+                  "WellInfo": null,
+                  "LidInfo": null
+                }
+              }
+            ]
+    },
+    "AdapterInfo": null,
+    "ConsumableInfo": null
+  },
+    {
+    "Position": "M1_Lane2",
+    "Description": null,
+    "TubeCarrierInfo": {
+      "Name": "Tube Carrier C (24)",
+      "WellInfo": [
+              {
+                "Wells": "*",
+                "ConsumableInfo": {
+                  "ConsumableType": "CentrifugeTube",
+                  "ConsumableName": "2mL Microcentrifuge Tube",
+                  "WellInfo": null,
+                  "LidInfo": null
+                }
+              }
+            ]
+    },
+    "AdapterInfo": null,
+    "ConsumableInfo": null
+  },
+  {
+    "Position": "M1_POS1",
+    "Description": null,
+    "TubeCarrierInfo": null,
+    "AdapterInfo": null,
+    "ConsumableInfo": {
+      "ConsumableType": "BoxTips",
+      "ConsumableName": "Tip Rack 1000μL Transparent Filter",
+      "WellInfo": null,
+      "LidInfo": null
+    }
+  },
+  {
+    "Position": "M1_POS2",
+    "Description": null,
+    "TubeCarrierInfo": null,
+    "AdapterInfo": null,
+    "ConsumableInfo": {
+            "ConsumableType": "DeepPlate",
+            "ConsumableName": "2.2ml 96 Well V-bottom Deepwell Plate",
+            "WellInfo": null,
+            "LidInfo": null
+          }
+  },
+  {
+    "Position": "M1_POS8",
+    "Description": null,
+    "TubeCarrierInfo": null,
+    "AdapterInfo": null,
+    "ConsumableInfo": {
+      "ConsumableType": "PCRPlate",
+      "ConsumableName": "0.2mL 96 Well Full-skirt PCR Plate",
+      "WellInfo": null,
+      "LidInfo": null
+    }
+  },
+  {
+    "Position": "M1_POS4",
+    "Description": null,
+    "TubeCarrierInfo": null,
+    "AdapterInfo": {
+      "Type": "ReagentReservoirAdapter",
+      "Name": "Single Reservoir Adapter",
+      "WellInfo": [
+        {
+          "Wells": "*",
+          "ConsumableInfo": {
+            "ConsumableType": "ReagentReservoir",
+            "ConsumableName": "Single Reservoir, 50mL",
+            "WellInfo": null,
+            "LidInfo": null
+          }
+        }
+      ]
+    },
+    "ConsumableInfo": null
+  },
+  {
+    "Position": "M1_POS5",
+    "Description": null,
+    "TubeCarrierInfo": null,
+    "AdapterInfo": null,
+    "ConsumableInfo": {
+            "ConsumableType": "DeepPlate",
+            "ConsumableName": "2.2ml 96 Well V-bottom Deepwell Plate",
+            "WellInfo": null,
+            "LidInfo": null
+          }
+  },
+  {
+    "Position": "M1_POS6",
+    "Description": null,
+    "TubeCarrierInfo": null,
+    "AdapterInfo": null,
+    "ConsumableInfo": {
+      "ConsumableType": "BoxTips",
+      "ConsumableName": "Tip Rack 300μL Conductive Filter",
+      "WellInfo": null,
+      "LidInfo": null
+    }
+  },
+  {
+    "Position": "M1_POS7",
+    "Description": null,
+    "TubeCarrierInfo": null,
+    "AdapterInfo": null,
+    "ConsumableInfo": {
+      "ConsumableType": "BoxTips",
+      "ConsumableName": "Tip Rack 300μL Conductive Filter",
+      "WellInfo": null,
+      "LidInfo": null
+    }
+  },
+  {
+    "Position": "M1_POS3",
+    "Description": null,
+    "TubeCarrierInfo": null,
+    "AdapterInfo": null,
+    "ConsumableInfo": {
+      "ConsumableType": "DeepPlate",
+      "ConsumableName": "2.2ml 96 Well V-bottom Deepwell Plate",
+      "WellInfo": null,
+      "LidInfo": null
+    }
+  },
+  {
+    "Position": "M1_POS9",
+    "Description": null,
+    "TubeCarrierInfo": null,
+    "AdapterInfo": null,
+    "ConsumableInfo": {
+            "ConsumableType": "DeepPlate",
+            "ConsumableName": "2.2ml 96 Well V-bottom Deepwell Plate",
+            "WellInfo": null,
+            "LidInfo": null
+          }
+  },
+   {
+    "Position": "M1_POS10",
+    "Description": null,
+    "TubeCarrierInfo": null,
+    "AdapterInfo": {
+      "Type": "FixedTubeAdapter",
+      "Name": "Temp.&Shaker Tube Adapter A (1x2)",
+      "WellInfo": [
+        {
+          "Wells": "*",
+          "ConsumableInfo": {
+            "ConsumableType": "CryovialTube",
+            "ConsumableName": "5mL tube",
+            "WellInfo": null,
+            "LidInfo": null
+          }
+        }
+      ]
+    },
+    "ConsumableInfo": null
+    },
+  {
+    "Position": "M1_POS11",
+    "Description": null,
+    "TubeCarrierInfo": null,
+    "AdapterInfo": null,
+    "ConsumableInfo": {
+      "ConsumableType": "BoxTips",
+      "ConsumableName": "Tip Rack 300μL Conductive Filter",
+      "WellInfo": null,
+      "LidInfo": null
+    }
+  },
+  {
+    "Position": "M1_POS12",
+    "Description": null,
+    "TubeCarrierInfo": null,
+    "AdapterInfo": null,
+    "ConsumableInfo": {
+      "ConsumableType": "BoxTips",
+      "ConsumableName": "Tip Rack 50μL Conductive Filter",
+      "WellInfo": null,
+      "LidInfo": null
+    }
+  },
+  {
+    "Position": "M1_POS13",
+    "Description": null,
+    "TubeCarrierInfo": null,
+    "AdapterInfo": null,
+    "ConsumableInfo": {
+            "ConsumableType": "DeepPlate",
+            "ConsumableName": "2.2ml 96 Well V-bottom Deepwell Plate",
+            "WellInfo": null,
+            "LidInfo": null
+          }
+  },
+  {
+    "Position": "M1_POS14",
+    "Description": null,
+    "TubeCarrierInfo": null,
+    "AdapterInfo": {
+      "Type": "TempControlTubeAdapter",
+      "Name": "Multi-segment Adapter (6x1, 3x2)",
+      "WellInfo": [
+        {
+          "Wells": "A1,B1,C1,D1,E1,F1",
+          "ConsumableInfo": {
+            "ConsumableType": "CryovialTube",
+            "ConsumableName": "2mL SC micro tube, PCR-PT",
+            "WellInfo": [
+              {
+                "Wells": "*",
+                "ContentInfo": {
+                  "Type": "None",
+                  "Name": "",
+                  "Volume": 1500
+                }
+              }
+            ]
+          }
+        },
+        {
+          "Wells": "A2,B2,C2,A3,B3,C3",
+          "ConsumableInfo": {
+            "ConsumableType": "CryovialTube",
+            "ConsumableName": "8mL tube",
+            "WellInfo": [
+              {
+                "Wells": "*",
+                "ContentInfo": {
+                  "Type": "None",
+                  "Name": "",
+                  "Volume": 5000
+                }
+              }
+            ]
+          }
+        }
+      ]
+    }
+  },
+  {
+    "Position": "M1_Trash",
+    "Description": null,
+    "TubeCarrierInfo": null,
+    "AdapterInfo": null,
+    "ConsumableInfo": null
+  },
+  {
+    "Position": "M1_CapMod",
+    "Description": null,
+    "TubeCarrierInfo": null,
+    "AdapterInfo": null,
+    "ConsumableInfo": null
+  },
+  {
+    "Position": "M1_MagMod",
+    "Description": null,
+    "TubeCarrierInfo": null,
+    "AdapterInfo": null,
+    "ConsumableInfo": {
+            "ConsumableType": "DeepPlate",
+            "ConsumableName": "2.2ml 96 Well V-bottom Deepwell Plate",
+            "WellInfo": null,
+            "LidInfo": null
+          }
+  },
+  {
+    "Position": "M1_T1",
+    "Description": null,
+    "TubeCarrierInfo": null,
+    "AdapterInfo": null,
+    "ConsumableInfo": {
+      "ConsumableType": "PCRPlate",
+      "ConsumableName": "0.2mL 96 Well Full-skirt PCR Plate",
+      "WellInfo": null,
+      "LidInfo": null
+    }
+  },
+  {
+    "Position": "M1_T2",
+    "Description": null,
+    "TubeCarrierInfo": null,
+    "AdapterInfo": null,
+    "ConsumableInfo": null
+  },
+  {
+    "Position": "M1_T3",
+    "Description": null,
+    "TubeCarrierInfo": null,
+    "AdapterInfo": null,
+    "ConsumableInfo": null
+  }
+]
