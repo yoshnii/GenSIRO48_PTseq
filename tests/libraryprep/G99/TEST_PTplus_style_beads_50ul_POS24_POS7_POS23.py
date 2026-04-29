@@ -4,7 +4,7 @@
 # Bead transfer isolation test for GenSIRO48 G99.
 # Not for production.
 # Intermediate: POS7 Col11.
-# Target: POS23 Col1.
+# Target: POS16 Col1.
 # POS7 input volume per well: 70 uL.
 # POS7 output volume per well: 50 uL.
 # Expected residual volume per well: 20 uL.
@@ -112,7 +112,7 @@ col_num = 1
 
 bead_stock = {"Position": "M2_POS24", "Col": 1, "Row": 1}
 pos7_beads = {"Position": "M2_POS7", "Col": 11, "Row": 1}
-target_plate = {"Position": "M2_POS23", "Col": 1, "Row": 1}
+target_plate = {"Position": "M2_POS16", "Col": 1, "Row": 1}
 pos7_input_volume = 70
 pos7_output_volume = 50
 
@@ -139,6 +139,6 @@ p1_unload_tips2({"Position": "M2_Trash", "Col": None, "Row": None})
 
 p8_tip = tip_300.load(8)[0]
 p8_load_modified(p8_tip)
-p8_aspirate({"Position": pos7_beads["Position"], "Col": pos7_beads["Col"], "Row": pos7_beads["Row"], "PreAirVolume": 35, "AspirateOffsetOfZ": 0.5, "AspirateSpeed": 50, "AspirateVolume": pos7_output_volume, "PreAirSpeed": 50, "DelayAfterAspirate": 1, "PostAirSpeed": 50, "PostAirVolume": 10, "IfTrack": False, "FirstSegmentSpeed": 100, "SpeedChangeOffsetOfZ": 0, "SecondSegmentSpeed": 80, "TipTouchTimes": 3, "TipTouchOffsetOfZ": 15, "TipTouchRangeOfX": 1.4, "TipTouchSpeed": 100})
+p8_aspirate({"Position": pos7_beads["Position"], "Col": pos7_beads["Col"], "Row": pos7_beads["Row"], "PreAirVolume": 35, "AspirateOffsetOfZ": 0.9, "AspirateSpeed": 50, "AspirateVolume": pos7_output_volume, "PreAirSpeed": 50, "DelayAfterAspirate": 1, "PostAirSpeed": 50, "PostAirVolume": 10, "IfTrack": False, "FirstSegmentSpeed": 100, "SpeedChangeOffsetOfZ": 0, "SecondSegmentSpeed": 80, "TipTouchTimes": 3, "TipTouchOffsetOfZ": 15, "TipTouchRangeOfX": 1.4, "TipTouchSpeed": 100})
 p8_dispense({"Position": target_plate["Position"], "Col": target_plate["Col"], "Row": target_plate["Row"], "FirstSegmentSpeed": 100, "SpeedChangeOffsetOfZ": 0, "SecondSegmentSpeed": 80, "DispenseOffsetOfZ": 0.8, "DispenseSpeed": 30, "DispenseVolume": pos7_output_volume, "DelayAfterDispense": 1, "IsEmpty": True, "EmptyOffsetOfZ": 2, "EmptySpeed": 30, "DelayAfterEmpty": 0.5, "TipTouchTimes": 0, "TipTouchOffsetOfZ": 5, "TipTouchRangeOfX": 1.2, "TipTouchSpeed": 100})
 p8_unload_tips({"Position": "M2_Trash", "Col": None, "Row": None})
