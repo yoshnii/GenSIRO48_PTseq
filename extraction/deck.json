@@ -1,40 +1,40 @@
 [
-    {
+  {
     "Position": "M1_Lane1",
     "Description": null,
     "TubeCarrierInfo": {
       "Name": "Tube Carrier C (24)",
       "WellInfo": [
-              {
-                "Wells": "*",
-                "ConsumableInfo": {
-                  "ConsumableType": "CentrifugeTube",
-                  "ConsumableName": "2mL Microcentrifuge Tube",
-                  "WellInfo": null,
-                  "LidInfo": null
-                }
-              }
-            ]
+        {
+          "Wells": "*",
+          "ConsumableInfo": {
+            "ConsumableType": "CentrifugeTube",
+            "ConsumableName": "2mL Microcentrifuge Tube",
+            "WellInfo": null,
+            "LidInfo": null
+          }
+        }
+      ]
     },
     "AdapterInfo": null,
     "ConsumableInfo": null
   },
-    {
+  {
     "Position": "M1_Lane2",
     "Description": null,
     "TubeCarrierInfo": {
       "Name": "Tube Carrier C (24)",
       "WellInfo": [
-              {
-                "Wells": "*",
-                "ConsumableInfo": {
-                  "ConsumableType": "CentrifugeTube",
-                  "ConsumableName": "2mL Microcentrifuge Tube",
-                  "WellInfo": null,
-                  "LidInfo": null
-                }
-              }
-            ]
+        {
+          "Wells": "*",
+          "ConsumableInfo": {
+            "ConsumableType": "CentrifugeTube",
+            "ConsumableName": "2mL Microcentrifuge Tube",
+            "WellInfo": null,
+            "LidInfo": null
+          }
+        }
+      ]
     },
     "AdapterInfo": null,
     "ConsumableInfo": null
@@ -57,11 +57,11 @@
     "TubeCarrierInfo": null,
     "AdapterInfo": null,
     "ConsumableInfo": {
-            "ConsumableType": "DeepPlate",
-            "ConsumableName": "2.2ml 96 Well V-bottom Deepwell Plate",
-            "WellInfo": null,
-            "LidInfo": null
-          }
+      "ConsumableType": "DeepPlate",
+      "ConsumableName": "2.2ml 96 Well V-bottom Deepwell Plate",
+      "WellInfo": null,
+      "LidInfo": null
+    }
   },
   {
     "Position": "M1_POS8",
@@ -102,11 +102,11 @@
     "TubeCarrierInfo": null,
     "AdapterInfo": null,
     "ConsumableInfo": {
-            "ConsumableType": "DeepPlate",
-            "ConsumableName": "2.2ml 96 Well V-bottom Deepwell Plate",
-            "WellInfo": null,
-            "LidInfo": null
-          }
+      "ConsumableType": "DeepPlate",
+      "ConsumableName": "2.2ml 96 Well V-bottom Deepwell Plate",
+      "WellInfo": null,
+      "LidInfo": null
+    }
   },
   {
     "Position": "M1_POS6",
@@ -115,7 +115,7 @@
     "AdapterInfo": null,
     "ConsumableInfo": {
       "ConsumableType": "BoxTips",
-      "ConsumableName": "Tip Rack 300μL Conductive Filter",
+      "ConsumableName": "Tip Rack 300μL Transparent Filter",
       "WellInfo": null,
       "LidInfo": null
     }
@@ -127,13 +127,13 @@
     "AdapterInfo": null,
     "ConsumableInfo": {
       "ConsumableType": "BoxTips",
-      "ConsumableName": "Tip Rack 300μL Conductive Filter",
+      "ConsumableName": "Tip Rack 300μL Transparent Filter",
       "WellInfo": null,
       "LidInfo": null
     }
   },
   {
-    "Position": "M1_POS3",
+    "Position": "M1_POS9",
     "Description": null,
     "TubeCarrierInfo": null,
     "AdapterInfo": null,
@@ -145,18 +145,6 @@
     }
   },
   {
-    "Position": "M1_POS9",
-    "Description": null,
-    "TubeCarrierInfo": null,
-    "AdapterInfo": null,
-    "ConsumableInfo": {
-            "ConsumableType": "DeepPlate",
-            "ConsumableName": "2.2ml 96 Well V-bottom Deepwell Plate",
-            "WellInfo": null,
-            "LidInfo": null
-          }
-  },
-   {
     "Position": "M1_POS10",
     "Description": null,
     "TubeCarrierInfo": null,
@@ -176,15 +164,15 @@
       ]
     },
     "ConsumableInfo": null
-    },
+  },
   {
     "Position": "M1_POS11",
-    "Description": null,
+    "Description": "1000uL Tips (moved due to physical constraints)",
     "TubeCarrierInfo": null,
     "AdapterInfo": null,
     "ConsumableInfo": {
       "ConsumableType": "BoxTips",
-      "ConsumableName": "Tip Rack 300μL Conductive Filter",
+      "ConsumableName": "Tip Rack 1000μL Transparent Filter",
       "WellInfo": null,
       "LidInfo": null
     }
@@ -196,7 +184,7 @@
     "AdapterInfo": null,
     "ConsumableInfo": {
       "ConsumableType": "BoxTips",
-      "ConsumableName": "Tip Rack 50μL Conductive Filter",
+      "ConsumableName": "Tip Rack 50μL Transparent Filter",
       "WellInfo": null,
       "LidInfo": null
     }
@@ -207,11 +195,11 @@
     "TubeCarrierInfo": null,
     "AdapterInfo": null,
     "ConsumableInfo": {
-            "ConsumableType": "DeepPlate",
-            "ConsumableName": "2.2ml 96 Well V-bottom Deepwell Plate",
-            "WellInfo": null,
-            "LidInfo": null
-          }
+      "ConsumableType": "DeepPlate",
+      "ConsumableName": "2.2ml 96 Well V-bottom Deepwell Plate",
+      "WellInfo": null,
+      "LidInfo": null
+    }
   },
   {
     "Position": "M1_POS14",
@@ -278,11 +266,11 @@
     "TubeCarrierInfo": null,
     "AdapterInfo": null,
     "ConsumableInfo": {
-            "ConsumableType": "DeepPlate",
-            "ConsumableName": "2.2ml 96 Well V-bottom Deepwell Plate",
-            "WellInfo": null,
-            "LidInfo": null
-          }
+      "ConsumableType": "DeepPlate",
+      "ConsumableName": "2.2ml 96 Well V-bottom Deepwell Plate",
+      "WellInfo": null,
+      "LidInfo": null
+    }
   },
   {
     "Position": "M1_T1",

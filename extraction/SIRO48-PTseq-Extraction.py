@@ -191,7 +191,7 @@ PostAirSpeed= 50.0, PostAirVolume= 5.0,liquid = 0):
 # ================================输入部分=============================================
 
 # 样本信息文件位置
-sample_info_file_path = r'D:/Pathogens/Pathogens48.csv'
+sample_info_file_path = r'D:/Pathogens/PTseq.csv'
 # 是否有样本孔需要过滤，默认值位True，即有样本孔需要过滤，反之则设为 False
 is_filter = False
 # 提取过滤的样本质控类型（仅在 is_filter 为 True 时生效）
@@ -280,30 +280,26 @@ def get_sample_info(sample_info_file_path, is_filter, filtered_sample_qc_type):
 
 filtered_samples=get_sample_info(sample_info_file_path, False, filtered_sample_qc_type)
 SampleCount = len(filtered_samples)
+if not filtered_samples:
+	a = dialog_textbox({"Title": "请输入样本数量", "Timeout": "02:00:00","Parameters":[{"Name": "样本数量", "Value": "48", "Notes": "未检测到样本信息文件，请输入样本数量"}]})
+	SampleCount = int(a["样本数量"])
 sample_num = SampleCount
 transport_go({"Position": "M1_T1"})
 
 '''============================================================枪头位置=============================================================='''
 
 #初始化枪头位
-tip_300_pos = ['M1_POS11']
-
+# ==================== 物理限制修改 ====================
+# 300µL tips moved to POS7 due to physical constraints
+tip_300_pos = ['M1_POS7']
 tip_300 = Tips(tip_300_pos)
 
-
-tip_1000_pos = ['M1_POS1']
+# 1000µL tips at POS11 and POS1
+tip_1000_pos = ['M1_POS11', 'M1_POS1']
 tip_1000 = Tips(tip_1000_pos)
+# ====================================================
 
 transport_go({"Position": "M1_T1"})
-
-# if SampleCount<8:
-	# for _ in range(1):
-		# temp = tip_1000.load(8)
-		# p8_load_modified(temp[0])
-		# p8_unload_tips({"Position": "M1_Trash", "Col": 1, "Row": 1})
-
-
-
 
 #=========================================混匀磁珠=====================================================
 lang=get_lang()
@@ -328,7 +324,6 @@ target_tip_num_list = [8]*(sample_num//8) + [sample_num%8]
 if (sample_num) < 9:
 	p8_load_modified(tip_1000.load(1)[0])
 	for i in range(sample_num):
-		#p8_load_modified(tip_1000.load(1)[0])
 	#第五次分液前重新震荡磁珠
 		if i == 4:
 			temp_shaker_set({"TempParameters": {"IsEnable": False, "Temp": 25.00, "Duration": -1}, "ShakerParameters": {"IsEnable": True, "Direction": 1, "Speed": 1200, "Duration": 30}})
@@ -413,10 +408,7 @@ if sample_num <= 9:
 		target_col = target_col_list[target_col_index]
 		target_row = target_row_list[target_rows_index]
 
-		#计算扎枪头位置
-		#temp = tip_1000.load(1)[0]
-		#p8_load_modified(temp)
-		p8_aspirate_modified('M1_POS14',1+i//4,1,45,PreAirVolume=0,AspirateOffsetOfZ=0.5)
+		p8_aspirate_modified('M1_POS14',1,2,45,PreAirVolume=0,AspirateOffsetOfZ=0.5)
 		p8_empty_modified(f'{target_pos}',target_row,target_col)
 	p8_unload_tips({"Position": "M1_Trash", "Col": 1, "Row": 1})
 
@@ -426,7 +418,7 @@ else:
 	temp = tip_1000.load(1)[0]
 	p8_load_modified(temp)
 	for i in range(8):
-		p8_aspirate_modified('M1_POS14',1+i//4,1,target_volume_list[i],PreAirVolume=0,AspirateOffsetOfZ=0.5)
+		p8_aspirate_modified('M1_POS14',1,2,target_volume_list[i],PreAirVolume=0,AspirateOffsetOfZ=0.5)
 		p8_empty_modified(f'M1_POS2',i+1,11,EmptyOffsetOfZ=2)
 	p8_unload_tips({"Position": "M1_Trash", "Col": 1, "Row": 1})
 	# 添加回溶液到样本
@@ -475,25 +467,7 @@ if lang==1: #
  report({"Phase": "分装洗液A", "Step": "分装洗液A", "TaskType": "library", "RemainingTime": None})
 elif lang==2: #
  report({"Phase": "Aliquoting Wash Buffer A", "Step": "Aliquoting Wash Buffer A", "TaskType": "library", "RemainingTime": None})
- 
-''' 
-cur_target_tip_num = 8
-temp = tip_1000.load(cur_target_tip_num,8,1)[0]
-p8_load_modified(temp)
-target_col_list = [3,9]
-for i in range(total_col_num):
-	if i == total_col_num-1 and sample_num%8 != 0:
-		p8_unload_modified(temp)
-		p8_load_modified((temp[0],temp[1],temp[2]+8-sample_num%8))
-	target_pos_index,target_col_index = divmod(i,2)
-	target_pos = magnet_pos_list[target_pos_index]
-	target_col = target_col_list[target_col_index]
-	target_row = 1
-	p8_aspirate_modified('M1_POS4',1,3,500,PostAirVolume=10,TipTouchTimes=3, TipTouchOffsetOfZ=40, TipTouchRangeOfX=1.2)
-	p8_empty_modified(f'{target_pos}',target_row,target_col,TipTouchTimes=1,EmptySpeed=200)
-p8_unload_tips({"Position": "M1_Trash", "Col": 1, "Row": 1})
-'''
-#===================================
+
 if SampleCount%8 == 0:
 	last_row =1
 else:
@@ -506,7 +480,7 @@ for i in range(total_col_num-1,-1,-1):
 	target_pos = magnet_pos_list[target_pos_index]
 	target_col = target_col_list[target_col_index]
 	target_row = 1
-	p8_aspirate_modified('M1_POS4',1,3,500,PostAirVolume=10,TipTouchTimes=3, TipTouchOffsetOfZ=40, TipTouchRangeOfX=1.2)
+	p8_aspirate_modified('M1_POS4',1,3,500,PostAirVolume=10,AspirateSpeed=300)
 	p8_empty_modified(f'{target_pos}',target_row,target_col,TipTouchTimes=1,EmptySpeed=200)
 	if i == total_col_num-1 and SampleCount%8 != 0:
 		p8_unload_tips({"Position":Wash_Buffer_A[0][0],"Col":Wash_Buffer_A[0][1],"Row":last_row,"Tips":8})
@@ -520,27 +494,6 @@ if lang==1: #
 elif lang==2: #
  report({"Phase": "Aliquoting Wash Buffer B", "Step": "Aliquoting Wash Buffer B", "TaskType": "library", "RemainingTime": None})
 
-''' 
-cur_target_tip_num = 8
-temp = tip_1000.load(cur_target_tip_num,8,1)[0]
-p8_load_modified(temp)
-target_col_list = [4,10]
-for i in range(total_col_num):
-	if i == total_col_num-1 and sample_num%8 != 0:
-		p8_unload_modified(temp)
-		p8_load_modified((temp[0],temp[1],temp[2]+8-sample_num%8))
-	
-	target_pos_index,target_col_index = divmod(i,2)
-	target_pos = magnet_pos_list[target_pos_index]
-	target_col = target_col_list[target_col_index]
-	target_row = 1
-	p8_aspirate_modified('M1_POS4',1,4,600,PostAirVolume=10,AspirateSpeed=300)
-	p8_empty_modified(f'{target_pos}',target_row,target_col,TipTouchTimes=1,EmptySpeed=200)
-	p8_aspirate_modified('M1_POS4',1,5,600,PostAirVolume=10)
-	p8_empty_modified(f'{target_pos}',target_row,target_col+1,TipTouchTimes=1,EmptySpeed=200)
-p8_unload_tips({"Position": "M1_Trash", "Col": 1, "Row": 1})
-'''
-#========================================
 if SampleCount%8 == 0:
 	last_row =1
 else:
@@ -608,7 +561,6 @@ delay({"Duration":300})
 ##将磁珠从第5列转移至第6列
 magnetic_rod_beads_release({"Col": 6,"FirstSpeedOfZ": 58.00, "SpeedChangeOffsetOfZ": 38.0, "SecondSpeedOfZ": 10.00, "LiftingSpeed":50,"ReleaseOffsetOfZ": 8.0, "ReleaseDuration": 0.50, "DelayAtSpeedChange": 0.50, "IsMix": True, "MixParams":{"MixStartOffsetOfZ": 8.0, "MixFrequency": 5, "MixDuration": 6, "MixEndOffsetOfZ":1, "DelayAfterMixLoopOffsetOfZ": 40.0, "DelayAfterMixLoop": 2.00}, "TipTouchTimes": 0, "TipTouchOffsetOfZ": 45.5, "TipTouchOffsetOfX": 1.5, "TipTouchSpeed": 10.0})
 
-# magnet_mix_modified(6,300,mix_temp = 56,MixFrequency=3,MixEndOffsetOfZ = 4)
 magnetic_rod_mix({"Col": 6,"FirstSpeedOfZ": 58.00, "SpeedChangeOffsetOfZ": 38.0, "SecondSpeedOfZ": 10.00,"LiftingSpeed":50, "Cycles": 1, "MixParams":{"MixStartOffsetOfZ": 1, "MixFrequency": 3, "MixDuration": 60.00, "MixEndOffsetOfZ": 4.0, "DelayAfterMixLoopOffsetOfZ": 40.0, "DelayAfterMixLoop": 2.00}, "TipTouchTimes": 0, "TipTouchOffsetOfZ": 45.5, "TipTouchOffsetOfX": 1.5, "TipTouchSpeed": 10.0})
 for x in range(3):
 	magnetic_rod_beads_collection({"Col": 6,"FirstSpeedOfZ": 58.00, "SpeedChangeOffsetOfZ": 38.0, "SecondSpeedOfZ": 10.00,"LiftingSpeed":100, "CollectionStartOffsetOfZ": 1, "CollectionSteppingSpeed": 1, "CollectionStep": 0.1, "DelayAfterStepping": 2.00, "CollectionEndOffsetOfZ": 4.0, "CollectionDuration": 60.00, "DelayAtSpeedChange": 0.50, "TipTouchTimes": 0, "TipTouchOffsetOfZ": 45.5, "TipTouchOffsetOfX": 1.5, "TipTouchSpeed": 10.0})
