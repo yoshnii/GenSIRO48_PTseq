@@ -43,3 +43,12 @@ The original archive is not modified by this conversion.
 - `pcr_methods/SIRO48_PTseq_Libprep.xml` <= `PCR/SIRO48_PTseq_Libprep.xml`
 - `sample_csv/PTseq24_test.csv` <= `PTseq24_test.csv`
 - `sample_csv/PTseq48.csv` <= `PTseq48.csv`
+- `tests/libraryprep/G99/TEST_PTplus_style_beads_50ul_POS24_POS7_POS23.py` <= `SIRO48-PTseq-Libraryprep/G99/TEST_PTplus_style_beads_50ul_POS24_POS7_POS23.py`
+- `tests/libraryprep/G99/TEST_PTplus_style_beads_32ul_conservative_POS24_POS7_POS23.py` <= `SIRO48-PTseq-Libraryprep/G99/TEST_PTplus_style_beads_32ul_conservative_POS24_POS7_POS23.py`
+- `tests/libraryprep/G99/WATER_RUN_FAKE_QUANT_POOLING.py` <= `SIRO48-PTseq-Libraryprep/G99/v12SIRO48-PTseq-Library-pooling-DNB-G99_WATER_RUN_FAKE_QUANT_POOLING.py`
+- `tests/libraryprep/misc/test_T1_direct.py` <= `SIRO48-PTseq-Libraryprep/测试/test_T1_direct.py`
+- `tests/libraryprep/misc/test_T23_mix.py` <= `SIRO48-PTseq-Libraryprep/测试/test_T23_mix.py`
+- `tests/libraryprep/misc/test_T23_mix_v2.py` <= `SIRO48-PTseq-Libraryprep/测试/test_T23_mix_v2.py`
+- `tests/libraryprep/misc/test_quantification.py` <= `SIRO48-PTseq-Libraryprep/测试/test_quantification.py`
+- `tests/libraryprep/misc/test_standard_curve.py` <= `SIRO48-PTseq-Libraryprep/测试/test_standard_curve.py`
+- `tests/libraryprep/misc/v7_simulation_report.md` <= `SIRO48-PTseq-Libraryprep/测试/v7_simulation_report.md`
