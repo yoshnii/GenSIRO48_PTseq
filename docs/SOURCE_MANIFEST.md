@@ -31,3 +31,6 @@ The original archive is not modified by this conversion.
 - `libraryprep/G99/SIRO48-PTseq-SequencingPrep-G99.py` <= `SIRO48-PTseq-Libraryprep/G99/SIRO48-PTseq-SequencingPrep-G99.py`
 - `libraryprep/G99/SIRO48-PTseq-Library-pooling-DNB-G99.py` <= `SIRO48-PTseq-Libraryprep/G99/v12SIRO48-PTseq-Library-pooling-DNB-G99.py`
 - `libraryprep/G99/deck.json` <= `SIRO48-PTseq-Libraryprep/G99/deck.json`
+- `libraryprep/E25/SIRO48-PTseq-Library-pooling-DNB-E25.py` <= `SIRO48-PTseq-Libraryprep/E25/v1SIRO48-PTseq-Library-pooling-DNB-E25.py`
+- `libraryprep/E25/SIRO48-PTseq-SequencingPrep-E25.py` <= `SIRO48-PTseq-Libraryprep/E25/SIRO48-PTseq-SequencingPrep-E25.py`
+- `libraryprep/E25/deck.json` <= `SIRO48-PTseq-Libraryprep/E25/deck.json`
