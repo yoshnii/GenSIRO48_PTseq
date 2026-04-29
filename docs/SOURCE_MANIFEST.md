@@ -25,3 +25,5 @@ The original archive is not modified by this conversion.
 - `libraryprep/G99/SIRO48-PTseq-Library-pooling-DNB-G99.py` <= `SIRO48-PTseq-Libraryprep/历史版本/v11SIRO48-PTseq-Library-pooling-DNB-G99.py`
 - `libraryprep/G99/SIRO48-PTseq-Library.py` <= `SIRO48-PTseq-Libraryprep/历史版本/pre-sync_SIRO48-PTseq-Library.py`
 - `libraryprep/G99/SIRO48-PTseq-SequencingPrep-G99.py` <= `SIRO48-PTseq-Libraryprep/历史版本/pre-sync_SIRO48-PTseq-SequencingPrep-G99.py`
+- `libraryprep/G99/SIRO48-PTseq-Library.py` <= `SIRO48-PTseq-Libraryprep/历史版本/pre-handoff_SIRO48-PTseq-Library.py`
+- `libraryprep/G99/SIRO48-PTseq-Library-pooling-DNB-G99.py` <= `SIRO48-PTseq-Libraryprep/历史版本/pre-handoff_v12SIRO48-PTseq-Library-pooling-DNB-G99.py`
