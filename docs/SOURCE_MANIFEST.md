@@ -16,3 +16,4 @@ The original archive is not modified by this conversion.
 - `libraryprep/G99/SIRO48-PTseq-Library-pooling-DNB-G99.py` <= `SIRO48-PTseq-Libraryprep/历史版本/v1SIRO48-PTseq-Library&pooling&DNB-G99.py`
 - `libraryprep/G99/SIRO48-PTseq-Library-pooling-DNB-G99.py` <= `SIRO48-PTseq-Libraryprep/历史版本/v3SIRO48-PTseq-Library&pooling&DNB-G99.py`
 - `libraryprep/G99/SIRO48-PTseq-Library-pooling-DNB-G99.py` <= `SIRO48-PTseq-Libraryprep/历史版本/v4SIRO48-PTseq-Library-pooling-DNB-G99.py`
+- `libraryprep/G99/SIRO48-PTseq-Library-pooling-DNB-G99.py` <= `SIRO48-PTseq-Libraryprep/历史版本/v5SIRO48-PTseq-Library-pooling-DNB-G99.py`
