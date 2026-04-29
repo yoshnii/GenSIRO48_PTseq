@@ -517,12 +517,13 @@ transfer({"StartPosition":"M2_POS20","EndPosition":"M2_POS26","LoosenOffsetOfZ":
 
 
 # 添加一链反应液到样本中 (from POS7 Col 9 intermediate)
+# FIX (Task 3): AspirateOffsetOfZ 0.3→0.1 同步自 validate_T2T3_cDNA_mix.py 测试验证
 for i in range(col_num):
 	p8_load_modified(tip_50.load(target_tip_num_list[i])[0])
 	if SampleCount <= 20:
-		p8_aspirate({"Position":"M2_POS7","Col":9,"Row":1,"PreAirVolume":5,"AspirateOffsetOfZ":0.3,"AspirateSpeed":15,"AspirateVolume":4,"PreAirSpeed":30,"DelayAfterAspirate":5,"TipTouchTimes":2,"TipTouchOffsetOfZ":3,"TipTouchRangeOfX":1.2,"TipTouchSpeed":100,"PostAirSpeed":50,"PostAirVolume":3,"IfTrack":False,"FirstSegmentSpeed":100,"SpeedChangeOffsetOfZ":0,"SecondSegmentSpeed":80})
+		p8_aspirate({"Position":"M2_POS7","Col":9,"Row":1,"PreAirVolume":5,"AspirateOffsetOfZ":0.1,"AspirateSpeed":15,"AspirateVolume":4,"PreAirSpeed":30,"DelayAfterAspirate":5,"TipTouchTimes":2,"TipTouchOffsetOfZ":3,"TipTouchRangeOfX":1.2,"TipTouchSpeed":100,"PostAirSpeed":50,"PostAirVolume":3,"IfTrack":False,"FirstSegmentSpeed":100,"SpeedChangeOffsetOfZ":0,"SecondSegmentSpeed":80})
 	else:
-		p8_aspirate({"Position":"M2_POS7","Col":9,"Row":1,"PreAirVolume":5,"AspirateOffsetOfZ":0.3,"AspirateSpeed":15,"AspirateVolume":4,"PreAirSpeed":30,"DelayAfterAspirate":5,"TipTouchTimes":2,"TipTouchOffsetOfZ":3,"TipTouchRangeOfX":1.2,"TipTouchSpeed":100,"PostAirSpeed":50,"PostAirVolume":3,"IfTrack":False,"FirstSegmentSpeed":100,"SpeedChangeOffsetOfZ":0,"SecondSegmentSpeed":80})
+		p8_aspirate({"Position":"M2_POS7","Col":9,"Row":1,"PreAirVolume":5,"AspirateOffsetOfZ":0.1,"AspirateSpeed":15,"AspirateVolume":4,"PreAirSpeed":30,"DelayAfterAspirate":5,"TipTouchTimes":2,"TipTouchOffsetOfZ":3,"TipTouchRangeOfX":1.2,"TipTouchSpeed":100,"PostAirSpeed":50,"PostAirVolume":3,"IfTrack":False,"FirstSegmentSpeed":100,"SpeedChangeOffsetOfZ":0,"SecondSegmentSpeed":80})
 	p8_empty({"Position":"M2_POS20","Col":i+1,"Row":1,"EmptyOffsetOfZ":0.8,"EmptySpeed":30,"DelayAfterEmpty":2,"TipTouchTimes":2,"TipTouchOffsetOfZ":3,"TipTouchRangeOfX":1.2,"TipTouchSpeed":100,"PostAirSpeed":50,"PostAirVolume":5,"FirstSegmentSpeed":100,"SpeedChangeOffsetOfZ":0,"SecondSegmentSpeed":80})
 	p8_mix({"Position":"M2_POS20","Col":i+1,"Row":1,"PreAirVolume":10,"MixTimes":15,"MixAspirateSpeed":20,"MixAspirateOffsetOfZ":0.5,"MixVolume":20,"MixDispenseOffsetOfZ":8,"MixDispenseSpeed":20,"DelayAfterMixLoop":2,"MixEmptyOffsetOfZ":3,"MixEmptySpeed":20,"PreAirSpeed":50,"DelayAfterMixAspirate":0.5,"DelayAfterMixDispense":0.5,"DelayAfterMixEmpty":0.5,"TipTouchTimes":0,"PostAirSpeed":50,"PostAirVolume":0,"FirstSegmentSpeed":100,"SpeedChangeOffsetOfZ":0,"SecondSegmentSpeed":80})
 	#p8_empty({"Position":"M2_POS20","Col":i+1,"Row":1,"EmptyOffsetOfZ":3,"EmptySpeed":50,"DelayAfterEmpty":0.5,"TipTouchTimes":0,"PostAirSpeed":50,"PostAirVolume":0,"FirstSegmentSpeed":100,"SpeedChangeOffsetOfZ":0,"SecondSegmentSpeed":80})
@@ -1050,7 +1051,8 @@ LA_dispense_tips = tip_300.load(sample_num,8,1)
 for i in range(col_num):
 	p8_load_modified(LA_dispense_tips[i])
 	# Aspirate 30 µL LA Master Mix from pre-dispensed reservoir
-	p8_aspirate({"Position":"M2_POS7","Col":11,"Row":1,"PreAirVolume":5,"AspirateOffsetOfZ":0.5,"AspirateSpeed":50,"AspirateVolume":30,"PreAirSpeed":50,"DelayAfterAspirate":0.5,"TipTouchTimes":0,"PostAirSpeed":50,"PostAirVolume":5,"IfTrack":False,"FirstSegmentSpeed":100,"SpeedChangeOffsetOfZ":0,"SecondSegmentSpeed":80})
+	# FIX (Task 5): DelayAfterAspirate 0.5→3s to let liquid settle in tip, reduces uneven aspiration across 8 channels
+	p8_aspirate({"Position":"M2_POS7","Col":11,"Row":1,"PreAirVolume":5,"AspirateOffsetOfZ":0.5,"AspirateSpeed":50,"AspirateVolume":30,"PreAirSpeed":50,"DelayAfterAspirate":3,"TipTouchTimes":0,"PostAirSpeed":50,"PostAirVolume":5,"IfTrack":False,"FirstSegmentSpeed":100,"SpeedChangeOffsetOfZ":0,"SecondSegmentSpeed":80})
 	# Dispense onto dried beads at M2_POS23 (on magnet)
 	p8_empty({"Position":"M2_POS23","Col":7+i,"Row":1,"EmptyOffsetOfZ":0.5,"EmptySpeed":20,"DelayAfterEmpty":0.5,"TipTouchTimes":0,"PostAirSpeed":50,"PostAirVolume":0,"FirstSegmentSpeed":100,"SpeedChangeOffsetOfZ":0,"SecondSegmentSpeed":80})
 	p8_unload_modified(LA_dispense_tips[i])
@@ -1602,8 +1604,8 @@ transfer({"StartPosition":"M2_POS20","EndPosition":"M2_POS26","LoosenOffsetOfZ":
 #样本来源板,板位，起始列
 source_plate = ('M2_POS13',7)
 
-# [v7] 原位稀释：直接在POS13 Col 7-12的library产物孔内加T2 buffer，不再使用POS14 Col 1-6
-sample_dilution_place = ('M2_POS13',7)  # 稀释位置 = 样本来源位置（原位）
+# [v11] 独立稀释：从POS13 Col 7-12 library产物取2µL到POS8 Col 7-12 PCR板稀释孔
+sample_dilution_place = ('M2_POS8',7)   # 稀释位置 = POS8 PCR板 col 7-12（独立稀释孔）
 
 # 样本取样体积临界值
 min_sample_volume = 2
@@ -1839,16 +1841,11 @@ p1_load_tips({"Position":single_tip_loc[0],'Col':single_tip_loc[1],'Row':single_
 
 if water_loc_list:
 	for i in range(len(water_loc_list)):
-		# 加入147µL T2 buffer实现8倍原位稀释 (21µL library + 147µL buffer = 168µL, 8x dilution)
-		p1_aspirate({"Position": dilution_buffer_loc[0], "Row": dilution_buffer_loc[2], "Col": dilution_buffer_loc[1], "FirstSegmentSpeed": 150, "SpeedChangeOffsetOfZ": 0, "PreAirSpeed": 100, "PreAirVolume": 10, "SecondSegmentSpeed": 100, "AspirateOffsetOfZ": 1.0, "AspirateSpeed": 20, "AspirateVolume": 147, "DelayAfterAspirate": 0.5, "TipTouchTimes": 0, "TipTouchOffsetOfZ": 10, "TipTouchRangeOfX": 2, "TipTouchSpeed": 100, "PostAirSpeed": 100, "PostAirVolume": 10})
+		# 加入14µL T2 buffer到POS8 PCR板稀释孔 (2µL sample + 14µL buffer = 16µL, 8x dilution)
+		p1_aspirate({"Position": dilution_buffer_loc[0], "Row": dilution_buffer_loc[2], "Col": dilution_buffer_loc[1], "FirstSegmentSpeed": 150, "SpeedChangeOffsetOfZ": 0, "PreAirSpeed": 100, "PreAirVolume": 10, "SecondSegmentSpeed": 100, "AspirateOffsetOfZ": 1.0, "AspirateSpeed": 20, "AspirateVolume": 14, "DelayAfterAspirate": 0.5, "TipTouchTimes": 0, "TipTouchOffsetOfZ": 10, "TipTouchRangeOfX": 2, "TipTouchSpeed": 100, "PostAirSpeed": 100, "PostAirVolume": 10})
 		p1_empty({"Position": water_loc_list[i][0], "Row": water_loc_list[i][1], "Col": water_loc_list[i][2], "FirstSegmentSpeed": 150, "SpeedChangeOffsetOfZ": 0, "SecondSegmentSpeed": 100, "EmptyOffsetOfZ": 1, "EmptySpeed": 190, "DelayAfterEmpty": 0.5, "TipTouchTimes": 0, "TipTouchOffsetOfZ": 10, "TipTouchRangeOfX": 2, "TipTouchSpeed": 100})
 
-# Step 3: p8 吹吸混匀已稀释的孔 (POS13 Col 7-12 原位)
-if water_loc_list:
-	for i in range(len(water_loc_list)):
-		p8_load_modified(tip_50.load(1)[0])
-		p8_mix({"Position":water_loc_list[i][0],"Col":water_loc_list[i][2],"Row":water_loc_list[i][1],"PreAirVolume":10,"MixTimes":10,"MixAspirateSpeed":100,"MixAspirateOffsetOfZ":0.5,"MixVolume":100,"MixDispenseOffsetOfZ":10,"MixDispenseSpeed":100,"DelayAfterMixLoop":0.5,"MixEmptyOffsetOfZ":10,"MixEmptySpeed":100,"PreAirSpeed":50,"DelayAfterMixAspirate":0.5,"DelayAfterMixDispense":0.5,"DelayAfterMixEmpty":0.5,"PostAirSpeed":50,"PostAirVolume":0,"FirstSegmentSpeed":100,"SpeedChangeOffsetOfZ":0,"SecondSegmentSpeed":80, "TipTouchTimes": 0, "TipTouchOffsetOfZ": 5, "TipTouchRangeOfX": 1.2, "TipTouchSpeed": 100})
-		p8_unload_tips({"Position":"M2_Trash","Col":None,"Row":None})
+# [v11] 独立 Step 3 mix 块已删除：改独立稀释孔后 sample 尚未进入稀释孔，mix 并入 Step 5 pool 循环
 
 # Step 4: p1 加补水到pooling管 (POS23 Col 7) 和 DNB反应孔 (POS20)
 for i in range(len(water_volume_list)):
@@ -1861,16 +1858,21 @@ for i in range(len(water_volume_list)):
 
 p1_unload_tips2({"Position":"M2_Trash","Col":None,"Row":None})
 
-# Step 5: p8 从POS13 Col 7-12取样 → POS23 Col 7 pooling管 (所有样本统一流程，不再区分稀释/非稀释)
+# Step 5: p8 pool 转移（非稀释直转 POS13→POS23；稀释分支 POS13→POS8 mix→POS8→POS23）
 for i,poolings in enumerate(temp):
 	samples = dnb_list[i]
 	for sample in samples:
 		p8_load_modified(tip_50.load(1)[0])
 		sample_volume = sample.DilutingSampleVolume
-		sample_col = sample.SampleWellColumn
-		sample_row = sample.SampleWellRow
-		p8_aspirate_modified(source_plate[0],sample_row,sample_col,sample_volume,PreAirVolume=10)
-		p8_empty_modified(pooling_tube_pos,i+1,pooling_tube_col)
+		if not sample.NeedDilution:
+			p8_aspirate_modified(sample.SampleWellPosition, sample.SampleWellRow, sample.SampleWellColumn, sample_volume, PreAirVolume=10)
+			p8_empty_modified(pooling_tube_pos, i+1, pooling_tube_col)
+		else:
+			p8_aspirate_modified(sample.SampleWellPosition, sample.SampleWellRow, sample.SampleWellColumn, 2, PreAirVolume=5, PostAirVolume=0)
+			p8_empty_modified(sample.DilutingWellPosition, sample.DilutingWellRow, sample.DilutingWellColumn, EmptyOffsetOfZ=0.5, EmptySpeed=10)
+			p8_mix({"Position":sample.DilutingWellPosition,"Col":sample.DilutingWellColumn,"Row":sample.DilutingWellRow,"PreAirVolume":10,"MixTimes":5,"MixAspirateSpeed":100,"MixAspirateOffsetOfZ":0.5,"MixVolume":30,"MixDispenseOffsetOfZ":10,"MixDispenseSpeed":100,"DelayAfterMixLoop":0.5,"MixEmptyOffsetOfZ":10,"MixEmptySpeed":100,"PreAirSpeed":50,"DelayAfterMixAspirate":0.5,"DelayAfterMixDispense":0.5,"DelayAfterMixEmpty":0.5,"PostAirSpeed":50,"PostAirVolume":0,"FirstSegmentSpeed":100,"SpeedChangeOffsetOfZ":0,"SecondSegmentSpeed":80,"TipTouchTimes":0,"TipTouchOffsetOfZ":5,"TipTouchRangeOfX":1.2,"TipTouchSpeed":100})
+			p8_aspirate_modified(sample.DilutingWellPosition, sample.DilutingWellRow, sample.DilutingWellColumn, sample_volume, PreAirVolume=0, PostAirVolume=0)
+			p8_empty_modified(pooling_tube_pos, i+1, pooling_tube_col)
 		p8_unload_tips({"Position":"M2_Trash","Col":None,"Row":None})
 
 # Step 6: 混匀pooling管并转移到POS20 Col 7 Row 1-6 (DNB环化反应位)
