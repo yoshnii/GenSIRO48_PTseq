@@ -1231,7 +1231,8 @@ Plate 4 home moved: M2_POS11 - 废液/矿物油/汇集和DNB站(Waste, Oil, Pool
   (与Plate 3相同的交换过程)
 
 Quantification tubes home: M2_POS14 [固定位置]
-定量阶段临时执行POS11↔POS14切换：POS11板到POS30，POS14定量管到POS11；定量后恢复。
+定量阶段临时释放POS13访问位：POS13 product/dye mix整板到空闲POS23，
+POS14定量管到POS13执行加液/混匀/读数；定量后POS13定量管回POS14，POS23整板回POS13。
 
 M2_POS30 - 中转点(Transit Spot)
 临时存储位置，用于在震荡器交换操作期间保持当前M2_POS16占用者
