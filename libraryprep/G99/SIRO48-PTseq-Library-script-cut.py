@@ -28,8 +28,11 @@ source_plate = ['M2_POS20',1]
 # 样本染料混合起始位置,必须是深孔板，板位，起始列，样本必须从上到下，从左到右，从第一个开始
 dye_mix_plate = ['M2_POS16',1]
 
-# 定量管起始位置,板位，起始列，样本必须从上到下，从左到右，从第一个开始
-quantification_tube_loc = ['M2_POS11',1]
+# POS14/POS11 switched: quantification tubes live at POS14 and are accessed at POS13 after plate swap.
+quantification_tube_home_pos = 'M2_POS14'
+quantification_tube_operating_pos = 'M2_POS13'
+# 定量管操作位置,板位，起始列，样本必须从上到下，从左到右，从第一个开始
+quantification_tube_loc = [quantification_tube_operating_pos,1]
 
 #=====================定量浓度输出文件位置======================================
 import time
@@ -58,6 +61,12 @@ concentration_list = []
 
 # 单个定量管位置，板列行
 quantification_tubes = [(quantification_tube_loc[0],quantification_tube_loc[1]+i//8,1 + i%8) for i in range(sample_num)]
+
+# Move quantification tubes from home POS14 to operating POS13.
+# Park the current POS13 plate in POS30 during quantification access.
+transfer({"StartPosition":"M2_POS13","EndPosition":"M2_POS30","LoosenOffsetOfZ":0})
+transfer({"StartPosition":quantification_tube_home_pos,"EndPosition":quantification_tube_operating_pos,"LoosenOffsetOfZ":0})
+
 #=================================== 样本稀释部分#===================================
 #分装染液
 if sample_num%8 == 0:
@@ -116,6 +125,10 @@ for i in range(col_num):
 
 	p8_unload_quantification_tube({"Position": quantification_tube_loc[0], "Row": 1, "Col": quantification_tube_loc[1]+i, "Tips":8})
 output_quantitative_data({"ProductType":sample_stage,"FilePath":file_path})
+
+# Restore quantification tubes to POS14 and the parked POS13 plate to POS13.
+transfer({"StartPosition":quantification_tube_operating_pos,"EndPosition":quantification_tube_home_pos,"LoosenOffsetOfZ":0})
+transfer({"StartPosition":"M2_POS30","EndPosition":"M2_POS13","LoosenOffsetOfZ":0})
 
 #============================输出浓度列表=========================
 #==================================以下部分为浓度输出部分===================================

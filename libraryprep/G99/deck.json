@@ -243,31 +243,22 @@
     "Position": "M2_POS11",
     "Description": "",
     "TubeCarrierInfo": null,
-    "AdapterInfo": {
-      "Type": "QuantificationTubeAdapter",
-      "Name": "Quantification Tube Adapter",
+    "AdapterInfo": null,
+    "ConsumableInfo": {
+      "ConsumableType": "DeepPlate",
+      "ConsumableName": "1.3mL 96 Well U-bottom Deepwell Plate",
       "WellInfo": [
         {
           "Wells": "*",
-          "ConsumableInfo": {
-            "ConsumableType": "QuantificationTube",
-            "ConsumableName": "260μL Quantification tube",
-            "WellInfo": [
-              {
-                "Wells": "*",
-                "ContentInfo": {
-                  "Type": "Sample",
-                  "Name": "Test",
-                  "Volume": 300.0
-                }
-              }
-            ],
-            "LidInfo": null
+          "ContentInfo": {
+            "Type": "None",
+            "Name": "",
+            "Volume": 0.0
           }
         }
-      ]
-    },
-    "ConsumableInfo": null
+      ],
+      "LidInfo": null
+    }
   },
   {
     "Position": "M2_POS12",
@@ -315,22 +306,31 @@
     "Position": "M2_POS14",
     "Description": "",
     "TubeCarrierInfo": null,
-    "AdapterInfo": null,
-    "ConsumableInfo": {
-      "ConsumableType": "DeepPlate",
-      "ConsumableName": "1.3mL 96 Well U-bottom Deepwell Plate",
+    "AdapterInfo": {
+      "Type": "QuantificationTubeAdapter",
+      "Name": "Quantification Tube Adapter",
       "WellInfo": [
         {
           "Wells": "*",
-          "ContentInfo": {
-            "Type": "None",
-            "Name": "",
-            "Volume": 0.0
+          "ConsumableInfo": {
+            "ConsumableType": "QuantificationTube",
+            "ConsumableName": "260μL Quantification tube",
+            "WellInfo": [
+              {
+                "Wells": "*",
+                "ContentInfo": {
+                  "Type": "Sample",
+                  "Name": "Test",
+                  "Volume": 300.0
+                }
+              }
+            ],
+            "LidInfo": null
           }
         }
-      ],
-      "LidInfo": null
-    }
+      ]
+    },
+    "ConsumableInfo": null
   },
   {
     "Position": "M2_POS15",

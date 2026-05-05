@@ -422,20 +422,11 @@ else:
 	a = 1.4
 target_volume_list = [80*a*(SampleCount//8+1)]*(SampleCount%8)+[50*a*(SampleCount//8)]*(8-SampleCount%8)
 
-# Plate swap: Move POS14 to POS13 (P1 cannot reach POS14, but can reach POS13)
-transfer({"StartPosition":"M2_POS14","EndPosition":"M2_POS30","LoosenOffsetOfZ":0})  # POS14 → POS30 (temporary)
-transfer({"StartPosition":"M2_POS13","EndPosition":"M2_POS14","LoosenOffsetOfZ":0})  # POS13 → POS14 (move out)
-transfer({"StartPosition":"M2_POS30","EndPosition":"M2_POS13","LoosenOffsetOfZ":0})  # POS30 → POS13 (POS14 plate now at POS13)
-
+# POS14/POS11 switched: original POS14 oil/waste/pooling plate now lives at POS11.
 for i in range(min(8, SampleCount)):
 	p1_aspirate({"Position":"M2_POS24","Col":3,"Row":1,"PreAirVolume":8,"AspirateOffsetOfZ":0.8,"AspirateSpeed":30,"AspirateVolume":target_volume_list[i],"PreAirSpeed":50,"DelayAfterAspirate":2,"PostAirSpeed":50,"PostAirVolume":0,"IfTrack":False,"FirstSegmentSpeed":100,"SpeedChangeOffsetOfZ":0,"SecondSegmentSpeed":80, "TipTouchTimes": 2, "TipTouchOffsetOfZ": 30, "TipTouchRangeOfX": 3, "TipTouchSpeed": 100})
-	p1_dispense({"Position":"M2_POS13","Col":8,"Row":i+1,"DispenseOffsetOfZ":8,"DispenseSpeed":20,"DispenseVolume":target_volume_list[i],"DelayAfterDispense":0.5,"TipTouchTimes":3,"PostAirSpeed":50,"PostAirVolume":0,"IsEmpty":True,"EmptyOffsetOfZ":2,"EmptySpeed":30,"DelayAfterEmpty":0.5,"FirstSegmentSpeed":100,"SpeedChangeOffsetOfZ":0,"SecondSegmentSpeed":80,"TipTouchOffsetOfZ": 10, "TipTouchRangeOfX": 2, "TipTouchSpeed": 100})
+	p1_dispense({"Position":"M2_POS11","Col":8,"Row":i+1,"DispenseOffsetOfZ":8,"DispenseSpeed":20,"DispenseVolume":target_volume_list[i],"DelayAfterDispense":0.5,"TipTouchTimes":3,"PostAirSpeed":50,"PostAirVolume":0,"IsEmpty":True,"EmptyOffsetOfZ":2,"EmptySpeed":30,"DelayAfterEmpty":0.5,"FirstSegmentSpeed":100,"SpeedChangeOffsetOfZ":0,"SecondSegmentSpeed":80,"TipTouchOffsetOfZ": 10, "TipTouchRangeOfX": 2, "TipTouchSpeed": 100})
 p1_unload_tips2({"Position":"M2_Trash","Col":None,"Row":None})
-
-# Swap back: Restore original plate positions
-transfer({"StartPosition":"M2_POS13","EndPosition":"M2_POS30","LoosenOffsetOfZ":0})  # POS13 → POS30 (temporary)
-transfer({"StartPosition":"M2_POS14","EndPosition":"M2_POS13","LoosenOffsetOfZ":0})  # POS14 → POS13 (restore original)
-transfer({"StartPosition":"M2_POS30","EndPosition":"M2_POS14","LoosenOffsetOfZ":0})  # POS30 → POS14 (restore original)
 
 # ===== STEP: Dispense T1 cDNA Primer to PCR Plate (POS20) =====
 col_num = (sample_num+7)//8  # Number of sample columns
@@ -490,24 +481,14 @@ else:
 	last_row = 9-SampleCount%8
 oil_1 = tip_300.load(8,8,1)
 
-# Plate swap: Move POS14 to POS13 (P8 cannot reach POS14)
-transfer({"StartPosition":"M2_POS14","EndPosition":"M2_POS30","LoosenOffsetOfZ":0})
-transfer({"StartPosition":"M2_POS13","EndPosition":"M2_POS14","LoosenOffsetOfZ":0})
-transfer({"StartPosition":"M2_POS30","EndPosition":"M2_POS13","LoosenOffsetOfZ":0})
-
 p8_load_tips({"Position":oil_1[0][0],"Col":oil_1[0][1],"Row":last_row,"Tips":8})
 for i in range(col_num-1,-1,-1):
-	p8_aspirate({"Position":"M2_POS13","Col":8,"Row":1,"PreAirVolume":20,"AspirateOffsetOfZ":1,"AspirateSpeed":10,"AspirateVolume":10,"PreAirSpeed":50,"DelayAfterAspirate":1,"PostAirSpeed":50,"PostAirVolume":0,"IfTrack":False,"FirstSegmentSpeed":100,"SpeedChangeOffsetOfZ":0,"SecondSegmentSpeed":80, "TipTouchTimes": 2, "TipTouchOffsetOfZ": 14, "TipTouchRangeOfX": 2, "TipTouchSpeed": 100})
+	p8_aspirate({"Position":"M2_POS11","Col":8,"Row":1,"PreAirVolume":20,"AspirateOffsetOfZ":1,"AspirateSpeed":10,"AspirateVolume":10,"PreAirSpeed":50,"DelayAfterAspirate":1,"PostAirSpeed":50,"PostAirVolume":0,"IfTrack":False,"FirstSegmentSpeed":100,"SpeedChangeOffsetOfZ":0,"SecondSegmentSpeed":80, "TipTouchTimes": 2, "TipTouchOffsetOfZ": 14, "TipTouchRangeOfX": 2, "TipTouchSpeed": 100})
 	p8_empty({"Position":"M2_POS20","Col":i+1,"Row":1,"EmptyOffsetOfZ":8,"EmptySpeed":30,"DelayAfterEmpty":0.5,"TipTouchTimes":0,"PostAirSpeed":50,"PostAirVolume":0,"FirstSegmentSpeed":100,"SpeedChangeOffsetOfZ":0,"SecondSegmentSpeed":80})
 	if i == col_num-1 and SampleCount%8 != 0:
 		p8_unload_tips({"Position":oil_1[0][0],"Col":oil_1[0][1],"Row":last_row,"Tips":8})
 		p8_load_modified(oil_1[0])
 p8_unload_tips({"Position":"M2_Trash","Col":None,"Row":None})
-
-# Swap back: Restore original plate positions
-transfer({"StartPosition":"M2_POS13","EndPosition":"M2_POS30","LoosenOffsetOfZ":0})
-transfer({"StartPosition":"M2_POS14","EndPosition":"M2_POS13","LoosenOffsetOfZ":0})
-transfer({"StartPosition":"M2_POS30","EndPosition":"M2_POS14","LoosenOffsetOfZ":0})
 
 # 添加PCR盖板
 transfer({"StartPosition":"M2_POS26","EndPosition":"M2_POS20","LoosenOffsetOfZ":0}) #PCR盖板
@@ -818,24 +799,14 @@ else:
 	last_row = 9-SampleCount%8
 oil_2 = tip_300.load(8,8,1)
 
-# Plate swap: Move POS14 to POS13 (P8 cannot reach POS14)
-transfer({"StartPosition":"M2_POS14","EndPosition":"M2_POS30","LoosenOffsetOfZ":0})
-transfer({"StartPosition":"M2_POS13","EndPosition":"M2_POS14","LoosenOffsetOfZ":0})
-transfer({"StartPosition":"M2_POS30","EndPosition":"M2_POS13","LoosenOffsetOfZ":0})
-
 p8_load_tips({"Position":oil_2[0][0],"Col":oil_2[0][1],"Row":last_row,"Tips":8})
 for i in range(col_num-1,-1,-1):
-	p8_aspirate({"Position":"M2_POS13","Col":8,"Row":1,"PreAirVolume":20,"AspirateOffsetOfZ":1,"AspirateSpeed":10,"AspirateVolume":10,"PreAirSpeed":50,"DelayAfterAspirate":1,"PostAirSpeed":50,"PostAirVolume":0,"IfTrack":False,"FirstSegmentSpeed":100,"SpeedChangeOffsetOfZ":0,"SecondSegmentSpeed":80, "TipTouchTimes": 2, "TipTouchOffsetOfZ": 14, "TipTouchRangeOfX": 2, "TipTouchSpeed": 100})
+	p8_aspirate({"Position":"M2_POS11","Col":8,"Row":1,"PreAirVolume":20,"AspirateOffsetOfZ":1,"AspirateSpeed":10,"AspirateVolume":10,"PreAirSpeed":50,"DelayAfterAspirate":1,"PostAirSpeed":50,"PostAirVolume":0,"IfTrack":False,"FirstSegmentSpeed":100,"SpeedChangeOffsetOfZ":0,"SecondSegmentSpeed":80, "TipTouchTimes": 2, "TipTouchOffsetOfZ": 14, "TipTouchRangeOfX": 2, "TipTouchSpeed": 100})
 	p8_empty({"Position":"M2_POS20","Col":i+7,"Row":1,"EmptyOffsetOfZ":8,"EmptySpeed":30,"DelayAfterEmpty":0.5,"TipTouchTimes":0,"PostAirSpeed":50,"PostAirVolume":0,"FirstSegmentSpeed":100,"SpeedChangeOffsetOfZ":0,"SecondSegmentSpeed":80})
 	if i == col_num-1 and SampleCount%8 != 0:
 		p8_unload_tips({"Position":oil_2[0][0],"Col":oil_2[0][1],"Row":last_row,"Tips":8})
 		p8_load_modified(oil_2[0])
 p8_unload_tips({"Position":"M2_Trash","Col":None,"Row":None})
-
-# Swap back: Restore original plate positions
-transfer({"StartPosition":"M2_POS13","EndPosition":"M2_POS30","LoosenOffsetOfZ":0})
-transfer({"StartPosition":"M2_POS14","EndPosition":"M2_POS13","LoosenOffsetOfZ":0})
-transfer({"StartPosition":"M2_POS30","EndPosition":"M2_POS14","LoosenOffsetOfZ":0})
 
 # 盖上PCR盖板
 transfer({"StartPosition":"M2_POS26","EndPosition":"M2_POS20","LoosenOffsetOfZ":0}) #PCR盖板
@@ -935,14 +906,10 @@ transfer({"StartPosition":"M2_POS16","EndPosition":"M2_POS23","LoosenOffsetOfZ":
 delay({"Duration": 180})
 
 # === 废液回收设置 ===
-# POS14 deepwell 1.3mL 板 Col 1-6 用于回收废液（1:1 列映射）
+# POS14/POS11 switched: original POS14 deepwell plate now lives at POS11.
+# POS11 deepwell 1.3mL 板 Col 1-6 用于回收废液（1:1 列映射）
 # 累计废液量: 95 + 420 + 85 + 420 = 1020 µL/孔 (容量 1300 µL)
 waste_col_start = 1
-
-# === Swap POS14 废液板到 POS13 (TA 纯化废液回收) ===
-transfer({"StartPosition":"M2_POS14","EndPosition":"M2_POS30","LoosenOffsetOfZ":0})
-transfer({"StartPosition":"M2_POS13","EndPosition":"M2_POS14","LoosenOffsetOfZ":0})
-transfer({"StartPosition":"M2_POS30","EndPosition":"M2_POS13","LoosenOffsetOfZ":0})
 
 Ligation_purification_tips2 = tip_300.load(sample_num,8,0)  # reuse_index=0: tips discarded after the TA ethanol wash block
 # NOTE: T2 Buffer is now added BEFORE magnetic separation (see line ~875-880)
@@ -957,12 +924,12 @@ elif lang==2: #
  report({"Phase": "Targeted Amplification Purification", "Step": "Ethanol Wash", "TaskType": "library", "RemainingTime": None})
 
 # 移除上清 (after adding T2 buffer: 50 beads + 25 TA + 25 T2 = 100 µL total, remove 110 µL for "弃多于打" safety margin)
-# Waste recovered to POS14 plate (now at POS13 via swap) Col 1-6
+# Waste recovered to POS11 plate Col 1-6
 for i in range(col_num):
 	p8_load_modified_BubblePurge(TA_purification_tips[i])
 	p8_aspirate({"Position":"M2_POS23","Col":7+i,"Row":1,"PreAirVolume":5,"AspirateOffsetOfZ":0.5,"AspirateSpeed":30,"AspirateVolume":110,"PreAirSpeed":50,"DelayAfterAspirate":0.5,"TipTouchTimes":0,"PostAirSpeed":50,"PostAirVolume":10,"IfTrack":True,"FirstSegmentSpeed":100,"SpeedChangeOffsetOfZ":0,"SecondSegmentSpeed":80})
-	# Empty waste to POS14 waste plate (swapped to POS13), Col 1:1 mapping
-	p8_empty({"Position":"M2_POS13","Col":waste_col_start+i,"Row":1,"EmptyOffsetOfZ":0.8,"EmptySpeed":50,"DelayAfterEmpty":0.8,"TipTouchTimes":3,"TipTouchOffsetOfZ":15,"TipTouchRangeOfX":1.2,"TipTouchSpeed":100,"PostAirSpeed":50,"PostAirVolume":5,"FirstSegmentSpeed":100,"SpeedChangeOffsetOfZ":0,"SecondSegmentSpeed":80})
+	# Empty waste to POS11 waste plate, Col 1:1 mapping
+	p8_empty({"Position":"M2_POS11","Col":waste_col_start+i,"Row":1,"EmptyOffsetOfZ":0.8,"EmptySpeed":50,"DelayAfterEmpty":0.8,"TipTouchTimes":3,"TipTouchOffsetOfZ":15,"TipTouchRangeOfX":1.2,"TipTouchSpeed":100,"PostAirSpeed":50,"PostAirVolume":5,"FirstSegmentSpeed":100,"SpeedChangeOffsetOfZ":0,"SecondSegmentSpeed":80})
 	p8_unload_tips({"Position":"M2_Trash","Col":None,"Row":None})
 
 # Use pre-allocated Ligation_purification_tips2 for ethanol wash.
@@ -983,18 +950,12 @@ for i in range(2):
 	for x in range(col_num):
 		p8_load_modified_BubblePurge(Ligation_purification_tips2[x])
 		p8_aspirate({"Position":"M2_POS23","Col":7+x,"Row":1,"PreAirVolume":2,"AspirateOffsetOfZ":0,"AspirateSpeed":10,"AspirateVolume":220,"PreAirSpeed":50,"DelayAfterAspirate":0.5,"TipTouchTimes":0,"PostAirSpeed":50,"PostAirVolume":5,"IfTrack":False,"FirstSegmentSpeed":100,"SpeedChangeOffsetOfZ":0,"SecondSegmentSpeed":80})
-		p8_empty({"Position":"M2_POS13","Col":waste_col_start+x,"Row":1,"EmptyOffsetOfZ":0.8,"EmptySpeed":50,"DelayAfterEmpty":0.8,"TipTouchTimes":3,"TipTouchOffsetOfZ":15,"TipTouchRangeOfX":1.2,"TipTouchSpeed":100,"PostAirSpeed":50,"PostAirVolume":5,"FirstSegmentSpeed":100,"SpeedChangeOffsetOfZ":0,"SecondSegmentSpeed":80})
+		p8_empty({"Position":"M2_POS11","Col":waste_col_start+x,"Row":1,"EmptyOffsetOfZ":0.8,"EmptySpeed":50,"DelayAfterEmpty":0.8,"TipTouchTimes":3,"TipTouchOffsetOfZ":15,"TipTouchRangeOfX":1.2,"TipTouchSpeed":100,"PostAirSpeed":50,"PostAirVolume":5,"FirstSegmentSpeed":100,"SpeedChangeOffsetOfZ":0,"SecondSegmentSpeed":80})
 		# 只在最后一轮丢弃枪头，第一轮放回原位
 		if i == 1:
 			p8_unload_tips({"Position":"M2_Trash","Col":None,"Row":None})
 		else:
 			p8_unload_modified(Ligation_purification_tips2[x])
-
-# === Swap back: 恢复 POS13 (产物) 和 POS14 (废液) 原位 (TA 纯化完成) ===
-transfer({"StartPosition":"M2_POS13","EndPosition":"M2_POS30","LoosenOffsetOfZ":0})
-transfer({"StartPosition":"M2_POS14","EndPosition":"M2_POS13","LoosenOffsetOfZ":0})
-transfer({"StartPosition":"M2_POS30","EndPosition":"M2_POS14","LoosenOffsetOfZ":0})
-
 
 def wait_for_magnetic_beads():
 	# v12: TA 纯化晾干延时 5 min (8→5 min, 回退至 SOP 允许下限)
@@ -1201,25 +1162,15 @@ else:
 	last_row = 9-SampleCount%8
 oil_3 = tip_300.load(8,8,0)  # reuse_index=0: oil tips discarded to trash
 
-# Plate swap: Move POS14 to POS13 (P8 cannot reach POS14)
-transfer({"StartPosition":"M2_POS14","EndPosition":"M2_POS30","LoosenOffsetOfZ":0})
-transfer({"StartPosition":"M2_POS13","EndPosition":"M2_POS14","LoosenOffsetOfZ":0})
-transfer({"StartPosition":"M2_POS30","EndPosition":"M2_POS13","LoosenOffsetOfZ":0})
-
 p8_load_tips({"Position":oil_3[0][0],"Col":oil_3[0][1],"Row":last_row,"Tips":8})
 for i in range(col_num-1,-1,-1):
-	p8_aspirate({"Position":"M2_POS13","Col":8,"Row":1,"PreAirVolume":20,"AspirateOffsetOfZ":0.5,"AspirateSpeed":10,"AspirateVolume":20,"PreAirSpeed":50,"DelayAfterAspirate":1,"PostAirSpeed":50,"PostAirVolume":0,"IfTrack":False,"FirstSegmentSpeed":100,"SpeedChangeOffsetOfZ":0,"SecondSegmentSpeed":80, "TipTouchTimes": 2, "TipTouchOffsetOfZ": 14, "TipTouchRangeOfX": 1.5, "TipTouchSpeed": 100})
+	p8_aspirate({"Position":"M2_POS11","Col":8,"Row":1,"PreAirVolume":20,"AspirateOffsetOfZ":0.5,"AspirateSpeed":10,"AspirateVolume":20,"PreAirSpeed":50,"DelayAfterAspirate":1,"PostAirSpeed":50,"PostAirVolume":0,"IfTrack":False,"FirstSegmentSpeed":100,"SpeedChangeOffsetOfZ":0,"SecondSegmentSpeed":80, "TipTouchTimes": 2, "TipTouchOffsetOfZ": 14, "TipTouchRangeOfX": 1.5, "TipTouchSpeed": 100})
 	# LA PCR oil to Cols 1-6 (CHANGED from 7-12)
 	p8_empty({"Position":"M2_POS20","Col":1+i,"Row":1,"EmptyOffsetOfZ":8,"EmptySpeed":30,"DelayAfterEmpty":0.5,"TipTouchTimes":0,"PostAirSpeed":50,"PostAirVolume":0,"FirstSegmentSpeed":100,"SpeedChangeOffsetOfZ":0,"SecondSegmentSpeed":80})
 	if i == col_num-1 and SampleCount%8 != 0:
 		p8_unload_tips({"Position":oil_3[0][0],"Col":oil_3[0][1],"Row":last_row,"Tips":8})
 		p8_load_modified(oil_3[0])
 p8_unload_tips({"Position":"M2_Trash","Col":None,"Row":None})
-
-# Swap back: Restore original plate positions
-transfer({"StartPosition":"M2_POS13","EndPosition":"M2_POS30","LoosenOffsetOfZ":0})
-transfer({"StartPosition":"M2_POS14","EndPosition":"M2_POS13","LoosenOffsetOfZ":0})
-transfer({"StartPosition":"M2_POS30","EndPosition":"M2_POS14","LoosenOffsetOfZ":0})
 
 transfer({"StartPosition":"M2_POS26","EndPosition":"M2_POS20","LoosenOffsetOfZ":0})
 
@@ -1271,13 +1222,16 @@ Plate 3: M2_POS13 - 库存和测量板(Stock & Measurement Plate) [固定位置]
   3. 混合完成后，将板返回到M2_POS13指定的主位置
   4. 恢复原始占用者到M2_POS16
 
-Plate 4: M2_POS14 - 汇集和DNB站(Pooling & DNB Station) [固定位置]
-此板在DNB合成之前处理最终的体积归一化。物理上与珠废物和大容量试剂区域隔离。
+Plate 4 home moved: M2_POS11 - 废液/矿物油/汇集和DNB站(Waste, Oil, Pooling & DNB Station) [固定位置]
+此板原位为POS14，现常驻POS11以减少高频POS14访问。物理上与珠废物和大容量试剂区域隔离。
 - Columns 1-6 (Pooling Dilution): 主库存(Plate 3)的等分试样在此稀释以达到目标400ng输入浓度
 - Column 7 (Pooling Product): 收集8样本池的最终孔
 - Columns 8-9 (Mineral Oil): 矿物油的中间储层，在DNB合成的热循环期间层叠在汇集样品上以防止蒸发
 - 震荡器交换: 当需要预汇集稀释的彻底混合时，机器人执行临时"震荡器交换"
   (与Plate 3相同的交换过程)
+
+Quantification tubes home: M2_POS14 [固定位置]
+定量阶段临时执行POS11↔POS14切换：POS11板到POS30，POS14定量管到POS11；定量后恢复。
 
 M2_POS30 - 中转点(Transit Spot)
 临时存储位置，用于在震荡器交换操作期间保持当前M2_POS16占用者
@@ -1301,7 +1255,7 @@ magetic_beads_volume2 = 20
 # 计算磁珠分装体积
 target_volume_list = [55*(SampleCount//8+1)]*(SampleCount%8)+[55*(SampleCount//8)]*(8-SampleCount%8)
 
-# UPDATED: waste recovered to POS14 deepwell plate Col 1-6 via swap mechanism
+# UPDATED: waste recovered to POS11 deepwell plate Col 1-6 after POS14/POS11 switch
 # waste_col_start defined at line ~808, shared by TA and LA purification
 
 # 乙醇位置 - 80% Ethanol at Columns 1-6 (6 wash cycles)
@@ -1397,18 +1351,13 @@ if magetic_beads_dispense_pos1["Position"] == "M2_POS16":
 # REMOVED: 多余的磁吸-振荡-磁吸循环 (原Lines 1385-1396)
 # 正常流程：磁吸分离 → 弃上清，无需再回振荡位重新磁吸
 
-# === Swap POS14 废液板到 POS13 (LA 纯化废液回收) ===
-transfer({"StartPosition":"M2_POS14","EndPosition":"M2_POS30","LoosenOffsetOfZ":0})
-transfer({"StartPosition":"M2_POS13","EndPosition":"M2_POS14","LoosenOffsetOfZ":0})
-transfer({"StartPosition":"M2_POS30","EndPosition":"M2_POS13","LoosenOffsetOfZ":0})
-
-# 逐列去除废液到废液板 (POS14 waste plate now at POS13 via swap)
+# 逐列去除废液到 POS11 废液板
 for i in range(col_num):
 	p8_load_modified_BubblePurge(temp[i])
 	# Remove 85 µL waste supernatant (Updated from 110 µL for 40 µL product + 32 µL beads)
 	# AspirateOffsetOfZ: 0→0.5 (抬起 0.5mm, 和 TA L830 一致, 避免贴底吸入磁珠)
 	p8_aspirate({"Position":"M2_POS23","Col":magetic_beads_dispense_pos1["Col"]+i,"Row":1,"PreAirVolume":2,"AspirateOffsetOfZ":0.5,"AspirateSpeed":10,"AspirateVolume":85,"PreAirSpeed":50,"DelayAfterAspirate":0.5,"TipTouchTimes":0,"PostAirSpeed":50,"PostAirVolume":5,"IfTrack":False,"FirstSegmentSpeed":100,"SpeedChangeOffsetOfZ":0,"SecondSegmentSpeed":80})
-	p8_empty({"Position":"M2_POS13","Col":waste_col_start+i,"Row":1,"EmptyOffsetOfZ":0.8,"EmptySpeed":50,"DelayAfterEmpty":0.8,"TipTouchTimes":3,"TipTouchOffsetOfZ":15,"TipTouchRangeOfX":1.2,"TipTouchSpeed":100,"PostAirSpeed":50,"PostAirVolume":5,"FirstSegmentSpeed":100,"SpeedChangeOffsetOfZ":0,"SecondSegmentSpeed":80})
+	p8_empty({"Position":"M2_POS11","Col":waste_col_start+i,"Row":1,"EmptyOffsetOfZ":0.8,"EmptySpeed":50,"DelayAfterEmpty":0.8,"TipTouchTimes":3,"TipTouchOffsetOfZ":15,"TipTouchRangeOfX":1.2,"TipTouchSpeed":100,"PostAirSpeed":50,"PostAirVolume":5,"FirstSegmentSpeed":100,"SpeedChangeOffsetOfZ":0,"SecondSegmentSpeed":80})
 	p8_unload_modified(temp[i])  # Keep tips for ethanol wash
 
 # 乙醇洗2次
@@ -1436,23 +1385,18 @@ for i in range(2):
 	for x in range(col_num):
 		p8_load_modified_BubblePurge(temp[x])
 		p8_aspirate({"Position":"M2_POS23","Col":magetic_beads_dispense_pos1["Col"]+x, "Row":1,"PreAirVolume":2,"AspirateOffsetOfZ":0,"AspirateSpeed":10,"AspirateVolume":220,"PreAirSpeed":50,"DelayAfterAspirate":0.5,"TipTouchTimes":0,"PostAirSpeed":50,"PostAirVolume":5,"IfTrack":False,"FirstSegmentSpeed":100,"SpeedChangeOffsetOfZ":0,"SecondSegmentSpeed":80})
-		p8_empty({"Position":"M2_POS13","Col":waste_col_start+x,"Row":1,"EmptyOffsetOfZ":0.8,"EmptySpeed":50,"DelayAfterEmpty":0.8,"TipTouchTimes":3,"TipTouchOffsetOfZ":15,"TipTouchRangeOfX":1.2,"TipTouchSpeed":100,"PostAirSpeed":50,"PostAirVolume":5,"FirstSegmentSpeed":100,"SpeedChangeOffsetOfZ":0,"SecondSegmentSpeed":80})
+		p8_empty({"Position":"M2_POS11","Col":waste_col_start+x,"Row":1,"EmptyOffsetOfZ":0.8,"EmptySpeed":50,"DelayAfterEmpty":0.8,"TipTouchTimes":3,"TipTouchOffsetOfZ":15,"TipTouchRangeOfX":1.2,"TipTouchSpeed":100,"PostAirSpeed":50,"PostAirVolume":5,"FirstSegmentSpeed":100,"SpeedChangeOffsetOfZ":0,"SecondSegmentSpeed":80})
 		# 只在最后一轮丢弃枪头，第一轮放回原位
 		if i == 1:
 			p8_unload_tips({"Position":"M2_Trash","Col":None,"Row":None})
 		else:
 			p8_unload_modified(temp[x])
 
-# v12: LA 纯化晾干延时 5 min — 在最后一次乙醇弃液完成后立即起计时, 与 swap-back 并行
+# v12: LA 纯化晾干延时 5 min — 在最后一次乙醇弃液完成后立即起计时
 def wait_for_LA_beads_dry():
 	delay({"Duration": 300})
 
 LA_dry_wait = parallel_block(wait_for_LA_beads_dry)
-
-# === Swap back: 恢复 POS13 (产物) 和 POS14 (废液) 原位 (LA 纯化完成) ===
-transfer({"StartPosition":"M2_POS13","EndPosition":"M2_POS30","LoosenOffsetOfZ":0})
-transfer({"StartPosition":"M2_POS14","EndPosition":"M2_POS13","LoosenOffsetOfZ":0})
-transfer({"StartPosition":"M2_POS30","EndPosition":"M2_POS14","LoosenOffsetOfZ":0})
 
 LA_dry_wait.Wait()
 
@@ -1534,8 +1478,11 @@ source_plate = ['M2_POS13',7]
 # 必须是深孔板，板位，起始列，样本必须从上到下，从左到右，从第一个开始
 dye_mix_plate = ['M2_POS13',1]
 
-# 定量管起始位置,板位，起始列，样本必须从上到下，从左到右，从第一个开始
-quantification_tube_loc = ['M2_POS11',1]
+# POS14/POS11 switched: quantification tubes live at POS14 and are accessed at POS13 after plate swap.
+quantification_tube_home_pos = 'M2_POS14'
+quantification_tube_operating_pos = 'M2_POS13'
+# 定量管操作位置,板位，起始列，样本必须从上到下，从左到右，从第一个开始
+quantification_tube_loc = [quantification_tube_operating_pos,1]
 
 #=====================定量浓度输出文件位置======================================
 import time
@@ -1572,7 +1519,7 @@ concentration_list = []
 # 单个定量管位置，板列行
 quantification_tubes = [(quantification_tube_loc[0],quantification_tube_loc[1]+i//8,1 + i%8) for i in range(sample_num)]
 #=================================== 样本稀释部分#===================================
-# TEMPLATE WORKFLOW: Mix in dye_mix_plate (M2_POS13), shake at POS16, transfer to quant tubes (POS11)
+# TEMPLATE WORKFLOW: Mix in dye_mix_plate (M2_POS13), shake at POS16, transfer to quant tubes after POS14 -> POS13 swap.
 
 # Step 1: Dispense dye to dye_mix_plate (M2_POS13 columns 1-6)
 if sample_num%8 == 0:
@@ -1616,7 +1563,12 @@ transfer({"StartPosition":"M2_POS16","EndPosition":"M2_POS13","LoosenOffsetOfZ":
 # Restore original POS16 occupant from POS23
 transfer({"StartPosition":"M2_POS23","EndPosition":"M2_POS16","LoosenOffsetOfZ":0})
 
-# Step 4: Transfer from dye_mix_plate (POS13) to quantification tubes (POS11)
+# Step 4: Park the POS13 product/dye mix plate in empty POS23, then move quantification tubes to POS13.
+transfer({"StartPosition":"M2_POS13","EndPosition":"M2_POS23","LoosenOffsetOfZ":0})
+dye_mix_plate[0] = "M2_POS23"
+transfer({"StartPosition":quantification_tube_home_pos,"EndPosition":quantification_tube_operating_pos,"LoosenOffsetOfZ":0})
+
+# Step 5: Transfer from the same dye_mix_plate wells, now parked at POS23, to quantification tubes at POS13.
 for i in range(col_num):
 	p8_load_modified(sample_dilute_tip_loc[i])
 	# Transfer 4x50µL from dye_mix_plate to quantification tubes
@@ -1636,6 +1588,11 @@ for i in range(col_num):
 	concentration_list += cur_concentration_list
 	p8_unload_quantification_tube({"Position": quantification_tube_loc[0], "Row": 1, "Col": quantification_tube_loc[1]+i, "Tips":8})
 output_quantitative_data({"ProductType":sample_stage,"FilePath":file_path})
+
+# Restore quantification tubes to POS14 and the product/dye mix plate to POS13.
+transfer({"StartPosition":quantification_tube_operating_pos,"EndPosition":quantification_tube_home_pos,"LoosenOffsetOfZ":0})
+transfer({"StartPosition":"M2_POS23","EndPosition":"M2_POS13","LoosenOffsetOfZ":0})
+dye_mix_plate[0] = "M2_POS13"
 
 #============================输出浓度列表=========================
 #==================================以下部分为浓度输出部分===================================
@@ -1725,8 +1682,8 @@ sample_qc_concentration = 10
 single_tip_loc = tip_1000.load(1)[0]
 #pooling稀释buffer位置，板-列-行 - M2_POS24 B1 (Col 1, Row 2) contains T2 buffer
 dilution_buffer_loc = ('M2_POS24',1,2)
-#pooling产物位置，板位，列，行 - Pooling Product at M2_POS14 Column 7
-target_tube_loc = [('M2_POS14',7,i) for i in range(1,9)]
+#pooling产物位置，板位，列，行 - POS14/POS11 switched: pooling product plate now lives at M2_POS11 Column 7
+target_tube_loc = [('M2_POS11',7,i) for i in range(1,9)]
 # [v7] DNB反应位置 - Column布局: Col 7 Row 1-6 为环化, Col 8 Row 1-6 为DNB制备
 # SIRO48最多48样本, 每8个一组, 最多6个pool
 target_dnb_loc_list = [('M2_POS20',7,1+i) for i in range(6)]
@@ -1927,10 +1884,10 @@ print(f"样本的 pooling 组、取样体积、稀释倍数和放大倍数已输
 
 
 # [v7] ===== Normalization + Pooling 重写 =====
-# 流程: POS14→POS23 → 原位稀释(POS13) → pooling(POS13→POS23) → 转移到POS20 → POS23→POS14
+# 流程: POS11→POS23 → 原位稀释(POS13) → pooling(POS13→POS23) → 转移到POS20 → POS23→POS11
 
-# Step 1: 移动POS14 (pooling板) 到POS23 (空闲, p1/p8均可达)
-transfer({"StartPosition":"M2_POS14","EndPosition":"M2_POS23","LoosenOffsetOfZ":0})  # POS14 → POS23
+# Step 1: 移动POS11 (原POS14 pooling板) 到POS23 (空闲, p1/p8均可达)
+transfer({"StartPosition":"M2_POS11","EndPosition":"M2_POS23","LoosenOffsetOfZ":0})  # POS11 → POS23
 
 # 操作时pooling管在POS23 Col 7
 pooling_tube_pos = 'M2_POS23'
@@ -1998,8 +1955,8 @@ for i in range(target_dnb_num):
 	p8_empty_modified(target_dnb_loc_list[i][0],target_dnb_loc_list[i][2],target_dnb_loc_list[i][1])
 	p8_unload_tips({"Position":"M2_Trash","Col":None,"Row":None})
 
-# Step 7: 移回POS23 → POS14，关PCR盖板
-transfer({"StartPosition":"M2_POS23","EndPosition":"M2_POS14","LoosenOffsetOfZ":0})  # POS23 → POS14 (恢复)
+# Step 7: 移回POS23 → POS11，关PCR盖板
+transfer({"StartPosition":"M2_POS23","EndPosition":"M2_POS11","LoosenOffsetOfZ":0})  # POS23 → POS11 (恢复)
 transfer({"StartPosition":"M2_POS26","EndPosition":"M2_POS20","LoosenOffsetOfZ":0})  #关PCR盖板
 pcr_close_door()
 
