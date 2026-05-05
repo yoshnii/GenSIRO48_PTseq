@@ -16,8 +16,9 @@
 #
 # Created: 2026-02-10
 #####################################################################
-#Timestamp:2024/11/18 9:46:21
+#Timestamp:2026 Apr 05
 #Head - 共用头部，包含所有功能。
+
 from library import *
 spxsiro = globals().get("library")
 set_siro(spxsiro)
@@ -32,7 +33,7 @@ def blockA():
 	temp_set({"Name":"M2_tempB","Temp": 6.00, "Duration": -1})#4度，POS10
 
 a = parallel_block(blockA)
-a.Wait()
+# Temperature control runs in the background; do not block protocol start.
 
 '''==================================================================自动计算取枪头位置逻辑v6======================================================'''
 # 更新内容
@@ -481,7 +482,7 @@ for i in range(col_num-1,-1,-1):
 	if i == col_num-1 and SampleCount%8 != 0:
 		p8_unload_tips({"Position":oil_1[0][0],"Col":oil_1[0][1],"Row":last_row,"Tips":8})
 		p8_load_modified(oil_1[0])
-p8_unload_tips({"Position":oil_1[0][0],"Col":oil_1[0][1],"Row":1,"Tips":8})
+p8_unload_tips({"Position":"M2_Trash","Col":None,"Row":None})
 
 # 添加PCR盖板
 transfer({"StartPosition":"M2_POS26","EndPosition":"M2_POS20","LoosenOffsetOfZ":0}) #PCR盖板
@@ -769,10 +770,19 @@ else:
 	for i in range(col_num):
 		p8_load_modified(tip_50.load(target_tip_num_list[i])[0])
 		p8_aspirate({"Position":"M2_POS7","Col":10,"Row":1,"PreAirVolume":8,"AspirateOffsetOfZ":0.5,"AspirateSpeed":10,"AspirateVolume":15,"PreAirSpeed":50,"DelayAfterAspirate":1,"TipTouchTimes":0,"PostAirSpeed":50,"PostAirVolume":3,"IfTrack":False,"FirstSegmentSpeed":100,"SpeedChangeOffsetOfZ":0,"SecondSegmentSpeed":80})
+		p8_empty({"Position":"M2_POS20","Col":i+7,"Row":1,"EmptyOffsetOfZ":3,"EmptySpeed":50,"DelayAfterEmpty":0.5,"TipTouchTimes":0,"PostAirSpeed":50,"PostAirVolume":0,"FirstSegmentSpeed":100,"SpeedChangeOffsetOfZ":0,"SecondSegmentSpeed":80})
+		p8_unload_tips({"Position":"M2_Trash","Col":None,"Row":None})
+	for i in range(col_num):
+		p8_load_modified(tip_50.load(target_tip_num_list[i])[0])
 		p8_aspirate({"Position":"M2_POS10","Col":i+1,"Row":1,"PreAirVolume":8,"AspirateOffsetOfZ":0.5,"AspirateSpeed":10,"AspirateVolume":5,"PreAirSpeed":50,"DelayAfterAspirate":1,"TipTouchTimes":0,"PostAirSpeed":50,"PostAirVolume":3,"IfTrack":False,"FirstSegmentSpeed":100,"SpeedChangeOffsetOfZ":0,"SecondSegmentSpeed":80})
+		p8_empty({"Position":"M2_POS20","Col":i+7,"Row":1,"EmptyOffsetOfZ":3,"EmptySpeed":50,"DelayAfterEmpty":0.5,"TipTouchTimes":0,"PostAirSpeed":50,"PostAirVolume":0,"FirstSegmentSpeed":100,"SpeedChangeOffsetOfZ":0,"SecondSegmentSpeed":80})
+		p8_unload_tips({"Position":"M2_Trash","Col":None,"Row":None})
+	for i in range(col_num):
+		p8_load_modified(tip_50.load(target_tip_num_list[i])[0])
 		p8_aspirate({"Position":"M2_POS20","Col":i+1,"Row":1,"PreAirVolume":8,"AspirateOffsetOfZ":0.5,"AspirateSpeed":10,"AspirateVolume":5,"PreAirSpeed":50,"DelayAfterAspirate":1,"TipTouchTimes":0,"PostAirSpeed":50,"PostAirVolume":0,"IfTrack":False,"FirstSegmentSpeed":100,"SpeedChangeOffsetOfZ":0,"SecondSegmentSpeed":80})
 		p8_empty({"Position":"M2_POS20","Col":i+7,"Row":1,"EmptyOffsetOfZ":3,"EmptySpeed":50,"DelayAfterEmpty":0.5,"TipTouchTimes":0,"PostAirSpeed":50,"PostAirVolume":0,"FirstSegmentSpeed":100,"SpeedChangeOffsetOfZ":0,"SecondSegmentSpeed":80})
 		p8_mix({"Position":"M2_POS20","Col":i+7,"Row":1,"PreAirVolume":10,"MixTimes":15,"MixAspirateSpeed":50,"MixAspirateOffsetOfZ":0.5,"MixVolume":22,"MixDispenseOffsetOfZ":5,"MixDispenseSpeed":50,"DelayAfterMixLoop":2,"MixEmptyOffsetOfZ":3,"MixEmptySpeed":50,"PreAirSpeed":50,"DelayAfterMixAspirate":0.5,"DelayAfterMixDispense":0.5,"DelayAfterMixEmpty":0.5,"TipTouchTimes":0,"PostAirSpeed":50,"PostAirVolume":0,"FirstSegmentSpeed":100,"SpeedChangeOffsetOfZ":0,"SecondSegmentSpeed":80})
+		#p8_empty({"Position":"M2_POS20","Col":i+1,"Row":1,"EmptyOffsetOfZ":3,"EmptySpeed":50,"DelayAfterEmpty":0.5,"TipTouchTimes":0,"PostAirSpeed":50,"PostAirVolume":0,"FirstSegmentSpeed":100,"SpeedChangeOffsetOfZ":0,"SecondSegmentSpeed":80})
 		p8_unload_tips({"Position":"M2_Trash","Col":None,"Row":None})
 
 # v12: Mineral oil overlay on TA PCR wells (POS20 Cols 7-12) before PTseq_TA. New wells, no prior oil.
@@ -789,7 +799,7 @@ for i in range(col_num-1,-1,-1):
 	if i == col_num-1 and SampleCount%8 != 0:
 		p8_unload_tips({"Position":oil_2[0][0],"Col":oil_2[0][1],"Row":last_row,"Tips":8})
 		p8_load_modified(oil_2[0])
-p8_unload_tips({"Position":oil_2[0][0],"Col":oil_2[0][1],"Row":1,"Tips":8})
+p8_unload_tips({"Position":"M2_Trash","Col":None,"Row":None})
 
 # 盖上PCR盖板
 transfer({"StartPosition":"M2_POS26","EndPosition":"M2_POS20","LoosenOffsetOfZ":0}) #PCR盖板
@@ -1106,14 +1116,14 @@ if low_throughput_p1_direct_col11:
 		p1_unload_tips2({"Position":"M2_Trash","Col":None,"Row":None})
 	transfer({"StartPosition":"M2_POS27","EndPosition":"M2_POS17","LoosenOffsetOfZ":0})
 else:
-	LA_dispense_tips = tip_300.load(sample_num,8,1)
+	LA_dispense_tips = tip_50.load(sample_num,8,1)
 	for i in range(col_num):
 		p8_load_modified(LA_dispense_tips[i])
 		# Aspirate 30 µL LA Master Mix from pre-dispensed reservoir
-		# v12: Conservative POS7 P8-300 aqueous aspiration style for small-volume transfers; keep AspirateOffsetOfZ unchanged per validation decision.
-		p8_aspirate({"Position":"M2_POS7","Col":11,"Row":1,"PreAirVolume":5,"AspirateOffsetOfZ":0.5,"AspirateSpeed":30,"AspirateVolume":30,"PreAirSpeed":50,"DelayAfterAspirate":3,"TipTouchTimes":0,"PostAirSpeed":50,"PostAirVolume":10,"IfTrack":True,"FirstSegmentSpeed":100,"SpeedChangeOffsetOfZ":0,"SecondSegmentSpeed":80})
+		# PTplus P8-50 small-volume POS7 -> POS23 deepwell style.
+		p8_aspirate({"Position":"M2_POS7","Col":11,"Row":1,"PreAirVolume":10,"AspirateOffsetOfZ":0.5,"AspirateSpeed":50,"AspirateVolume":30,"PreAirSpeed":50,"DelayAfterAspirate":0.5,"TipTouchTimes":0,"PostAirSpeed":50,"PostAirVolume":5,"IfTrack":False,"FirstSegmentSpeed":100,"SpeedChangeOffsetOfZ":0,"SecondSegmentSpeed":80})
 		# Dispense onto dried beads at M2_POS23 (on magnet)
-		p8_empty({"Position":"M2_POS23","Col":7+i,"Row":1,"EmptyOffsetOfZ":0.5,"EmptySpeed":20,"DelayAfterEmpty":0.5,"TipTouchTimes":0,"PostAirSpeed":50,"PostAirVolume":0,"FirstSegmentSpeed":100,"SpeedChangeOffsetOfZ":0,"SecondSegmentSpeed":80})
+		p8_empty({"Position":"M2_POS23","Col":7+i,"Row":1,"EmptyOffsetOfZ":0.8,"EmptySpeed":80,"DelayAfterEmpty":0.8,"TipTouchTimes":0,"PostAirSpeed":50,"PostAirVolume":5,"FirstSegmentSpeed":100,"SpeedChangeOffsetOfZ":0,"SecondSegmentSpeed":80})
 		p8_unload_modified(LA_dispense_tips[i])
 
 # Step 2: Move plate from magnet to shaker for resuspension
@@ -1520,14 +1530,14 @@ for i in range(col_num):
 	p8_mix({"Position":dye_mix_plate[0],"Col":dye_mix_plate[1]+i,"Row":1,"PreAirVolume":10,"MixTimes":2,"MixAspirateSpeed":100,"MixAspirateOffsetOfZ":1,"MixVolume":40,"MixDispenseOffsetOfZ":15,"MixDispenseSpeed":100,"DelayAfterMixLoop":0.5,"MixEmptyOffsetOfZ":5,"MixEmptySpeed":50,"PreAirSpeed":50,"DelayAfterMixAspirate":0.5,"DelayAfterMixDispense":0.5,"DelayAfterMixEmpty":0.5,"PostAirSpeed":50,"PostAirVolume":0,"FirstSegmentSpeed":100,"SpeedChangeOffsetOfZ":0,"SecondSegmentSpeed":80, "TipTouchTimes": 0, "TipTouchOffsetOfZ": 5, "TipTouchRangeOfX": 1.2, "TipTouchSpeed": 100})
 	p8_unload_modified(sample_dilute_tip_loc[i])
 
-# Library-only: 定量取样完成，关闭POS20盖板并启动4度保存
+# Library-only: 定量取样完成，关闭POS20盖板并启动PCR模块4度过夜保存
 transfer({"StartPosition":"M2_POS26","EndPosition":"M2_POS20","LoosenOffsetOfZ":0})  # 关PCR盖板
 pcr_close_door()
 
-# 启动4度保存（并行执行，不阻塞后续定量流程）
-def block_4keep():
-    temp_set({"Name":"M2_tempC","Temp": 4.00, "Duration": -1})  # POS17→POS20 4度保存
-keep = parallel_block(block_4keep)
+# 启动PCR 4keep保存（并行执行，不阻塞后续定量流程）
+def block_pcr_4keep():
+	pcr_run_method({"Methods": ["4keep"]})
+keep = parallel_block(block_pcr_4keep)
 
 # Step 3: Shaking - Move POS16 to POS23, move POS13 to POS16, shake, then restore
 # Move current POS16 occupant to POS23 (temporary storage)
@@ -1599,7 +1609,7 @@ except:
 	pass
 
 
-# ===== Library-only: 等待4度保存完成 =====
+# ===== Library-only: 等待PCR 4keep过夜保存完成 =====
 keep.Wait()
 
 # ===== 脚本结束 =====
