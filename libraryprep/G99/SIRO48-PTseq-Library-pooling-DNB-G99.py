@@ -497,8 +497,7 @@ def spx_p1_f_0():
 
 spx_p0_v_0 = parallel_block(spx_p1_f_0)
 
-# 等 PTseq_RT 接近结束后再配置 T2/T3，一链体系不提前长时间放置。
-delay({"Duration": 1800})
+# PTseq_RT 运行期间立即配置 T2/T3；后续 spx_p0_v_0.Wait() 会等待 RT 完成后再开盖加样。
 
 '''===================================================cDNA一链合成反应体系==============================================================='''
 lang=get_lang()
@@ -602,8 +601,8 @@ def spx_p2_f_0():
 	pcr_run_method({"Methods":["PTseq_cDNA"]})
 spx_p2_v_0 = parallel_block(spx_p2_f_0)
 
-# 等 PTseq_cDNA 接近结束后再配置 TA Master Mix，避免 T4/T5/T2 混合液提前放置太久。
-delay({"Duration": 4200})
+# PTseq_cDNA 后等待 30 min，再配置 TA Master Mix，避免 T4/T5/T2 混合液提前放置太久。
+delay({"Duration": 1800})
 
 # POS7 无盖板，已移除旧逻辑中不必要的 POS10 盖板动作。
 
