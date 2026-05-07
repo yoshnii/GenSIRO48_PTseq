@@ -712,6 +712,8 @@ if not low_throughput_p1_direct_col10:
 	# 8 行全部分装完成后再丢弃枪头。
 	p1_unload_tips2({"Position":"M2_Trash","Col":None,"Row":None})
 
+transfer({"StartPosition":"M2_POS27","EndPosition":"M2_POS17","LoosenOffsetOfZ":0})
+
 # =============================================
 # 关键步骤：向 POS7 Col7 预分装 T2 缓冲液。
 # =============================================
@@ -732,8 +734,6 @@ for i in range(8):
 # 8 行全部分装完成后再丢弃枪头。
 p1_unload_tips2({"Position":"M2_Trash","Col":None,"Row":None})
 
-# 盖上试剂盖
-transfer({"StartPosition":"M2_POS27","EndPosition":"M2_POS17","LoosenOffsetOfZ":0})
 spx_p2_v_0.Wait()
 
 #Block begin:将靶向扩增反应液与样本混合
@@ -909,6 +909,18 @@ TA_ethanol_predispense_wait.Wait()
 # 累计废液量: 95 + 420 + 85 + 420 = 1020 µL/孔 (容量 1300 µL)
 waste_col_start = 1
 
+Ligation_purification_tips2 = tip_300.load(sample_num,8,0)  # reuse_index=0：TA 乙醇洗涤/弃液枪头用完直接丢弃。
+# 注意：T2 现在在磁吸前加入，用于帮助 DNA 结合到 SPRI 磁珠。
+# 旧逻辑曾在弃上清后再加 T2，这与结合机理不符。
+# DNA 需要 PEG/盐环境才能有效结合 SPRI 磁珠，因此不能把 T2 放到弃上清之后。
+
+# 连接后纯化乙醇清洗
+lang=get_lang()
+if lang==1: #
+ report({"Phase": "靶向扩增反应后纯化", "Step": "乙醇清洗", "TaskType": "library", "RemainingTime": None})
+elif lang==2: #
+ report({"Phase": "Targeted Amplification Purification", "Step": "Ethanol Wash", "TaskType": "library", "RemainingTime": None})
+
 # 移除上清：结合体系约 100 uL（50 uL 磁珠 + 25 uL TA + 25 uL T2），吸走 110 uL 用于“弃多于打”的余量策略。
 # 废液按样本列 1:1 回收到 POS11 Col1-6。
 for i in range(col_num):
@@ -918,10 +930,37 @@ for i in range(col_num):
 	p8_empty({"Position":"M2_POS11","Col":waste_col_start+i,"Row":1,"EmptyOffsetOfZ":0.8,"EmptySpeed":50,"DelayAfterEmpty":0.8,"TipTouchTimes":3,"TipTouchOffsetOfZ":15,"TipTouchRangeOfX":1.2,"TipTouchSpeed":100,"PostAirSpeed":50,"PostAirVolume":5,"FirstSegmentSpeed":100,"SpeedChangeOffsetOfZ":0,"SecondSegmentSpeed":80})
 	p8_unload_tips({"Position":"M2_Trash","Col":None,"Row":None})
 
-Ligation_purification_tips2 = tip_300.load(sample_num,8,0)  # reuse_index=0：TA 乙醇洗涤/弃液枪头用完直接丢弃。
-# 注意：T2 现在在磁吸前加入，用于帮助 DNA 结合到 SPRI 磁珠。
-# 旧逻辑曾在弃上清后再加 T2，这与结合机理不符。
-# DNA 需要 PEG/盐环境才能有效结合 SPRI 磁珠，因此不能把 T2 放到弃上清之后。
+# 乙醇洗涤继续使用前面分配好的 Ligation_purification_tips2。
+
+# v12 sync: TA 乙醇洗涤流程 - 静置等待方案, 加乙醇后不移板/不吹打, 仅做 120 s 磁吸沉降后弃乙醇
+for i in range(2):
+	# 第一步：加乙醇，板保持在 POS23 磁力架位。
+	for x in range(col_num):
+		p8_load_modified_BubblePurge(Ligation_purification_tips2[x])
+		p8_aspirate({"Position":"M2_POS7","Col":1+x,"Row":1,"PreAirVolume":10,"AspirateOffsetOfZ":1.0,"AspirateSpeed":50,"AspirateVolume":200,"PreAirSpeed":50,"DelayAfterAspirate":0.5,"TipTouchTimes":0,"PostAirSpeed":50,"PostAirVolume":5,"IfTrack":False,"FirstSegmentSpeed":100,"SpeedChangeOffsetOfZ":0,"SecondSegmentSpeed":80})
+		p8_empty({"Position":"M2_POS23","Col":7+x,"Row":1,"EmptyOffsetOfZ":0.8,"EmptySpeed":80,"DelayAfterEmpty":0.8,"TipTouchTimes":2,"PostAirSpeed":50,"PostAirVolume":5,"FirstSegmentSpeed":100,"SpeedChangeOffsetOfZ":0,"SecondSegmentSpeed":80, "TipTouchOffsetOfZ": 15, "TipTouchRangeOfX": 1.4, "TipTouchSpeed": 100})
+		p8_unload_modified(Ligation_purification_tips2[x])
+
+	# 第二步：静置磁吸沉降，板始终保持在 POS23 磁力架位。
+	delay({"Duration": 120})
+
+	# 第三步：弃乙醇，板仍在 POS23；吸液体积从 210 uL 提到 220 uL，用 +20 uL 余量减少残液。
+	for x in range(col_num):
+		p8_load_modified_BubblePurge(Ligation_purification_tips2[x])
+		p8_aspirate({"Position":"M2_POS23","Col":7+x,"Row":1,"PreAirVolume":2,"AspirateOffsetOfZ":0,"AspirateSpeed":10,"AspirateVolume":220,"PreAirSpeed":50,"DelayAfterAspirate":0.5,"TipTouchTimes":0,"PostAirSpeed":50,"PostAirVolume":5,"IfTrack":False,"FirstSegmentSpeed":100,"SpeedChangeOffsetOfZ":0,"SecondSegmentSpeed":80})
+		p8_empty({"Position":"M2_POS11","Col":waste_col_start+x,"Row":1,"EmptyOffsetOfZ":0.8,"EmptySpeed":50,"DelayAfterEmpty":0.8,"TipTouchTimes":3,"TipTouchOffsetOfZ":15,"TipTouchRangeOfX":1.2,"TipTouchSpeed":100,"PostAirSpeed":50,"PostAirVolume":5,"FirstSegmentSpeed":100,"SpeedChangeOffsetOfZ":0,"SecondSegmentSpeed":80})
+		# 只在最后一轮丢弃枪头，第一轮放回原位
+		if i == 1:
+			p8_unload_tips({"Position":"M2_Trash","Col":None,"Row":None})
+		else:
+			p8_unload_modified(Ligation_purification_tips2[x])
+
+def wait_for_magnetic_beads():
+	# v12 sync: TA 纯化晾干延时 5 min (8→5 min, 回退至 SOP 允许下限)
+	delay({"Duration": 300})
+
+magetic_wait = parallel_block(wait_for_magnetic_beads)
+# 等待磁珠吸附
 
 lang=get_lang()
 if lang==1: #
@@ -1021,45 +1060,6 @@ else:
 	p1_unload_tips2({"Position":"M2_Trash","Col":None,"Row":None})
 
 transfer({"StartPosition":"M2_POS27","EndPosition":"M2_POS17","LoosenOffsetOfZ":0})
-
-# 连接后纯化乙醇清洗
-lang=get_lang()
-if lang==1: #
- report({"Phase": "靶向扩增反应后纯化", "Step": "乙醇清洗", "TaskType": "library", "RemainingTime": None})
-elif lang==2: #
- report({"Phase": "Targeted Amplification Purification", "Step": "Ethanol Wash", "TaskType": "library", "RemainingTime": None})
-
-# TA 乙醇洗涤复用弃上清时放回原位的 Ligation_purification_tips2，可节省最多 48 个 300 uL 枪头。
-
-# v12 sync: TA 乙醇洗涤流程 - 静置等待方案, 加乙醇后不移板/不吹打, 仅做 120 s 磁吸沉降后弃乙醇
-for i in range(2):
-	# 第一步：加乙醇，板保持在 POS23 磁力架位。
-	for x in range(col_num):
-		p8_load_modified_BubblePurge(Ligation_purification_tips2[x])
-		p8_aspirate({"Position":"M2_POS7","Col":1+x,"Row":1,"PreAirVolume":10,"AspirateOffsetOfZ":1.0,"AspirateSpeed":50,"AspirateVolume":200,"PreAirSpeed":50,"DelayAfterAspirate":0.5,"TipTouchTimes":0,"PostAirSpeed":50,"PostAirVolume":5,"IfTrack":False,"FirstSegmentSpeed":100,"SpeedChangeOffsetOfZ":0,"SecondSegmentSpeed":80})
-		p8_empty({"Position":"M2_POS23","Col":7+x,"Row":1,"EmptyOffsetOfZ":0.8,"EmptySpeed":80,"DelayAfterEmpty":0.8,"TipTouchTimes":2,"PostAirSpeed":50,"PostAirVolume":5,"FirstSegmentSpeed":100,"SpeedChangeOffsetOfZ":0,"SecondSegmentSpeed":80, "TipTouchOffsetOfZ": 15, "TipTouchRangeOfX": 1.4, "TipTouchSpeed": 100})
-		p8_unload_modified(Ligation_purification_tips2[x])
-
-	# 第二步：静置磁吸沉降，板始终保持在 POS23 磁力架位。
-	delay({"Duration": 120})
-
-	# 第三步：弃乙醇，板仍在 POS23；吸液体积从 210 uL 提到 220 uL，用 +20 uL 余量减少残液。
-	for x in range(col_num):
-		p8_load_modified_BubblePurge(Ligation_purification_tips2[x])
-		p8_aspirate({"Position":"M2_POS23","Col":7+x,"Row":1,"PreAirVolume":2,"AspirateOffsetOfZ":0,"AspirateSpeed":10,"AspirateVolume":220,"PreAirSpeed":50,"DelayAfterAspirate":0.5,"TipTouchTimes":0,"PostAirSpeed":50,"PostAirVolume":5,"IfTrack":False,"FirstSegmentSpeed":100,"SpeedChangeOffsetOfZ":0,"SecondSegmentSpeed":80})
-		p8_empty({"Position":"M2_POS11","Col":waste_col_start+x,"Row":1,"EmptyOffsetOfZ":0.8,"EmptySpeed":50,"DelayAfterEmpty":0.8,"TipTouchTimes":3,"TipTouchOffsetOfZ":15,"TipTouchRangeOfX":1.2,"TipTouchSpeed":100,"PostAirSpeed":50,"PostAirVolume":5,"FirstSegmentSpeed":100,"SpeedChangeOffsetOfZ":0,"SecondSegmentSpeed":80})
-		# 只在最后一轮丢弃枪头，第一轮放回原位
-		if i == 1:
-			p8_unload_tips({"Position":"M2_Trash","Col":None,"Row":None})
-		else:
-			p8_unload_modified(Ligation_purification_tips2[x])
-
-def wait_for_magnetic_beads():
-	# v12 sync: TA 纯化晾干延时 5 min (8→5 min, 回退至 SOP 允许下限)
-	delay({"Duration": 300})
-
-magetic_wait = parallel_block(wait_for_magnetic_beads)
-# 等待磁珠吸附
 
 # 靶向扩增反应纯化PCR反应液回溶
 
