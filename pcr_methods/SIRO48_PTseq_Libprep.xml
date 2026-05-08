@@ -257,7 +257,7 @@
       <OverShootTime>0</OverShootTime>
       <OverShootSlope2>2.2</OverShootSlope2>
       <GotoNumber>2</GotoNumber>
-      <LoopNumber>30</LoopNumber>
+      <LoopNumber>29</LoopNumber>
       <PIDNumber>1</PIDNumber>
       <LidTemp>110</LidTemp>
     </Step>
@@ -417,7 +417,7 @@
       <OverShootTime>0</OverShootTime>
       <OverShootSlope2>2.2</OverShootSlope2>
       <GotoNumber>3</GotoNumber>
-      <LoopNumber>8</LoopNumber>
+      <LoopNumber>7</LoopNumber>
       <PIDNumber>1</PIDNumber>
       <LidTemp>110</LidTemp>
     </Step>
