@@ -315,7 +315,7 @@
       <Number>1</Number>
       <Slope>2</Slope>
       <PlateauTemperature>4</PlateauTemperature>
-      <PlateauTime>1</PlateauTime>
+      <PlateauTime>28800</PlateauTime>
       <OverShootSlope1>0.1</OverShootSlope1>
       <OverShootTemperature>0</OverShootTemperature>
       <OverShootTime>0</OverShootTime>
