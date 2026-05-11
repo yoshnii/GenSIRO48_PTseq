@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 #####################################################################
-# SIRO48-PTseq SequencingPrep (上机前准备) for E25
+# SIRO48-PTseq SequencingPrep (上机前准备) for 2000&200
 #####################################################################
 # 独立的Pooling + DNB脚本，通过CSV读取样本浓度信息
 # 模仿PTseq Plus SequencingPrep的结构模式，使用PTseq自己的实验参数
@@ -31,7 +31,7 @@ def blockA():
 	temp_set({"Name":"M2_tempB","Temp": 6.00, "Duration": -1})#4度，POS10
 
 a = parallel_block(blockA)
-a.Wait()
+# 温控只在后台启动，用于保护 POS17/POS10 试剂；程序不等待温度到达，避免开局空等。
 import time
 
 '''=====================================样本信息读取（CSV）====================================='''
@@ -86,9 +86,11 @@ def get_sample_info(file_path):
 
 # 读取样本信息
 samples_from_csv = get_sample_info(sample_info_file_path)
+# 过滤低浓度样本
+samples_from_csv = [each for each in samples_from_csv if each.Concentration >= sample_qc_concentration]
 
 if not samples_from_csv:
-	a_dialog = dialog_textbox({"Title": "样本信息", "Timeout": "02:00:00","Parameters":[{"Name": "样本数量", "Value": "48", "Notes": "未检测到样本信息CSV文件，请确认"}]})
+	a_dialog = dialog_textbox({"Title": "样本信息", "Timeout": "02:00:00","Parameters":[{"Name": "样本数量", "Value": "48", "Notes": "未检测到样本信息CSV文件或所有样本浓度不合格，请确认"}]})
 	raise Exception("未读取到有效样本信息，请检查CSV文件")
 
 sample_num = len(samples_from_csv)
@@ -186,14 +188,14 @@ def p8_load_modified_BubblePurge(loc):
 '''============================================================枪头位置=============================================================='''
 # SequencingPrep枪头从全新开始（无文库制备消耗）
 tip_300_loc = ['M2_POS5','M2_POS6']
-backup_tip_300_loc = ['M2_POS28','M2_POS29']
+backup_tip_300_loc = ['M2_POS19','M2_POS28','M2_POS29']
 tip_300 = Tips(tip_300_loc,backup_tip_300_loc)
 
 tip_1000_loc = ['M2_POS18']
 tip_1000 = Tips(tip_1000_loc)
 
 tip_50_loc = ['M2_POS15','M2_POS12']
-backup_tip_50_loc = ['M2_POS25','M2_POS19']
+backup_tip_50_loc = ['M2_POS25']
 tip_50 = Tips(tip_50_loc,backup_tip_50_loc)
 
 #===========================================================================优化吸液逻辑=======================================================================
@@ -258,19 +260,19 @@ PostAirSpeed= 50.0, PostAirVolume= 5.0,liquid = 0):
 
 '''=====================================Pooling配置参数====================================='''
 
-# 样本来源板位 - 文库产物在 POS7 Col 7-12 (用户手动放置PCR plate)
+# 样本来源板位 - 文库产物在POS11 Col 7-12 (用户手动放置PCR plate)
 source_plate = ('M2_POS7',7)
 
-# 稀释板位 - 在 POS8 Col 7-12 做 library dilution
-sample_dilution_place = ('M2_POS8',7)
+# 原位稀释：直接在POS11 Col 7-12的library产物孔内加T2 buffer
+sample_dilution_place = ('M2_POS7',7)
 
 # 样本取样体积临界值
 min_sample_volume = 2
 max_sample_volume = 20
 
-# 单个DNB样本数 - E25: ≤32样本1个pool, >32样本2个pool
-single_dnb_sample_num = 32
-# 单个DNB投入量 (E25说明书: 1pmol ≈ 200ng for ~300bp fragments)
+# 单个DNB样本数 - 200/2000: 所有样本归入1个pool
+single_dnb_sample_num = sample_num
+# 单个DNB投入量 (G99说明书: 1pmol ≈ 200ng for ~300bp fragments)
 target_dna_ng = 200
 # pooling总体积
 target_pooling_volume = 48
@@ -292,29 +294,30 @@ dilution_transfer_tip_loc = None
 # 空白样本是否pooling
 Is_blank_pooling = False
 # 浓度不合格样本是否pooling
-Is_unqualified_pooling = False
+Is_unqualified_pooling = True
 # pooling信息输出文件
 output_file_path = r"D:/data/PTseq_pooling_info.csv"
 
 
 '''=====================================Pooling计算====================================='''
 
-# 构建兼容全流程代码的 sample_concentration 列表。
-# 样本来源孔位按 CSV 原始 position 映射，避免过滤低浓度样本后把后续样本前移。
+# 构建兼容全流程代码的sample_concentration列表
+# 需要将CSV的Sample对象映射到pooling代码期望的属性格式
+col_num = (sample_num+7)//8
+sample_list = [(source_plate[0],source_plate[1]+i//8,1+i%8) for i in range(sample_num)]
+dilute_hole = [(sample_dilution_place[0],sample_dilution_place[1]+i//8,1+i%8) for i in range(sample_num)]
+
+# 为每个样本设置位置属性（兼容全流程pooling代码）
 for i, s in enumerate(samples_from_csv):
-	s.SampleWellPosition = source_plate[0]
-	s.SampleWellColumn = source_plate[1] + s.column - 1
-	s.SampleWellRow = s.row
-	s.DilutingWellPosition = sample_dilution_place[0]
-	s.DilutingWellColumn = sample_dilution_place[1] + s.column - 1
-	s.DilutingWellRow = s.row
+	s.SampleWellPosition = sample_list[i][0]
+	s.SampleWellColumn = sample_list[i][1]
+	s.SampleWellRow = sample_list[i][2]
+	s.DilutingWellPosition = dilute_hole[i][0]
+	s.DilutingWellColumn = dilute_hole[i][1]
+	s.DilutingWellRow = dilute_hole[i][2]
 	s.sample_initial_index = i
 
 sample_concentration = samples_from_csv
-
-# 浓度不合格样本是否进入 pooling；过滤发生在孔位映射之后，因此保留剩余样本的原始吸液孔位。
-if not Is_unqualified_pooling:
-	sample_concentration = [each for each in sample_concentration if each.Concentration >= sample_qc_concentration]
 
 # 过滤空白样本
 if not Is_blank_pooling:
@@ -325,8 +328,6 @@ if not Is_blank_pooling:
 
 # 按浓度计算pooling分组
 sample_num = len(sample_concentration)
-if sample_num == 0:
-	raise Exception("过滤低浓度或空白样本后没有可 pooling 的有效样本，请检查CSV浓度和样本类型")
 target_dnb_num = (sample_num+single_dnb_sample_num-1)//single_dnb_sample_num
 Hybridization_num = target_dnb_num
 
@@ -426,16 +427,21 @@ elif lang==2:
 pooling_tube_pos = 'M2_POS13'
 pooling_tube_col = 7
 
-# Step 2: Normalization - 稀释高浓度样本 (p1加T2 buffer到POS8 Col 7-12)
+# Step 2: Normalization - 原位稀释高浓度样本 (p1加T2 buffer到POS11 Col 7-12)
 p1_load_tips({"Position":single_tip_loc[0],'Col':single_tip_loc[1],'Row':single_tip_loc[2]})
 
 if water_loc_list:
 	for i in range(len(water_loc_list)):
-		# 加入14µL T2 buffer到POS8 PCR板稀释孔 (2µL sample + 14µL buffer = 16µL, 8x dilution)
-		p1_aspirate({"Position": dilution_buffer_loc[0], "Row": dilution_buffer_loc[2], "Col": dilution_buffer_loc[1], "FirstSegmentSpeed": 150, "SpeedChangeOffsetOfZ": 0, "PreAirSpeed": 100, "PreAirVolume": 10, "SecondSegmentSpeed": 100, "AspirateOffsetOfZ": 1.0, "AspirateSpeed": 20, "AspirateVolume": 14, "DelayAfterAspirate": 0.5, "TipTouchTimes": 0, "TipTouchOffsetOfZ": 10, "TipTouchRangeOfX": 2, "TipTouchSpeed": 100, "PostAirSpeed": 100, "PostAirVolume": 10})
+		# 加入147µL T2 buffer实现8倍原位稀释 (21µL library + 147µL buffer = 168µL, 8x dilution)
+		p1_aspirate({"Position": dilution_buffer_loc[0], "Row": dilution_buffer_loc[2], "Col": dilution_buffer_loc[1], "FirstSegmentSpeed": 150, "SpeedChangeOffsetOfZ": 0, "PreAirSpeed": 100, "PreAirVolume": 10, "SecondSegmentSpeed": 100, "AspirateOffsetOfZ": 1.0, "AspirateSpeed": 20, "AspirateVolume": 147, "DelayAfterAspirate": 0.5, "TipTouchTimes": 0, "TipTouchOffsetOfZ": 10, "TipTouchRangeOfX": 2, "TipTouchSpeed": 100, "PostAirSpeed": 100, "PostAirVolume": 10})
 		p1_empty({"Position": water_loc_list[i][0], "Row": water_loc_list[i][1], "Col": water_loc_list[i][2], "FirstSegmentSpeed": 150, "SpeedChangeOffsetOfZ": 0, "SecondSegmentSpeed": 100, "EmptyOffsetOfZ": 1, "EmptySpeed": 190, "DelayAfterEmpty": 0.5, "TipTouchTimes": 0, "TipTouchOffsetOfZ": 10, "TipTouchRangeOfX": 2, "TipTouchSpeed": 100})
 
-# Step 3 mix 并入 Step 5：sample 进入 POS8 稀释孔后再混匀。
+# Step 3: p8 吹吸混匀已稀释的孔
+if water_loc_list:
+	for i in range(len(water_loc_list)):
+		p8_load_modified(tip_50.load(1)[0])
+		p8_mix({"Position":water_loc_list[i][0],"Col":water_loc_list[i][2],"Row":water_loc_list[i][1],"PreAirVolume":10,"MixTimes":10,"MixAspirateSpeed":100,"MixAspirateOffsetOfZ":0.5,"MixVolume":100,"MixDispenseOffsetOfZ":10,"MixDispenseSpeed":100,"DelayAfterMixLoop":0.5,"MixEmptyOffsetOfZ":10,"MixEmptySpeed":100,"PreAirSpeed":50,"DelayAfterMixAspirate":0.5,"DelayAfterMixDispense":0.5,"DelayAfterMixEmpty":0.5,"PostAirSpeed":50,"PostAirVolume":0,"FirstSegmentSpeed":100,"SpeedChangeOffsetOfZ":0,"SecondSegmentSpeed":80, "TipTouchTimes": 0, "TipTouchOffsetOfZ": 5, "TipTouchRangeOfX": 1.2, "TipTouchSpeed": 100})
+		p8_unload_tips({"Position":"M2_Trash","Col":None,"Row":None})
 
 # Step 4: p1 加补水到pooling管 (POS13 Col 7) 和 DNB反应孔 (POS20)
 for i in range(len(water_volume_list)):
@@ -448,24 +454,19 @@ for i in range(len(water_volume_list)):
 
 p1_unload_tips2({"Position":"M2_Trash","Col":None,"Row":None})
 
-# Step 5: p8 pool 转移（非稀释直转 POS7→POS13；稀释分支 POS7→POS8 mix→POS8→POS13）
+# Step 5: p8 从POS11 Col 7-12取样 → POS13 Col 7 pooling管
 for i,poolings in enumerate(temp):
 	samples = dnb_list[i]
 	for sample in samples:
 		p8_load_modified(tip_50.load(1)[0])
 		sample_volume = sample.DilutingSampleVolume
-		if not sample.NeedDilution:
-			p8_aspirate_modified(sample.SampleWellPosition, sample.SampleWellRow, sample.SampleWellColumn, sample_volume, PreAirVolume=10)
-			p8_empty_modified(pooling_tube_pos, i+1, pooling_tube_col)
-		else:
-			p8_aspirate_modified(sample.SampleWellPosition, sample.SampleWellRow, sample.SampleWellColumn, 2, PreAirVolume=5, PostAirVolume=0)
-			p8_empty_modified(sample.DilutingWellPosition, sample.DilutingWellRow, sample.DilutingWellColumn, EmptyOffsetOfZ=0.5, EmptySpeed=10)
-			p8_mix({"Position":sample.DilutingWellPosition,"Col":sample.DilutingWellColumn,"Row":sample.DilutingWellRow,"PreAirVolume":10,"MixTimes":5,"MixAspirateSpeed":100,"MixAspirateOffsetOfZ":0.5,"MixVolume":10,"MixDispenseOffsetOfZ":10,"MixDispenseSpeed":100,"DelayAfterMixLoop":0.5,"MixEmptyOffsetOfZ":10,"MixEmptySpeed":100,"PreAirSpeed":50,"DelayAfterMixAspirate":0.5,"DelayAfterMixDispense":0.5,"DelayAfterMixEmpty":0.5,"PostAirSpeed":50,"PostAirVolume":0,"FirstSegmentSpeed":100,"SpeedChangeOffsetOfZ":0,"SecondSegmentSpeed":80,"TipTouchTimes":0,"TipTouchOffsetOfZ":5,"TipTouchRangeOfX":1.2,"TipTouchSpeed":100})
-			p8_aspirate_modified(sample.DilutingWellPosition, sample.DilutingWellRow, sample.DilutingWellColumn, sample_volume, PreAirVolume=0, PostAirVolume=0)
-			p8_empty_modified(pooling_tube_pos, i+1, pooling_tube_col)
+		sample_col = sample.SampleWellColumn
+		sample_row = sample.SampleWellRow
+		p8_aspirate_modified(source_plate[0],sample_row,sample_col,sample_volume,PreAirVolume=10)
+		p8_empty_modified(pooling_tube_pos,i+1,pooling_tube_col)
 		p8_unload_tips({"Position":"M2_Trash","Col":None,"Row":None})
 
-# Step 6: 混匀pooling管并转移到POS20 Col 7 Row 1-6 (DNB反应位)
+# Step 6: 混匀pooling管并转移到POS20 Col 7 Row 1-6 (DNB环化反应位)
 for i in range(target_dnb_num):
 	target_tip_loc = tip_300.load(1)
 	target_tip_pos,target_tip_col,target_tip_row = target_tip_loc[0]
@@ -493,58 +494,120 @@ transfer({"StartPosition":"M2_POS26","EndPosition":"M2_POS20","LoosenOffsetOfZ":
 pcr_close_door()
 
 
-'''#######################################################make DNB (E25) - 无单链环化步骤#########################################'''
+'''#######################################################make DNB#########################################'''
 DNB_Num = target_dnb_num
 
+##################################################################################### 单链环化 ######################################################################################
+lang=get_lang()
+if lang==1:
+ report({"Phase": "单链环化", "Step": "单链反应程序", "TaskType": "library", "RemainingTime": None})
+elif lang==2:
+ report({"Phase": "Single-Strand Cyclization", "Step": "Single-Strand Reaction Program", "TaskType": "library", "RemainingTime": None})
+
+def blockSS():
+	pcr_run_method({"Methods": ["PTseq_2000_SSR"]})
+ss = parallel_block(blockSS)
+
+transfer({"StartPosition":"M2_POS17","EndPosition":"M2_POS27","LoosenOffsetOfZ":0})###开试剂盖板
+
+#配置环化反应液——D1 Buffer打入D2 Enzyme源管混合（big-into-small）
+p8_load_modified(tip_300.load(1)[0])
+# Step 1: 吸取D1环化反应缓冲液——手工配置环化酶量 = 0.5*(DNB_Num+1) µL 在D2 enzyme管中
+p8_aspirate({"Position":"M2_POS17", "Col":1, "Row":4,"PreAirVolume":5,"AspirateOffsetOfZ":0.6,"AspirateSpeed":15,"AspirateVolume":11.6 * (DNB_Num + 1),"PreAirSpeed":30,"DelayAfterAspirate":5,"PostAirSpeed":50,"PostAirVolume":5,"IfTrack":False,"FirstSegmentSpeed":100,"SpeedChangeOffsetOfZ":0,"SecondSegmentSpeed":80,"TipTouchTimes":2, "TipTouchOffsetOfZ": 3, "TipTouchRangeOfX": 1.2, "TipTouchSpeed": 100})
+# Step 2: 打入D2 enzyme源管 (big into small)
+p8_empty({"Position":"M2_POS17","Col":2,"Row":4,"EmptyOffsetOfZ":0.5,"EmptySpeed":10,"DelayAfterEmpty":0.5,"PostAirSpeed":50,"PostAirVolume":0,"FirstSegmentSpeed":100,"SpeedChangeOffsetOfZ":0,"SecondSegmentSpeed":80,"TipTouchTimes":2, "TipTouchOffsetOfZ": 5, "TipTouchRangeOfX": 0, "TipTouchSpeed": 100})
+# Step 3: 在D2管中混合
+p8_mix({"Position":"M2_POS17","Col":2,"Row":4,"PreAirVolume":10,"MixTimes":20,"MixAspirateSpeed":50,"MixAspirateOffsetOfZ":0.5,"MixVolume":10*DNB_Num,"MixDispenseOffsetOfZ":8,"MixDispenseSpeed":50,"DelayAfterMixLoop":2,"MixEmptyOffsetOfZ":2,"MixEmptySpeed":50,"PreAirSpeed":50,"DelayAfterMixAspirate":0.5,"DelayAfterMixDispense":0.5,"DelayAfterMixEmpty":0.5,"TipTouchTimes":0,"PostAirSpeed":50,"PostAirVolume":0,"FirstSegmentSpeed":100,"SpeedChangeOffsetOfZ":0,"SecondSegmentSpeed":80})
+p8_unload_tips({"Position":"M2_Trash","Col":None,"Row":None})
+transfer({"StartPosition":"M2_POS27","EndPosition":"M2_POS17","LoosenOffsetOfZ":0})###关试剂盖板
+ss.Wait()
+###PCR开门
 pcr_open_door()
-transfer({"StartPosition":"M2_POS20","EndPosition":"M2_POS26","LoosenOffsetOfZ":0})  #开PCR盖板
-
-##################################################################################### 样本转移 Col7→Col8 #######################################################################
-
-# 混匀Col7 pooling产物并转移20µL到Col8 (DNB反应位)
-DNB_transfer = tip_300.load(DNB_Num,1)
+transfer({"StartPosition":"M2_POS20","EndPosition":"M2_POS26","LoosenOffsetOfZ":0}) #开PCR盖板
+transfer({"StartPosition":"M2_POS17","EndPosition":"M2_POS27","LoosenOffsetOfZ":0})###开试剂盖板
+# 加入环化mix - POS20 Col 7, Row 1-DNB_Num
+DNB_mix_cycling = tip_300.load(DNB_Num,1)
 for x in range(DNB_Num):
-	p8_load_modified(DNB_transfer[x])
-	# 混匀Col7 pooling产物 (48µL)
-	p8_mix({"Position":"M2_POS20","Col":7,"Row":1+x,"PreAirVolume":10,"MixTimes":10,"MixAspirateSpeed":30,"MixAspirateOffsetOfZ":0.5,"MixVolume":40,"MixDispenseOffsetOfZ":8,"MixDispenseSpeed":30,"DelayAfterMixLoop":2,"MixEmptyOffsetOfZ":2,"MixEmptySpeed":50,"PreAirSpeed":50,"DelayAfterMixAspirate":0.5,"DelayAfterMixDispense":0.5,"DelayAfterMixEmpty":0.5,"TipTouchTimes":0,"PostAirSpeed":50,"PostAirVolume":0,"FirstSegmentSpeed":100,"SpeedChangeOffsetOfZ":0,"SecondSegmentSpeed":80})
-	# 吸取20µL
-	p8_aspirate({"Position":"M2_POS20","Col":7,"Row":1+x,"PreAirVolume":5,"AspirateOffsetOfZ":0.5,"AspirateSpeed":10,"AspirateVolume":20,"PreAirSpeed":50,"DelayAfterAspirate":0.5,"TipTouchTimes":0,"PostAirSpeed":50,"PostAirVolume":5,"IfTrack":False,"FirstSegmentSpeed":100,"SpeedChangeOffsetOfZ":0,"SecondSegmentSpeed":80})
-	# 排到Col8
-	p8_empty({"Position":"M2_POS20","Col":8,"Row":1+x,"EmptyOffsetOfZ":0.8,"EmptySpeed":20,"DelayAfterEmpty":0.8,"TipTouchTimes":0,"PostAirSpeed":50,"PostAirVolume":5,"FirstSegmentSpeed":100,"SpeedChangeOffsetOfZ":0,"SecondSegmentSpeed":80})
+	p8_load_modified(DNB_mix_cycling[x])
+	# DNB Cycling Mix: 12.1 µL per reaction (从D2源管取)
+	p8_aspirate({"Position":"M2_POS17", "Col":2, "Row":4,"PreAirVolume":5,"AspirateOffsetOfZ":0.6,"AspirateSpeed":15,"AspirateVolume":12.1,"PreAirSpeed":30,"DelayAfterAspirate":5,"PostAirSpeed":50,"PostAirVolume":5,"IfTrack":False,"FirstSegmentSpeed":100,"SpeedChangeOffsetOfZ":0,"SecondSegmentSpeed":80,"TipTouchTimes":2, "TipTouchOffsetOfZ": 3, "TipTouchRangeOfX": 1.2, "TipTouchSpeed": 100})
+	p8_empty({"Position":"M2_POS20","Col":7,"Row":1+x,"EmptyOffsetOfZ":0.5,"EmptySpeed":5,"DelayAfterEmpty":0.5,"PostAirSpeed":50,"PostAirVolume":0,"FirstSegmentSpeed":100,"SpeedChangeOffsetOfZ":0,"SecondSegmentSpeed":80,"TipTouchTimes":2, "TipTouchOffsetOfZ": 5, "TipTouchRangeOfX": 0, "TipTouchSpeed": 100})
+	p8_mix({"Position":"M2_POS20","Col":7,"Row":1+x,"PreAirVolume":10,"MixTimes":20,"MixAspirateSpeed":30,"MixAspirateOffsetOfZ":0.5,"MixVolume":40,"MixDispenseOffsetOfZ":8,"MixDispenseSpeed":30,"DelayAfterMixLoop":2,"MixEmptyOffsetOfZ":2,"MixEmptySpeed":50,"PreAirSpeed":50,"DelayAfterMixAspirate":0.5,"DelayAfterMixDispense":0.5,"DelayAfterMixEmpty":0.5,"TipTouchTimes":0,"PostAirSpeed":50,"PostAirVolume":0,"FirstSegmentSpeed":100,"SpeedChangeOffsetOfZ":0,"SecondSegmentSpeed":80})
+	p8_empty({"Position":"M2_POS20","Col":7,"Row":1+x,"EmptyOffsetOfZ":0.5,"EmptySpeed":5,"DelayAfterEmpty":0.5,"PostAirSpeed":50,"PostAirVolume":0,"FirstSegmentSpeed":100,"SpeedChangeOffsetOfZ":0,"SecondSegmentSpeed":80,"TipTouchTimes":2, "TipTouchOffsetOfZ": 5, "TipTouchRangeOfX": 0, "TipTouchSpeed": 100})
 	p8_unload_tips({"Position":"M2_Trash","Col":None,"Row":None})
+
+# [已移除] MakeDNB环节不添加矿物油（与CNVseq/PTseq Plus/NIFTY保持一致）
+
+###PCR关门
+transfer({"StartPosition":"M2_POS26","EndPosition":"M2_POS20","LoosenOffsetOfZ":0}) #PCR盖板
+pcr_close_door()
+transfer({"StartPosition":"M2_POS27","EndPosition":"M2_POS17","LoosenOffsetOfZ":0})###关试剂盖板
+
+lang=get_lang()
+if lang==1:
+ report({"Phase": "单链环化", "Step": "环化反应程序", "TaskType": "library", "RemainingTime": None})
+elif lang==2:
+ report({"Phase": "Single-Strand Circularization", "Step": "Circularization Reaction Program", "TaskType": "library", "RemainingTime": None})
+def blockC():
+	pcr_run_method({"Methods": ["PTseq_2000_CR_30min"]})
+cycling_block = parallel_block(blockC)
+
+cycling_block.Wait()
+
+###PCR开门
+pcr_open_door()
+transfer({"StartPosition":"M2_POS20","EndPosition":"M2_POS26","LoosenOffsetOfZ":0}) #开PCR盖板
+
 
 ##################################################################################### DNB制备体系1 ############################################################################
 
 transfer({"StartPosition":"M2_POS17","EndPosition":"M2_POS27","LoosenOffsetOfZ":0})###开盖板
 
-# 50 uL tip 只负责分装 20 uL DNB 制备缓冲液(SB)；POS17 Row5 Col1 为 SB。
-DNB1_buffer = tip_50.load(DNB_Num,1)
+# 分装DNB制备缓冲液 - 20 µL per reaction → POS20 Col 8, Row 1-6
+p8_load_modified(tip_50.load(1)[0])
 for x in range(DNB_Num):
-	p8_load_modified(DNB1_buffer[x])
-	p8_aspirate({"Position":"M2_POS17", "Col":1, "Row":5,"PreAirVolume":5,"AspirateOffsetOfZ":0.6,"AspirateSpeed":5,"AspirateVolume":20,"PreAirSpeed":30,"DelayAfterAspirate":5,"PostAirSpeed":50,"PostAirVolume":3,"IfTrack":False,"FirstSegmentSpeed":100,"SpeedChangeOffsetOfZ":0,"SecondSegmentSpeed":80,"TipTouchTimes":2, "TipTouchOffsetOfZ": 3, "TipTouchRangeOfX": 1.2, "TipTouchSpeed": 100})
+	p8_aspirate({"Position":"M2_POS17", "Col":3, "Row":5,"PreAirVolume":5,"AspirateOffsetOfZ":0.6,"AspirateSpeed":15,"AspirateVolume":20,"PreAirSpeed":30,"DelayAfterAspirate":5,"PostAirSpeed":50,"PostAirVolume":3,"IfTrack":False,"FirstSegmentSpeed":100,"SpeedChangeOffsetOfZ":0,"SecondSegmentSpeed":80,"TipTouchTimes":2, "TipTouchOffsetOfZ": 3, "TipTouchRangeOfX": 1.2, "TipTouchSpeed": 100})
 	p8_empty({"Position":"M2_POS20","Col":8,"Row":1+x,"EmptyOffsetOfZ":0.5,"EmptySpeed":3,"DelayAfterEmpty":0.5,"PostAirSpeed":50,"PostAirVolume":0,"FirstSegmentSpeed":100,"SpeedChangeOffsetOfZ":0,"SecondSegmentSpeed":80,"TipTouchTimes":2, "TipTouchOffsetOfZ": 5, "TipTouchRangeOfX": 0, "TipTouchSpeed": 100})
-	p8_unload_tips({"Position":"M2_Trash","Col":None,"Row":None})
+p8_unload_tips({"Position":"M2_Trash","Col":None,"Row":None})
 
-# 参考 PTplus E25：SB 加完后用 300 uL tip 单独混匀 40 uL DNB 制备体系1。
+
+# 加样本（从环化反应孔Col 7转移到DNB制备孔Col 8）
 DNB1_mix = tip_300.load(DNB_Num,1)
 for x in range(DNB_Num):
 	p8_load_modified(DNB1_mix[x])
-	p8_mix({"Position":"M2_POS20","Col":8,"Row":1+x,"PreAirVolume":10,"MixTimes":20,"MixAspirateSpeed":10,"MixAspirateOffsetOfZ":0.5,"MixVolume":35,"MixDispenseOffsetOfZ":8,"MixDispenseSpeed":10,"DelayAfterMixLoop":2,"MixEmptyOffsetOfZ":2,"MixEmptySpeed":50,"PreAirSpeed":50,"DelayAfterMixAspirate":0.5,"DelayAfterMixDispense":0.5,"DelayAfterMixEmpty":0.5,"TipTouchTimes":0,"PostAirSpeed":50,"PostAirVolume":0,"FirstSegmentSpeed":100,"SpeedChangeOffsetOfZ":0,"SecondSegmentSpeed":80})
+	# 混合环化产物 (Col 7, Row 1+x)
+	p8_mix({"Position":"M2_POS20","Col":7,"Row":1+x,"PreAirVolume":10,"MixTimes":10,"MixAspirateSpeed":30,"MixAspirateOffsetOfZ":0.5,"MixVolume":40,"MixDispenseOffsetOfZ":8,"MixDispenseSpeed":30,"DelayAfterMixLoop":2,"MixEmptyOffsetOfZ":2,"MixEmptySpeed":50,"PreAirSpeed":50,"DelayAfterMixAspirate":0.5,"DelayAfterMixDispense":0.5,"DelayAfterMixEmpty":0.5,"TipTouchTimes":0,"PostAirSpeed":50,"PostAirVolume":0,"FirstSegmentSpeed":100,"SpeedChangeOffsetOfZ":0,"SecondSegmentSpeed":80})
+	# 从环化孔吸取20µL样本 (Col 7, Row 1+x)
+	p8_aspirate({"Position":"M2_POS20","Col":7,"Row":1+x,"PreAirVolume":5,"AspirateOffsetOfZ":0.5,"AspirateSpeed":10,"AspirateVolume":20,"PreAirSpeed":50,"DelayAfterAspirate":0.5,"TipTouchTimes":0,"PostAirSpeed":50,"PostAirVolume":5,"IfTrack":False,"FirstSegmentSpeed":100,"SpeedChangeOffsetOfZ":0,"SecondSegmentSpeed":80})
+	# 分装到DNB制备孔 (Col 8, Row 1+x)
+	p8_empty({"Position":"M2_POS20","Col":8,"Row":1+x,"EmptyOffsetOfZ":0.8,"EmptySpeed":20,"DelayAfterEmpty":0.8,"TipTouchTimes":0,"PostAirSpeed":50,"PostAirVolume":5,"FirstSegmentSpeed":100,"SpeedChangeOffsetOfZ":0,"SecondSegmentSpeed":80})
+	# 混合DNB制备体系 (Col 8, Row 1+x)
+	p8_mix({"Position":"M2_POS20","Col":8,"Row":1+x,"PreAirVolume":10,"MixTimes":20,"MixAspirateSpeed":30,"MixAspirateOffsetOfZ":0.5,"MixVolume":35,"MixDispenseOffsetOfZ":8,"MixDispenseSpeed":30,"DelayAfterMixLoop":2,"MixEmptyOffsetOfZ":2,"MixEmptySpeed":50,"PreAirSpeed":50,"DelayAfterMixAspirate":0.5,"DelayAfterMixDispense":0.5,"DelayAfterMixEmpty":0.5,"TipTouchTimes":0,"PostAirSpeed":50,"PostAirVolume":0,"FirstSegmentSpeed":100,"SpeedChangeOffsetOfZ":0,"SecondSegmentSpeed":80})
 	p8_unload_tips({"Position":"M2_Trash","Col":None,"Row":None})
-
 
 ###PCR关门
 transfer({"StartPosition":"M2_POS26","EndPosition":"M2_POS20","LoosenOffsetOfZ":0}) #PCR盖板
 pcr_close_door()
-###
+
 lang=get_lang()
-if lang==1: #
+if lang==1:
  report({"Phase": "DNB制备", "Step": "DNB制备程序1", "TaskType": "library", "RemainingTime": None})
-elif lang==2: #
+elif lang==2:
  report({"Phase": "DNB Preparation", "Step": "DNB Preparation Procedure 1", "TaskType": "library", "RemainingTime": None})
 def blockD1():
-	pcr_run_method({"Methods": ["PTseq_DNB_E25_1st"]})
+	pcr_run_method({"Methods": ["PTseq_2000_DNB1"]})
 d1 = parallel_block(blockD1)
+
+##################################################################################### DNB制备体系2 ############################################################################
+#配置DNB制备体系2——E1 Mix I打入E2 Mix II源管混合（big-into-small）
+p8_load_modified(tip_300.load(1)[0])
+# Step 1: 吸取E1 DNB聚合酶混合液I——手工配置DNB聚合酶混合液II(LC) = 2*(DNB_Num+0.5) µL 在E2 Mix II管中
+p8_aspirate({"Position":"M2_POS17", "Col":1, "Row":5,"PreAirVolume":5,"AspirateOffsetOfZ":0.6,"AspirateSpeed":15,"AspirateVolume":40 * (DNB_Num + 0.5),"PreAirSpeed":30,"DelayAfterAspirate":5,"PostAirSpeed":50,"PostAirVolume":5,"IfTrack":False,"FirstSegmentSpeed":100,"SpeedChangeOffsetOfZ":0,"SecondSegmentSpeed":80,"TipTouchTimes":2, "TipTouchOffsetOfZ": 3, "TipTouchRangeOfX": 1.2, "TipTouchSpeed": 100})
+# Step 2: 打入E2 Mix II源管 (big into small)
+p8_empty({"Position":"M2_POS17","Col":2,"Row":5,"EmptyOffsetOfZ":0.5,"EmptySpeed":10,"DelayAfterEmpty":0.5,"PostAirSpeed":50,"PostAirVolume":0,"FirstSegmentSpeed":100,"SpeedChangeOffsetOfZ":0,"SecondSegmentSpeed":80,"TipTouchTimes":2, "TipTouchOffsetOfZ": 5, "TipTouchRangeOfX": 0, "TipTouchSpeed": 100})
+# Step 3: 在E2管中混合
+p8_mix({"Position":"M2_POS17","Col":2,"Row":5,"PreAirVolume":10,"MixTimes":20,"MixAspirateSpeed":30,"MixAspirateOffsetOfZ":0.5,"MixVolume":40*DNB_Num+15,"MixDispenseOffsetOfZ":8,"MixDispenseSpeed":30,"DelayAfterMixLoop":2,"MixEmptyOffsetOfZ":2,"MixEmptySpeed":50,"PreAirSpeed":50,"DelayAfterMixAspirate":0.5,"DelayAfterMixDispense":0.5,"DelayAfterMixEmpty":0.5,"TipTouchTimes":0,"PostAirSpeed":50,"PostAirVolume":0,"FirstSegmentSpeed":100,"SpeedChangeOffsetOfZ":0,"SecondSegmentSpeed":80})
+p8_unload_tips({"Position":"M2_Trash","Col":None,"Row":None})
 
 transfer({"StartPosition":"M2_POS27","EndPosition":"M2_POS17","LoosenOffsetOfZ":0})###关盖板
 d1.Wait()
@@ -553,29 +616,13 @@ pcr_open_door()
 transfer({"StartPosition":"M2_POS20","EndPosition":"M2_POS26","LoosenOffsetOfZ":0}) #开PCR盖板
 transfer({"StartPosition":"M2_POS17","EndPosition":"M2_POS27","LoosenOffsetOfZ":0})###开盖板
 
-##################################################################################### DNB制备体系2 ############################################################################
-# DNB聚合酶体系：先将 Mix I 大体积加入 Mix II 小体积源管，再从源管分装到 POS20 Col8。
-# POS17 Row5 Col2 为 DNB聚合酶混合液I，Row5 Col3 为 DNB聚合酶混合液II。
-DNB_polymerase_source_mix = tip_300.load(1)[0]
-p8_load_modified(DNB_polymerase_source_mix)
-p8_aspirate({"Position":"M2_POS17", "Col":2, "Row":5,"PreAirVolume":5,"AspirateOffsetOfZ":0.6,"AspirateSpeed":15,"AspirateVolume":40 * (DNB_Num + 0.5),"PreAirSpeed":30,"DelayAfterAspirate":5,"PostAirSpeed":50,"PostAirVolume":5,"IfTrack":False,"FirstSegmentSpeed":100,"SpeedChangeOffsetOfZ":0,"SecondSegmentSpeed":80,"TipTouchTimes":2, "TipTouchOffsetOfZ": 3, "TipTouchRangeOfX": 1.2, "TipTouchSpeed": 100})
-p8_empty({"Position":"M2_POS17","Col":3,"Row":5,"EmptyOffsetOfZ":0.5,"EmptySpeed":10,"DelayAfterEmpty":0.5,"PostAirSpeed":50,"PostAirVolume":0,"FirstSegmentSpeed":100,"SpeedChangeOffsetOfZ":0,"SecondSegmentSpeed":80,"TipTouchTimes":2,"TipTouchOffsetOfZ":5,"TipTouchRangeOfX":0,"TipTouchSpeed":100})
-p8_mix({"Position":"M2_POS17","Col":3,"Row":5,"PreAirVolume":10,"MixTimes":20,"MixAspirateSpeed":30,"MixAspirateOffsetOfZ":0.5,"MixVolume":40 * DNB_Num,"MixDispenseOffsetOfZ":8,"MixDispenseSpeed":30,"DelayAfterMixLoop":2,"MixEmptyOffsetOfZ":2,"MixEmptySpeed":50,"PreAirSpeed":50,"DelayAfterMixAspirate":0.5,"DelayAfterMixDispense":0.5,"DelayAfterMixEmpty":0.5,"TipTouchTimes":0,"PostAirSpeed":50,"PostAirVolume":0,"FirstSegmentSpeed":100,"SpeedChangeOffsetOfZ":0,"SecondSegmentSpeed":80})
-p8_unload_tips({"Position":"M2_Trash","Col":None,"Row":None})
-
-# 分装混匀后的 DNB聚合酶体系 44 uL → POS20 Col8；44 uL 接近 50 uL tip 上限，改用 300 uL tip 留足气隙余量。
-DNB_polymerase_mix = tip_300.load(DNB_Num,1)
+# 加入DNB聚合酶混合液mix → POS20 Col 8, Row 1-DNB_Num (从E2源管取)
+DNB_mix_2 = tip_300.load(DNB_Num,1)
 for x in range(DNB_Num):
-	p8_load_modified(DNB_polymerase_mix[x])
-	p8_aspirate({"Position":"M2_POS17", "Col":3, "Row":5,"PreAirVolume":3,"AspirateOffsetOfZ":0.6,"AspirateSpeed":15,"AspirateVolume":44,"PreAirSpeed":30,"DelayAfterAspirate":5,"PostAirSpeed":50,"PostAirVolume":1,"IfTrack":False,"FirstSegmentSpeed":100,"SpeedChangeOffsetOfZ":0,"SecondSegmentSpeed":80,"TipTouchTimes":2, "TipTouchOffsetOfZ": 10, "TipTouchRangeOfX": 3.5, "TipTouchSpeed": 100})
-	p8_empty({"Position":"M2_POS20","Col":8,"Row":1+x,"EmptyOffsetOfZ":0.5,"EmptySpeed":20,"DelayAfterEmpty":0.5,"PostAirSpeed":50,"PostAirVolume":0,"FirstSegmentSpeed":100,"SpeedChangeOffsetOfZ":0,"SecondSegmentSpeed":80,"TipTouchTimes":2,"TipTouchOffsetOfZ":5,"TipTouchRangeOfX":0,"TipTouchSpeed":100})
-	p8_unload_tips({"Position":"M2_Trash","Col":None,"Row":None})
-
-# 聚合酶体系加完后，用 300 uL tip 混匀 POS20 Col8。
-DNB_polymerase_reaction_mix = tip_300.load(DNB_Num,1)
-for x in range(DNB_Num):
-	p8_load_modified(DNB_polymerase_reaction_mix[x])
-	p8_mix({"Position":"M2_POS20","Col":8,"Row":1+x,"PreAirVolume":10,"MixTimes":10,"MixAspirateSpeed":50,"MixAspirateOffsetOfZ":0.5,"MixVolume":60,"MixDispenseOffsetOfZ":8,"MixDispenseSpeed":50,"DelayAfterMixLoop":2,"MixEmptyOffsetOfZ":2,"MixEmptySpeed":50,"PreAirSpeed":50,"DelayAfterMixAspirate":0.5,"DelayAfterMixDispense":0.5,"DelayAfterMixEmpty":0.5,"TipTouchTimes":0,"PostAirSpeed":50,"PostAirVolume":0,"FirstSegmentSpeed":100,"SpeedChangeOffsetOfZ":0,"SecondSegmentSpeed":80})
+	p8_load_modified(DNB_mix_2[x])
+	p8_aspirate({"Position":"M2_POS17", "Col":2, "Row":5,"PreAirVolume":2,"AspirateOffsetOfZ":0.6,"AspirateSpeed":15,"AspirateVolume":44,"PreAirSpeed":30,"DelayAfterAspirate":5,"PostAirSpeed":50,"PostAirVolume":3,"IfTrack":False,"FirstSegmentSpeed":100,"SpeedChangeOffsetOfZ":0,"SecondSegmentSpeed":80,"TipTouchTimes":2, "TipTouchOffsetOfZ": 3, "TipTouchRangeOfX": 1.2, "TipTouchSpeed": 100})
+	p8_empty({"Position":"M2_POS20","Col":8,"Row":1+x,"EmptyOffsetOfZ":0.5,"EmptySpeed":10,"DelayAfterEmpty":0.5,"PostAirSpeed":50,"PostAirVolume":0,"FirstSegmentSpeed":100,"SpeedChangeOffsetOfZ":0,"SecondSegmentSpeed":80,"TipTouchTimes":2, "TipTouchOffsetOfZ": 5, "TipTouchRangeOfX": 0, "TipTouchSpeed": 100})
+	p8_mix({"Position":"M2_POS20","Col":8,"Row":1+x,"PreAirVolume":10,"MixTimes":20,"MixAspirateSpeed":30,"MixAspirateOffsetOfZ":0.5,"MixVolume":70,"MixDispenseOffsetOfZ":8,"MixDispenseSpeed":30,"DelayAfterMixLoop":2,"MixEmptyOffsetOfZ":2,"MixEmptySpeed":50,"PreAirSpeed":50,"DelayAfterMixAspirate":0.5,"DelayAfterMixDispense":0.5,"DelayAfterMixEmpty":0.5,"TipTouchTimes":0,"PostAirSpeed":50,"PostAirVolume":0,"FirstSegmentSpeed":100,"SpeedChangeOffsetOfZ":0,"SecondSegmentSpeed":80})
 	p8_unload_tips({"Position":"M2_Trash","Col":None,"Row":None})
 
 
@@ -584,18 +631,17 @@ transfer({"StartPosition":"M2_POS27","EndPosition":"M2_POS17","LoosenOffsetOfZ":
 ###PCR关门
 transfer({"StartPosition":"M2_POS26","EndPosition":"M2_POS20","LoosenOffsetOfZ":0}) #关PCR盖板
 pcr_close_door()
-###
+
 lang=get_lang()
-if lang==1: #
+if lang==1:
  report({"Phase": "DNB制备", "Step": "DNB制备程序2", "TaskType": "library", "RemainingTime": None})
-elif lang==2: #
+elif lang==2:
  report({"Phase": "DNB Preparation", "Step": "DNB Preparation Procedure 2", "TaskType": "library", "RemainingTime": None})
 
 
 def blockD2():
-	pcr_run_method({"Methods": ["PTseq_DNB_E25_2nd"]})
+	pcr_run_method({"Methods": ["PTseq_2000_RCA_25min"]})
 d2 = parallel_block(blockD2)
-
 
 d2.Wait()
 
@@ -605,14 +651,16 @@ pcr_open_door()
 transfer({"StartPosition":"M2_POS20","EndPosition":"M2_POS26","LoosenOffsetOfZ":0}) #开PCR盖板
 transfer({"StartPosition":"M2_POS17","EndPosition":"M2_POS27","LoosenOffsetOfZ":0})###开盖板
 
-#加入DNB终止缓冲液 20µL → POS20 Col8 Row 1+x
-DNB_temp1_1000 = tip_1000.load(DNB_Num,1)
+# 加入DNB终止缓冲液 → POS20 Col 8, Row 1-DNB_Num
+DNB_temp1_300 = tip_300.load(DNB_Num,1)
 for x in range(DNB_Num):
-	p1_load_modified(DNB_temp1_1000[x])
+	p1_load_modified(DNB_temp1_300[x])
 	p1_aspirate({"Position":"M2_POS17", "Col":4, "Row":5,"PreAirVolume":5,"AspirateOffsetOfZ":0.6,"AspirateSpeed":15,"AspirateVolume":20,"PreAirSpeed":30,"DelayAfterAspirate":5,"PostAirSpeed":50,"PostAirVolume":5,"IfTrack":False,"FirstSegmentSpeed":100,"SpeedChangeOffsetOfZ":0,"SecondSegmentSpeed":80,"TipTouchTimes":2, "TipTouchOffsetOfZ": 3, "TipTouchRangeOfX": 1.2, "TipTouchSpeed": 100})
 	p1_empty({"Position":"M2_POS20","Col":8,"Row":1+x,"EmptyOffsetOfZ":0.5,"EmptySpeed":50,"DelayAfterEmpty":0.5,"PostAirSpeed":50,"PostAirVolume":0,"FirstSegmentSpeed":100,"SpeedChangeOffsetOfZ":0,"SecondSegmentSpeed":80,"TipTouchTimes":2, "TipTouchOffsetOfZ": 5, "TipTouchRangeOfX": 0, "TipTouchSpeed": 100})
-	p1_mix({"Position":"M2_POS20","Col":8,"Row":1+x,"PreAirVolume":10,"MixTimes":15,"MixAspirateSpeed":20,"MixAspirateOffsetOfZ":0.5,"MixVolume":80,"MixDispenseOffsetOfZ":8,"MixDispenseSpeed":20,"DelayAfterMixLoop":2,"MixEmptyOffsetOfZ":2,"MixEmptySpeed":50,"PreAirSpeed":50,"DelayAfterMixAspirate":0.5,"DelayAfterMixDispense":0.5,"DelayAfterMixEmpty":0.5,"TipTouchTimes":0,"PostAirSpeed":50,"PostAirVolume":0,"FirstSegmentSpeed":100,"SpeedChangeOffsetOfZ":0,"SecondSegmentSpeed":80})
+	p1_mix({"Position":"M2_POS20","Col":8,"Row":1+x,"PreAirVolume":10,"MixTimes":15,"MixAspirateSpeed":20,"MixAspirateOffsetOfZ":0.5,"MixVolume":90,"MixDispenseOffsetOfZ":8,"MixDispenseSpeed":20,"DelayAfterMixLoop":2,"MixEmptyOffsetOfZ":2,"MixEmptySpeed":50,"PreAirSpeed":50,"DelayAfterMixAspirate":0.5,"DelayAfterMixDispense":0.5,"DelayAfterMixEmpty":0.5,"TipTouchTimes":0,"PostAirSpeed":50,"PostAirVolume":0,"FirstSegmentSpeed":100,"SpeedChangeOffsetOfZ":0,"SecondSegmentSpeed":80})
 	p1_unload_tips2({"Position":"M2_Trash","Col":None,"Row":None})
+
+# DNB为单链DNA，机上dsDNA_HS无法准确定量，改为手动ssDNA kit定量
 
 transfer({"StartPosition":"M2_POS27","EndPosition":"M2_POS17","LoosenOffsetOfZ":0})###关盖板
 ###PCR关门
@@ -625,5 +673,5 @@ d3 = parallel_block(blockD3)
 
 d3.Wait()
 
-# Home all axes at end of run to allow easy sample retrieval
+# Home all axes at end of run
 home()

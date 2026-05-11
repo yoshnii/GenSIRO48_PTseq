@@ -32,7 +32,7 @@
                 "ContentInfo": {
                   "Type": "Reagent",
                   "Name": "酒精",
-                  "Volume": 40000.0
+                  "Volume": 40000
                 }
               }
             ],
@@ -62,7 +62,7 @@
                 "ContentInfo": {
                   "Type": "Reagent",
                   "Name": "染液",
-                  "Volume": 40000.0
+                  "Volume": 40000
                 }
               }
             ],
@@ -87,7 +87,7 @@
           "ContentInfo": {
             "Type": "None",
             "Name": "",
-            "Volume": 0.0
+            "Volume": 0
           }
         }
       ],
@@ -108,7 +108,7 @@
           "ContentInfo": {
             "Type": "None",
             "Name": "",
-            "Volume": 0.0
+            "Volume": 0
           }
         }
       ],
@@ -121,15 +121,15 @@
     "TubeCarrierInfo": null,
     "AdapterInfo": null,
     "ConsumableInfo": {
-      "ConsumableType": "DeepPlate",
-      "ConsumableName": "1.3mL 96 Well U-bottom Deepwell Plate",
+      "ConsumableType": "PCRPlate",
+      "ConsumableName": "0.2mL 96 Well Full-skirt PCR Plate",
       "WellInfo": [
         {
           "Wells": "*",
           "ContentInfo": {
             "Type": "None",
             "Name": "",
-            "Volume": 0.0
+            "Volume": 0
           }
         }
       ],
@@ -150,7 +150,7 @@
           "ContentInfo": {
             "Type": "Sample",
             "Name": "",
-            "Volume": 30.0
+            "Volume": 30
           }
         }
       ],
@@ -188,7 +188,7 @@
                 "ContentInfo": {
                   "Type": "BarcodeReagent",
                   "Name": "Adapter",
-                  "Volume": 10.0
+                  "Volume": 10
                 }
               }
             ],
@@ -210,7 +210,7 @@
                 "ContentInfo": {
                   "Type": "BarcodeReagent",
                   "Name": "Adapter",
-                  "Volume": 10.0
+                  "Volume": 10
                 }
               }
             ],
@@ -228,7 +228,7 @@
                 "ContentInfo": {
                   "Type": "None",
                   "Name": "",
-                  "Volume": 0.0
+                  "Volume": 0
                 }
               }
             ],
@@ -243,31 +243,22 @@
     "Position": "M2_POS11",
     "Description": "",
     "TubeCarrierInfo": null,
-    "AdapterInfo": {
-      "Type": "QuantificationTubeAdapter",
-      "Name": "Quantification Tube Adapter",
+    "AdapterInfo": null,
+    "ConsumableInfo": {
+      "ConsumableType": "DeepPlate",
+      "ConsumableName": "1.3mL 96 Well U-bottom Deepwell Plate",
       "WellInfo": [
         {
           "Wells": "*",
-          "ConsumableInfo": {
-            "ConsumableType": "QuantificationTube",
-            "ConsumableName": "260μL Quantification tube",
-            "WellInfo": [
-              {
-                "Wells": "*",
-                "ContentInfo": {
-                  "Type": "Sample",
-                  "Name": "Test",
-                  "Volume": 300.0
-                }
-              }
-            ],
-            "LidInfo": null
+          "ContentInfo": {
+            "Type": "None",
+            "Name": "",
+            "Volume": 0
           }
         }
-      ]
-    },
-    "ConsumableInfo": null
+      ],
+      "LidInfo": null
+    }
   },
   {
     "Position": "M2_POS12",
@@ -283,7 +274,7 @@
           "ContentInfo": {
             "Type": "None",
             "Name": "",
-            "Volume": 0.0
+            "Volume": 0
           }
         }
       ],
@@ -304,7 +295,7 @@
           "ContentInfo": {
             "Type": "None",
             "Name": "",
-            "Volume": 0.0
+            "Volume": 0
           }
         }
       ],
@@ -315,22 +306,31 @@
     "Position": "M2_POS14",
     "Description": "",
     "TubeCarrierInfo": null,
-    "AdapterInfo": null,
-    "ConsumableInfo": {
-      "ConsumableType": "DeepPlate",
-      "ConsumableName": "1.3mL 96 Well U-bottom Deepwell Plate",
+    "AdapterInfo": {
+      "Type": "QuantificationTubeAdapter",
+      "Name": "Quantification Tube Adapter",
       "WellInfo": [
         {
           "Wells": "*",
-          "ContentInfo": {
-            "Type": "None",
-            "Name": "",
-            "Volume": 0.0
+          "ConsumableInfo": {
+            "ConsumableType": "QuantificationTube",
+            "ConsumableName": "260μL Quantification tube",
+            "WellInfo": [
+              {
+                "Wells": "*",
+                "ContentInfo": {
+                  "Type": "Sample",
+                  "Name": "Test",
+                  "Volume": 300
+                }
+              }
+            ],
+            "LidInfo": null
           }
         }
-      ],
-      "LidInfo": null
-    }
+      ]
+    },
+    "ConsumableInfo": null
   },
   {
     "Position": "M2_POS15",
@@ -346,7 +346,7 @@
           "ContentInfo": {
             "Type": "None",
             "Name": "",
-            "Volume": 0.0
+            "Volume": 0
           }
         }
       ],
@@ -372,7 +372,7 @@
                 "ContentInfo": {
                   "Type": "None",
                   "Name": "",
-                  "Volume": 0.0
+                  "Volume": 0
                 }
               }
             ],
@@ -402,7 +402,7 @@
                 "ContentInfo": {
                   "Type": "Reagent",
                   "Name": "T1 cDNA合成引物 (cDNA Synthesis Primer)",
-                  "Volume": 500.0
+                  "Volume": 500
                 }
               }
             ],
@@ -424,7 +424,7 @@
                 "ContentInfo": {
                   "Type": "Reagent",
                   "Name": "T2一链合成缓冲液 (cDNA Synthesis Buffer)",
-                  "Volume": 500.0
+                  "Volume": 500
                 }
               }
             ],
@@ -442,7 +442,7 @@
                 "ContentInfo": {
                   "Type": "Reagent",
                   "Name": "T3一链合成酶 (cDNA Synthesis Enzyme)",
-                  "Volume": 500.0
+                  "Volume": 500
                 }
               }
             ],
@@ -460,7 +460,7 @@
                 "ContentInfo": {
                   "Type": "Reagent",
                   "Name": "T4靶向扩增缓冲液 (TA Buffer)",
-                  "Volume": 2000.0
+                  "Volume": 2000
                 }
               }
             ],
@@ -478,7 +478,7 @@
                 "ContentInfo": {
                   "Type": "Reagent",
                   "Name": "T5靶向扩增酶 (TA Enzyme)",
-                  "Volume": 500.0
+                  "Volume": 500
                 }
               }
             ],
@@ -496,7 +496,7 @@
                 "ContentInfo": {
                   "Type": "Reagent",
                   "Name": "T7 PCR Mix",
-                  "Volume": 2000.0
+                  "Volume": 2000
                 }
               }
             ],
@@ -514,7 +514,7 @@
                 "ContentInfo": {
                   "Type": "Reagent",
                   "Name": "T8 UDG Enzyme",
-                  "Volume": 500.0
+                  "Volume": 500
                 }
               }
             ],
@@ -532,7 +532,7 @@
                 "ContentInfo": {
                   "Type": "Reagent",
                   "Name": "环化反应缓冲液 (DNB Cycling Buffer)",
-                  "Volume": 500.0
+                  "Volume": 500
                 }
               }
             ],
@@ -550,7 +550,7 @@
                 "ContentInfo": {
                   "Type": "Reagent",
                   "Name": "DNB环化酶 (DNB Cycling Enzyme - automated)",
-                  "Volume": 500.0
+                  "Volume": 500
                 }
               }
             ],
@@ -568,7 +568,7 @@
                 "ContentInfo": {
                   "Type": "Reagent",
                   "Name": "DNB聚合酶混合液I (DNB Polymerase Mix I)",
-                  "Volume": 500.0
+                  "Volume": 500
                 }
               }
             ],
@@ -586,7 +586,7 @@
                 "ContentInfo": {
                   "Type": "Reagent",
                   "Name": "DNB聚合酶混合液II LC (DNB Polymerase Mix II LC - automated)",
-                  "Volume": 500.0
+                  "Volume": 500
                 }
               }
             ],
@@ -604,7 +604,7 @@
                 "ContentInfo": {
                   "Type": "Reagent",
                   "Name": "DNB制备缓冲液 (DNB Prep Buffer)",
-                  "Volume": 500.0
+                  "Volume": 500
                 }
               }
             ],
@@ -622,7 +622,7 @@
                 "ContentInfo": {
                   "Type": "Reagent",
                   "Name": "DNB终止缓冲液 (DNB Termination Buffer)",
-                  "Volume": 500.0
+                  "Volume": 500
                 }
               }
             ],
@@ -640,7 +640,7 @@
                 "ContentInfo": {
                   "Type": "None",
                   "Name": "Mix Tube (for DNB Polymerase Mix I + II)",
-                  "Volume": 0.0
+                  "Volume": 0
                 }
               }
             ],
@@ -658,7 +658,7 @@
                 "ContentInfo": {
                   "Type": "None",
                   "Name": "Empty/Reserved",
-                  "Volume": 0.0
+                  "Volume": 0
                 }
               }
             ],
@@ -676,7 +676,7 @@
                 "ContentInfo": {
                   "Type": "None",
                   "Name": "Mix Tube (empty)",
-                  "Volume": 0.0
+                  "Volume": 0
                 }
               }
             ],
@@ -701,7 +701,7 @@
           "ContentInfo": {
             "Type": "None",
             "Name": "",
-            "Volume": 0.0
+            "Volume": 0
           }
         }
       ],
@@ -722,7 +722,7 @@
           "ContentInfo": {
             "Type": "None",
             "Name": "",
-            "Volume": 0.0
+            "Volume": 0
           }
         }
       ],
@@ -767,7 +767,7 @@
                 "ContentInfo": {
                   "Type": "Sample",
                   "Name": "Test",
-                  "Volume": 300.0
+                  "Volume": 300
                 }
               }
             ],
@@ -804,7 +804,7 @@
                 "ContentInfo": {
                   "Type": "Reagent",
                   "Name": "T1 磁珠 (TA+LA纯化共用)",
-                  "Volume": 5000.0
+                  "Volume": 5000
                 }
               }
             ],
@@ -822,7 +822,7 @@
                 "ContentInfo": {
                   "Type": "None",
                   "Name": "Empty/Reserved",
-                  "Volume": 0.0
+                  "Volume": 0
                 }
               }
             ],
@@ -840,7 +840,7 @@
                 "ContentInfo": {
                   "Type": "Reagent",
                   "Name": "矿物油",
-                  "Volume": 4000.0
+                  "Volume": 4000
                 }
               }
             ],
@@ -858,7 +858,7 @@
                 "ContentInfo": {
                   "Type": "Reagent",
                   "Name": "T2 缓冲液",
-                  "Volume": 3000.0
+                  "Volume": 3000
                 }
               }
             ],
@@ -883,7 +883,7 @@
           "ContentInfo": {
             "Type": "None",
             "Name": "",
-            "Volume": 0.0
+            "Volume": 0
           }
         }
       ],
@@ -909,7 +909,7 @@
                 "ContentInfo": {
                   "Type": "None",
                   "Name": "",
-                  "Volume": 0.0
+                  "Volume": 0
                 }
               }
             ],
@@ -945,7 +945,7 @@
           "ContentInfo": {
             "Type": "None",
             "Name": "",
-            "Volume": 0.0
+            "Volume": 0
           }
         }
       ],
@@ -966,7 +966,7 @@
           "ContentInfo": {
             "Type": "None",
             "Name": "",
-            "Volume": 0.0
+            "Volume": 0
           }
         }
       ],

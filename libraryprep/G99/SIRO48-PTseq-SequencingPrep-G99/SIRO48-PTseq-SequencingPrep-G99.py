@@ -32,7 +32,7 @@ def blockA():
 	temp_set({"Name":"M2_tempB","Temp": 6.00, "Duration": -1})#4度，POS10
 
 a = parallel_block(blockA)
-a.Wait()
+# 温控只在后台启动，用于保护 POS17/POS10 试剂；程序不等待温度到达，避免开局空等。
 import time
 
 '''=====================================样本信息读取（CSV）====================================='''

@@ -1,0 +1,983 @@
+[
+  {
+    "Position": "M2_POS1",
+    "Description": "",
+    "TubeCarrierInfo": null,
+    "AdapterInfo": null,
+    "ConsumableInfo": null
+  },
+  {
+    "Position": "M2_POS2",
+    "Description": "",
+    "TubeCarrierInfo": null,
+    "AdapterInfo": null,
+    "ConsumableInfo": null
+  },
+  {
+    "Position": "M2_POS3",
+    "Description": "",
+    "TubeCarrierInfo": null,
+    "AdapterInfo": {
+      "Type": "ReagentReservoirAdapter",
+      "Name": "Single Reservoir Adapter (1×3)",
+      "WellInfo": [
+        {
+          "Wells": "A1,A2,A3",
+          "ConsumableInfo": {
+            "ConsumableType": "ReagentReservoir",
+            "ConsumableName": "Single Reservoir, 50mL",
+            "WellInfo": [
+              {
+                "Wells": "*",
+                "ContentInfo": {
+                  "Type": "Reagent",
+                  "Name": "酒精",
+                  "Volume": 40000
+                }
+              }
+            ],
+            "LidInfo": null
+          }
+        }
+      ]
+    },
+    "ConsumableInfo": null
+  },
+  {
+    "Position": "M2_POS4",
+    "Description": "",
+    "TubeCarrierInfo": null,
+    "AdapterInfo": {
+      "Type": "ReagentReservoirAdapter",
+      "Name": "Single Reservoir Adapter (1×3)",
+      "WellInfo": [
+        {
+          "Wells": "A1,A2,A3",
+          "ConsumableInfo": {
+            "ConsumableType": "ReagentReservoir",
+            "ConsumableName": "Single Reservoir, 50mL",
+            "WellInfo": [
+              {
+                "Wells": "*",
+                "ContentInfo": {
+                  "Type": "Reagent",
+                  "Name": "染液",
+                  "Volume": 40000
+                }
+              }
+            ],
+            "LidInfo": null
+          }
+        }
+      ]
+    },
+    "ConsumableInfo": null
+  },
+  {
+    "Position": "M2_POS5",
+    "Description": "",
+    "TubeCarrierInfo": null,
+    "AdapterInfo": null,
+    "ConsumableInfo": {
+      "ConsumableType": "BoxTips",
+      "ConsumableName": "Tip Rack 300μL Transparent Filter",
+      "WellInfo": [
+        {
+          "Wells": "*",
+          "ContentInfo": {
+            "Type": "None",
+            "Name": "",
+            "Volume": 0
+          }
+        }
+      ],
+      "LidInfo": null
+    }
+  },
+  {
+    "Position": "M2_POS6",
+    "Description": "",
+    "TubeCarrierInfo": null,
+    "AdapterInfo": null,
+    "ConsumableInfo": {
+      "ConsumableType": "BoxTips",
+      "ConsumableName": "Tip Rack 300μL Transparent Filter",
+      "WellInfo": [
+        {
+          "Wells": "*",
+          "ContentInfo": {
+            "Type": "None",
+            "Name": "",
+            "Volume": 0
+          }
+        }
+      ],
+      "LidInfo": null
+    }
+  },
+  {
+    "Position": "M2_POS7",
+    "Description": "",
+    "TubeCarrierInfo": null,
+    "AdapterInfo": null,
+    "ConsumableInfo": {
+      "ConsumableType": "PCRPlate",
+      "ConsumableName": "0.2mL 96 Well Full-skirt PCR Plate",
+      "WellInfo": [
+        {
+          "Wells": "*",
+          "ContentInfo": {
+            "Type": "None",
+            "Name": "",
+            "Volume": 0
+          }
+        }
+      ],
+      "LidInfo": null
+    }
+  },
+  {
+    "Position": "M2_POS8",
+    "Description": "",
+    "TubeCarrierInfo": null,
+    "AdapterInfo": null,
+    "ConsumableInfo": {
+      "ConsumableType": "PCRPlate",
+      "ConsumableName": "0.2mL 96 Well Full-skirt PCR Plate",
+      "WellInfo": [
+        {
+          "Wells": "A1,B1,C1,D1,E1,F1,G1,H1,A2,B2,C2,D2,E2,F2,G2,H2,A3,B3,C3,D3,E3,F3,G3,H3,A4,B4,C4,D4,E4,F4,G4,H4,A5,B5,C5,D5,E5,F5,G5,H5,A6,B6,C6,D6,E6,F6,G6,H6",
+          "ContentInfo": {
+            "Type": "Sample",
+            "Name": "",
+            "Volume": 30
+          }
+        }
+      ],
+      "LidInfo": null
+    }
+  },
+  {
+    "Position": "M2_POS9",
+    "Description": "Fresh PCR plate for LA/DNB (swapped with POS20 after TA)",
+    "TubeCarrierInfo": null,
+    "AdapterInfo": null,
+    "ConsumableInfo": {
+      "ConsumableType": "PCRPlate",
+      "ConsumableName": "0.2mL 96 Well Full-skirt PCR Plate",
+      "WellInfo": null,
+      "LidInfo": null
+    }
+  },
+  {
+    "Position": "M2_POS10",
+    "Description": "",
+    "TubeCarrierInfo": null,
+    "AdapterInfo": {
+      "Type": "SealableTempControlTubeAdapter",
+      "Name": "Temp. Control Sealed Break-away 8 Strips PCR Tubes Adapter (8x12)",
+      "WellInfo": [
+        {
+          "Wells": "A1",
+          "ConsumableInfo": {
+            "ConsumableType": "BreakAwayPlate",
+            "ConsumableName": "Break-away 8 Strips PCR Tubes and Caps",
+            "WellInfo": [
+              {
+                "Wells": "*",
+                "ContentInfo": {
+                  "Type": "BarcodeReagent",
+                  "Name": "Adapter",
+                  "Volume": 10
+                }
+              }
+            ],
+            "LidInfo": {
+              "ConsumableType": "SealingLid",
+              "ConsumableName": "Temp. Control Sealing Lid",
+              "WellInfo": null
+            }
+          }
+        },
+        {
+          "Wells": "B1,C1,D1,E1,F1,G1,H1,A2,B2,C2,D2,E2,F2,G2,H2,A3,B3,C3,D3,E3,F3,G3,H3,A4,B4,C4,D4,E4,F4,G4,H4,A5,B5,C5,D5,E5,F5,G5,H5,A6,B6,C6,D6,E6,F6,G6,H6",
+          "ConsumableInfo": {
+            "ConsumableType": "BreakAwayPlate",
+            "ConsumableName": "Break-away 8 Strips PCR Tubes and Caps",
+            "WellInfo": [
+              {
+                "Wells": "*",
+                "ContentInfo": {
+                  "Type": "BarcodeReagent",
+                  "Name": "Adapter",
+                  "Volume": 10
+                }
+              }
+            ],
+            "LidInfo": null
+          }
+        },
+        {
+          "Wells": "*",
+          "ConsumableInfo": {
+            "ConsumableType": "BreakAwayPlate",
+            "ConsumableName": "Break-away 8 Strips PCR Tubes and Caps",
+            "WellInfo": [
+              {
+                "Wells": "*",
+                "ContentInfo": {
+                  "Type": "None",
+                  "Name": "",
+                  "Volume": 0
+                }
+              }
+            ],
+            "LidInfo": null
+          }
+        }
+      ]
+    },
+    "ConsumableInfo": null
+  },
+  {
+    "Position": "M2_POS11",
+    "Description": "",
+    "TubeCarrierInfo": null,
+    "AdapterInfo": {
+      "Type": "QuantificationTubeAdapter",
+      "Name": "Quantification Tube Adapter",
+      "WellInfo": [
+        {
+          "Wells": "*",
+          "ConsumableInfo": {
+            "ConsumableType": "QuantificationTube",
+            "ConsumableName": "260μL Quantification tube",
+            "WellInfo": [
+              {
+                "Wells": "*",
+                "ContentInfo": {
+                  "Type": "Sample",
+                  "Name": "Test",
+                  "Volume": 300
+                }
+              }
+            ],
+            "LidInfo": null
+          }
+        }
+      ]
+    },
+    "ConsumableInfo": null
+  },
+  {
+    "Position": "M2_POS12",
+    "Description": "",
+    "TubeCarrierInfo": null,
+    "AdapterInfo": null,
+    "ConsumableInfo": {
+      "ConsumableType": "BoxTips",
+      "ConsumableName": "Tip Rack 50μL Transparent Filter",
+      "WellInfo": [
+        {
+          "Wells": "*",
+          "ContentInfo": {
+            "Type": "None",
+            "Name": "",
+            "Volume": 0
+          }
+        }
+      ],
+      "LidInfo": null
+    }
+  },
+  {
+    "Position": "M2_POS13",
+    "Description": "",
+    "TubeCarrierInfo": null,
+    "AdapterInfo": null,
+    "ConsumableInfo": {
+      "ConsumableType": "DeepPlate",
+      "ConsumableName": "1.3mL 96 Well U-bottom Deepwell Plate",
+      "WellInfo": [
+        {
+          "Wells": "*",
+          "ContentInfo": {
+            "Type": "None",
+            "Name": "",
+            "Volume": 0
+          }
+        }
+      ],
+      "LidInfo": null
+    }
+  },
+  {
+    "Position": "M2_POS14",
+    "Description": "",
+    "TubeCarrierInfo": null,
+    "AdapterInfo": null,
+    "ConsumableInfo": {
+      "ConsumableType": "DeepPlate",
+      "ConsumableName": "1.3mL 96 Well U-bottom Deepwell Plate",
+      "WellInfo": [
+        {
+          "Wells": "*",
+          "ContentInfo": {
+            "Type": "None",
+            "Name": "",
+            "Volume": 0
+          }
+        }
+      ],
+      "LidInfo": null
+    }
+  },
+  {
+    "Position": "M2_POS15",
+    "Description": "",
+    "TubeCarrierInfo": null,
+    "AdapterInfo": null,
+    "ConsumableInfo": {
+      "ConsumableType": "BoxTips",
+      "ConsumableName": "Tip Rack 50μL Transparent Filter",
+      "WellInfo": [
+        {
+          "Wells": "*",
+          "ContentInfo": {
+            "Type": "None",
+            "Name": "",
+            "Volume": 0
+          }
+        }
+      ],
+      "LidInfo": null
+    }
+  },
+  {
+    "Position": "M2_POS16",
+    "Description": "",
+    "TubeCarrierInfo": null,
+    "AdapterInfo": {
+      "Type": "TempControlDeepwellPlateAdapter",
+      "Name": "Temp. Control Deepwell Plate Adapter",
+      "WellInfo": [
+        {
+          "Wells": "*",
+          "ConsumableInfo": {
+            "ConsumableType": "DeepPlate",
+            "ConsumableName": "1.3mL 96 Well U-bottom Deepwell Plate",
+            "WellInfo": [
+              {
+                "Wells": "*",
+                "ContentInfo": {
+                  "Type": "None",
+                  "Name": "",
+                  "Volume": 0
+                }
+              }
+            ],
+            "LidInfo": null
+          }
+        }
+      ]
+    },
+    "ConsumableInfo": null
+  },
+  {
+    "Position": "M2_POS17",
+    "Description": "",
+    "TubeCarrierInfo": null,
+    "AdapterInfo": {
+      "Type": "SealableTempControlTubeAdapter",
+      "Name": "Temp. Control Sealed Tube Adapter (6x8)",
+      "WellInfo": [
+        {
+          "Wells": "A1",
+          "ConsumableInfo": {
+            "ConsumableType": "CryovialTube",
+            "ConsumableName": "0.5mL SC micro tube, PCR-PT",
+            "WellInfo": [
+              {
+                "Wells": "*",
+                "ContentInfo": {
+                  "Type": "Reagent",
+                  "Name": "T1 cDNA合成引物 (cDNA Synthesis Primer)",
+                  "Volume": 500
+                }
+              }
+            ],
+            "LidInfo": {
+              "ConsumableType": "SealingLid",
+              "ConsumableName": "Temp. Control Sealing Lid",
+              "WellInfo": null
+            }
+          }
+        },
+        {
+          "Wells": "A2",
+          "ConsumableInfo": {
+            "ConsumableType": "CryovialTube",
+            "ConsumableName": "0.5mL SC micro tube, PCR-PT",
+            "WellInfo": [
+              {
+                "Wells": "*",
+                "ContentInfo": {
+                  "Type": "Reagent",
+                  "Name": "T2一链合成缓冲液 (cDNA Synthesis Buffer)",
+                  "Volume": 500
+                }
+              }
+            ],
+            "LidInfo": null
+          }
+        },
+        {
+          "Wells": "A3",
+          "ConsumableInfo": {
+            "ConsumableType": "CryovialTube",
+            "ConsumableName": "0.5mL SC micro tube, PCR-PT",
+            "WellInfo": [
+              {
+                "Wells": "*",
+                "ContentInfo": {
+                  "Type": "Reagent",
+                  "Name": "T3一链合成酶 (cDNA Synthesis Enzyme)",
+                  "Volume": 500
+                }
+              }
+            ],
+            "LidInfo": null
+          }
+        },
+        {
+          "Wells": "B1",
+          "ConsumableInfo": {
+            "ConsumableType": "CryovialTube",
+            "ConsumableName": "2mL SC micro tube, PCR-PT",
+            "WellInfo": [
+              {
+                "Wells": "*",
+                "ContentInfo": {
+                  "Type": "Reagent",
+                  "Name": "T4靶向扩增缓冲液 (TA Buffer)",
+                  "Volume": 2000
+                }
+              }
+            ],
+            "LidInfo": null
+          }
+        },
+        {
+          "Wells": "B2",
+          "ConsumableInfo": {
+            "ConsumableType": "CryovialTube",
+            "ConsumableName": "0.5mL SC micro tube, PCR-PT",
+            "WellInfo": [
+              {
+                "Wells": "*",
+                "ContentInfo": {
+                  "Type": "Reagent",
+                  "Name": "T5靶向扩增酶 (TA Enzyme)",
+                  "Volume": 500
+                }
+              }
+            ],
+            "LidInfo": null
+          }
+        },
+        {
+          "Wells": "C1",
+          "ConsumableInfo": {
+            "ConsumableType": "CryovialTube",
+            "ConsumableName": "2mL SC micro tube, PCR-PT",
+            "WellInfo": [
+              {
+                "Wells": "*",
+                "ContentInfo": {
+                  "Type": "Reagent",
+                  "Name": "T7 PCR Mix",
+                  "Volume": 2000
+                }
+              }
+            ],
+            "LidInfo": null
+          }
+        },
+        {
+          "Wells": "C2",
+          "ConsumableInfo": {
+            "ConsumableType": "CryovialTube",
+            "ConsumableName": "0.5mL SC micro tube, PCR-PT",
+            "WellInfo": [
+              {
+                "Wells": "*",
+                "ContentInfo": {
+                  "Type": "Reagent",
+                  "Name": "T8 UDG Enzyme",
+                  "Volume": 500
+                }
+              }
+            ],
+            "LidInfo": null
+          }
+        },
+        {
+          "Wells": "D1",
+          "ConsumableInfo": {
+            "ConsumableType": "CryovialTube",
+            "ConsumableName": "0.5mL SC micro tube, PCR-PT",
+            "WellInfo": [
+              {
+                "Wells": "*",
+                "ContentInfo": {
+                  "Type": "Reagent",
+                  "Name": "环化反应缓冲液 (DNB Cycling Buffer)",
+                  "Volume": 500
+                }
+              }
+            ],
+            "LidInfo": null
+          }
+        },
+        {
+          "Wells": "D2",
+          "ConsumableInfo": {
+            "ConsumableType": "CryovialTube",
+            "ConsumableName": "0.5mL SC micro tube, PCR-PT",
+            "WellInfo": [
+              {
+                "Wells": "*",
+                "ContentInfo": {
+                  "Type": "Reagent",
+                  "Name": "DNB环化酶 (DNB Cycling Enzyme - automated)",
+                  "Volume": 500
+                }
+              }
+            ],
+            "LidInfo": null
+          }
+        },
+        {
+          "Wells": "E1",
+          "ConsumableInfo": {
+            "ConsumableType": "CryovialTube",
+            "ConsumableName": "0.5mL SC micro tube, PCR-PT",
+            "WellInfo": [
+              {
+                "Wells": "*",
+                "ContentInfo": {
+                  "Type": "Reagent",
+                  "Name": "DNB聚合酶混合液I (DNB Polymerase Mix I)",
+                  "Volume": 500
+                }
+              }
+            ],
+            "LidInfo": null
+          }
+        },
+        {
+          "Wells": "E2",
+          "ConsumableInfo": {
+            "ConsumableType": "CryovialTube",
+            "ConsumableName": "0.5mL SC micro tube, PCR-PT",
+            "WellInfo": [
+              {
+                "Wells": "*",
+                "ContentInfo": {
+                  "Type": "Reagent",
+                  "Name": "DNB聚合酶混合液II LC (DNB Polymerase Mix II LC - automated)",
+                  "Volume": 500
+                }
+              }
+            ],
+            "LidInfo": null
+          }
+        },
+        {
+          "Wells": "E3",
+          "ConsumableInfo": {
+            "ConsumableType": "CryovialTube",
+            "ConsumableName": "0.5mL SC micro tube, PCR-PT",
+            "WellInfo": [
+              {
+                "Wells": "*",
+                "ContentInfo": {
+                  "Type": "Reagent",
+                  "Name": "DNB制备缓冲液 (DNB Prep Buffer)",
+                  "Volume": 500
+                }
+              }
+            ],
+            "LidInfo": null
+          }
+        },
+        {
+          "Wells": "E4",
+          "ConsumableInfo": {
+            "ConsumableType": "CryovialTube",
+            "ConsumableName": "0.5mL SC micro tube, PCR-PT",
+            "WellInfo": [
+              {
+                "Wells": "*",
+                "ContentInfo": {
+                  "Type": "Reagent",
+                  "Name": "DNB终止缓冲液 (DNB Termination Buffer)",
+                  "Volume": 500
+                }
+              }
+            ],
+            "LidInfo": null
+          }
+        },
+        {
+          "Wells": "E5",
+          "ConsumableInfo": {
+            "ConsumableType": "CryovialTube",
+            "ConsumableName": "2mL SC micro tube, PCR-PT",
+            "WellInfo": [
+              {
+                "Wells": "*",
+                "ContentInfo": {
+                  "Type": "None",
+                  "Name": "Mix Tube (for DNB Polymerase Mix I + II)",
+                  "Volume": 0
+                }
+              }
+            ],
+            "LidInfo": null
+          }
+        },
+        {
+          "Wells": "B3,C3,D3,F1,F2,F3,F4,F5,F6,G1,G2,G3,G4,G5,G6,H1,H2,H3,H4,H5,H6,A5,A6,B5,B6,C5,C6,D5,D6,E6",
+          "ConsumableInfo": {
+            "ConsumableType": "CryovialTube",
+            "ConsumableName": "0.5mL SC micro tube, PCR-PT",
+            "WellInfo": [
+              {
+                "Wells": "*",
+                "ContentInfo": {
+                  "Type": "None",
+                  "Name": "Empty/Reserved",
+                  "Volume": 0
+                }
+              }
+            ],
+            "LidInfo": null
+          }
+        },
+        {
+          "Wells": "A4,B4,C4,D4",
+          "ConsumableInfo": {
+            "ConsumableType": "CryovialTube",
+            "ConsumableName": "2mL SC micro tube, PCR-PT",
+            "WellInfo": [
+              {
+                "Wells": "*",
+                "ContentInfo": {
+                  "Type": "None",
+                  "Name": "Mix Tube (empty)",
+                  "Volume": 0
+                }
+              }
+            ],
+            "LidInfo": null
+          }
+        }
+      ]
+    },
+    "ConsumableInfo": null
+  },
+  {
+    "Position": "M2_POS18",
+    "Description": "",
+    "TubeCarrierInfo": null,
+    "AdapterInfo": null,
+    "ConsumableInfo": {
+      "ConsumableType": "BoxTips",
+      "ConsumableName": "Tip Rack 1000μL Transparent Filter",
+      "WellInfo": [
+        {
+          "Wells": "*",
+          "ContentInfo": {
+            "Type": "None",
+            "Name": "",
+            "Volume": 0
+          }
+        }
+      ],
+      "LidInfo": null
+    }
+  },
+  {
+    "Position": "M2_POS19",
+    "Description": "",
+    "TubeCarrierInfo": null,
+    "AdapterInfo": null,
+    "ConsumableInfo": {
+      "ConsumableType": "BoxTips",
+      "ConsumableName": "Tip Rack 50μL Transparent Filter",
+      "WellInfo": [
+        {
+          "Wells": "*",
+          "ContentInfo": {
+            "Type": "None",
+            "Name": "",
+            "Volume": 0
+          }
+        }
+      ],
+      "LidInfo": null
+    }
+  },
+  {
+    "Position": "M2_POS20",
+    "Description": "",
+    "TubeCarrierInfo": null,
+    "AdapterInfo": null,
+    "ConsumableInfo": {
+      "ConsumableType": "PCRPlate",
+      "ConsumableName": "0.2mL 96 Well Full-skirt PCR Plate",
+      "WellInfo": null,
+      "LidInfo": null
+    }
+  },
+  {
+    "Position": "M2_POS21",
+    "Description": "",
+    "TubeCarrierInfo": null,
+    "AdapterInfo": null,
+    "ConsumableInfo": null
+  },
+  {
+    "Position": "M2_POS22",
+    "Description": "",
+    "TubeCarrierInfo": null,
+    "AdapterInfo": {
+      "Type": "QuantificationTubeAdapter",
+      "Name": "Quantification Tube  Adapter (8x5)",
+      "WellInfo": [
+        {
+          "Wells": "*",
+          "ConsumableInfo": {
+            "ConsumableType": "QuantificationTube",
+            "ConsumableName": "260μL Quantification tube",
+            "WellInfo": [
+              {
+                "Wells": "*",
+                "ContentInfo": {
+                  "Type": "Sample",
+                  "Name": "Test",
+                  "Volume": 300
+                }
+              }
+            ],
+            "LidInfo": null
+          }
+        }
+      ]
+    },
+    "ConsumableInfo": null
+  },
+  {
+    "Position": "M2_POS23",
+    "Description": "",
+    "TubeCarrierInfo": null,
+    "AdapterInfo": null,
+    "ConsumableInfo": null
+  },
+  {
+    "Position": "M2_POS24",
+    "Description": "",
+    "TubeCarrierInfo": null,
+    "AdapterInfo": {
+      "Type": "FixedTubeAdapter",
+      "Name": "Micro Tube Adapter (3x3)",
+      "WellInfo": [
+        {
+          "Wells": "A1",
+          "ConsumableInfo": {
+            "ConsumableType": "CryovialTube",
+            "ConsumableName": "5mL tube",
+            "WellInfo": [
+              {
+                "Wells": "*",
+                "ContentInfo": {
+                  "Type": "Reagent",
+                  "Name": "T1 磁珠 (TA+LA纯化共用)",
+                  "Volume": 5000
+                }
+              }
+            ],
+            "LidInfo": null
+          }
+        },
+        {
+          "Wells": "A2",
+          "ConsumableInfo": {
+            "ConsumableType": "CryovialTube",
+            "ConsumableName": "5mL tube",
+            "WellInfo": [
+              {
+                "Wells": "*",
+                "ContentInfo": {
+                  "Type": "None",
+                  "Name": "Empty/Reserved",
+                  "Volume": 0
+                }
+              }
+            ],
+            "LidInfo": null
+          }
+        },
+        {
+          "Wells": "A3",
+          "ConsumableInfo": {
+            "ConsumableType": "CryovialTube",
+            "ConsumableName": "5mL tube",
+            "WellInfo": [
+              {
+                "Wells": "*",
+                "ContentInfo": {
+                  "Type": "Reagent",
+                  "Name": "矿物油",
+                  "Volume": 4000
+                }
+              }
+            ],
+            "LidInfo": null
+          }
+        },
+        {
+          "Wells": "B1",
+          "ConsumableInfo": {
+            "ConsumableType": "CryovialTube",
+            "ConsumableName": "5mL tube",
+            "WellInfo": [
+              {
+                "Wells": "*",
+                "ContentInfo": {
+                  "Type": "Reagent",
+                  "Name": "T2 缓冲液",
+                  "Volume": 3000
+                }
+              }
+            ],
+            "LidInfo": null
+          }
+        }
+      ]
+    },
+    "ConsumableInfo": null
+  },
+  {
+    "Position": "M2_POS25",
+    "Description": "",
+    "TubeCarrierInfo": null,
+    "AdapterInfo": null,
+    "ConsumableInfo": {
+      "ConsumableType": "BoxTips",
+      "ConsumableName": "Tip Rack 50μL Transparent Filter",
+      "WellInfo": [
+        {
+          "Wells": "*",
+          "ContentInfo": {
+            "Type": "None",
+            "Name": "",
+            "Volume": 0
+          }
+        }
+      ],
+      "LidInfo": null
+    }
+  },
+  {
+    "Position": "M2_POS26",
+    "Description": "",
+    "TubeCarrierInfo": null,
+    "AdapterInfo": {
+      "Type": "SealingLidAdapter",
+      "Name": "Sealing Lid Adapter",
+      "WellInfo": [
+        {
+          "Wells": "*",
+          "ConsumableInfo": {
+            "ConsumableType": "SealingLid",
+            "ConsumableName": "PCR Sealing Lid",
+            "WellInfo": [
+              {
+                "Wells": "*",
+                "ContentInfo": {
+                  "Type": "None",
+                  "Name": "",
+                  "Volume": 0
+                }
+              }
+            ],
+            "LidInfo": null
+          }
+        }
+      ]
+    },
+    "ConsumableInfo": null
+  },
+  {
+    "Position": "M2_POS27",
+    "Description": "",
+    "TubeCarrierInfo": null,
+    "AdapterInfo": {
+      "Type": "SealingLidAdapter",
+      "Name": "Sealing Lid Adapter",
+      "WellInfo": []
+    },
+    "ConsumableInfo": null
+  },
+  {
+    "Position": "M2_POS28",
+    "Description": "",
+    "TubeCarrierInfo": null,
+    "AdapterInfo": null,
+    "ConsumableInfo": {
+      "ConsumableType": "BoxTips",
+      "ConsumableName": "Tip Rack 300μL Transparent Filter",
+      "WellInfo": [
+        {
+          "Wells": "*",
+          "ContentInfo": {
+            "Type": "None",
+            "Name": "",
+            "Volume": 0
+          }
+        }
+      ],
+      "LidInfo": null
+    }
+  },
+  {
+    "Position": "M2_POS29",
+    "Description": "",
+    "TubeCarrierInfo": null,
+    "AdapterInfo": null,
+    "ConsumableInfo": {
+      "ConsumableType": "BoxTips",
+      "ConsumableName": "Tip Rack 300μL Transparent Filter",
+      "WellInfo": [
+        {
+          "Wells": "*",
+          "ContentInfo": {
+            "Type": "None",
+            "Name": "",
+            "Volume": 0
+          }
+        }
+      ],
+      "LidInfo": null
+    }
+  },
+  {
+    "Position": "M2_POS30",
+    "Description": "",
+    "TubeCarrierInfo": null,
+    "AdapterInfo": null,
+    "ConsumableInfo": null
+  }
+]
