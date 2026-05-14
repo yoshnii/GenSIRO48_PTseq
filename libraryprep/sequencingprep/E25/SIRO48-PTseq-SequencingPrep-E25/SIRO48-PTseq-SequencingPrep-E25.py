@@ -281,7 +281,7 @@ single_tip_loc = tip_1000.load(1)[0]
 dilution_buffer_loc = ('M2_POS24',1,2)
 # pooling产物位置 - M2_POS13 Column 7
 target_tube_loc = [('M2_POS13',7,i) for i in range(1,9)]
-# DNB反应位置 - Column布局: Col 7 Row 1-6 为环化, Col 8 Row 1-6 为DNB制备
+# DNB反应位置 - Column布局: Col 7 Row 1-6 为 pooling 产物暂存, Col 8 Row 1-6 为DNB制备
 # SIRO48最多48样本, 每8个一组, 最多6个pool
 target_dnb_loc_list = [('M2_POS20',7,1+i) for i in range(6)]
 
