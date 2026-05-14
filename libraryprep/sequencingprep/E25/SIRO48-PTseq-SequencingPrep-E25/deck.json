@@ -738,9 +738,9 @@
               {
                 "Wells": "*",
                 "ContentInfo": {
-                  "Type": "Sample",
-                  "Name": "Test",
-                  "Volume": 300
+                  "Type": "None",
+                  "Name": "",
+                  "Volume": 0
                 }
               }
             ],

@@ -94,6 +94,7 @@ def get_sample_info(file_path):
 	except Exception as e:
 		print(f"Error reading sample info: {e}")
 		raise
+	return samples
 
 # 读取样本信息
 samples_from_csv = get_sample_info(sample_info_file_path)
