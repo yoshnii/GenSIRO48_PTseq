@@ -11,7 +11,8 @@
 #
 # 关键设计：
 #   1. POS17 和 POS10 低温运行，但温控并行启动，不等待温度到达后才开始程序。
-#   2. SampleCount <= 16 时，Col9/Col10/Col11 反应液使用 P1 50 uL 低通量直接分装；
+#   2. SampleCount <= 16 时，Col9/Col10/Col11 反应液使用低通量直接分装；
+#      其中 POS10 的 T6/T9 index 试剂按列使用 P8 排枪转移，减少逐样本点样动作；
 #      SampleCount > 16 时保持原始 POS7 中转 + P8 分装流程。
 #   3. POS11/POS14 已对换：POS11 固定承担废液和矿物油相关功能；
 #      POS14 为定量管 home，定量时通过 POS13 访问，结束后恢复。
@@ -743,7 +744,7 @@ transfer({"StartPosition":"M2_POS20","EndPosition":"M2_POS26","LoosenOffsetOfZ":
 if low_throughput_p1_direct_col10:
 	# 低通量直接分装按来源分阶段执行，避免每个样本反复开关 POS10 盖板。
 	# TA Master Mix 只接触同一混合液和空 TA 目标孔，每个样本列复用 1 支 50 uL 枪头。
-	# T6/index 和 cDNA 产物仍使用逐样本独立枪头，避免 index 或样本回带。
+	# T6/index 按列使用 P8 排枪转移；cDNA 产物仍使用逐样本独立枪头，避免样本回带。
 	transfer({"StartPosition":"M2_POS17","EndPosition":"M2_POS27","LoosenOffsetOfZ":0})
 	ta_direct_mix_tips = tip_50.load(col_num, 1)
 	for col_index in range(col_num):
@@ -756,12 +757,12 @@ if low_throughput_p1_direct_col10:
 	transfer({"StartPosition":"M2_POS27","EndPosition":"M2_POS17","LoosenOffsetOfZ":0})
 	# POS10 T6/index 引物一次开盖处理完全部样本，处理完立即关盖。
 	transfer({"StartPosition":"M2_POS10","EndPosition":"M2_POS27","LoosenOffsetOfZ":0})
-	ta_direct_reagent_tips = tip_50.load(sample_num, 1)
-	for tip_index, (col_index, row) in enumerate(active_sample_wells(SampleCount)):
-		p1_load_modified(ta_direct_reagent_tips[tip_index])
-		p1_aspirate_modified("M2_POS10", row, col_index+1, 5, PreAirVolume=5, AspirateSpeed=10, AspirateOffsetOfZ=0.5, DelayAfterAspirate=1, PostAirVolume=0, IfTrack=False)
-		p1_empty_modified("M2_POS20", row, col_index+7, EmptyOffsetOfZ=3, EmptySpeed=50, DelayAfterEmpty=0.5, TipTouchTimes=0, PostAirVolume=0)
-		p1_unload_tips2({"Position":"M2_Trash","Col":None,"Row":None})
+	ta_direct_reagent_tips = tip_50.load(sample_num, 8, 1)
+	for col_index in range(col_num):
+		p8_load_modified(ta_direct_reagent_tips[col_index])
+		p8_aspirate({"Position":"M2_POS10","Col":col_index+1,"Row":1,"PreAirVolume":5,"AspirateOffsetOfZ":0.5,"AspirateSpeed":10,"AspirateVolume":5,"PreAirSpeed":50,"DelayAfterAspirate":1,"TipTouchTimes":0,"PostAirSpeed":50,"PostAirVolume":0,"IfTrack":False,"FirstSegmentSpeed":100,"SpeedChangeOffsetOfZ":0,"SecondSegmentSpeed":80})
+		p8_empty({"Position":"M2_POS20","Col":col_index+7,"Row":1,"EmptyOffsetOfZ":3,"EmptySpeed":50,"DelayAfterEmpty":0.5,"TipTouchTimes":0,"PostAirSpeed":50,"PostAirVolume":0,"FirstSegmentSpeed":100,"SpeedChangeOffsetOfZ":0,"SecondSegmentSpeed":80})
+		p8_unload_tips({"Position":"M2_Trash","Col":None,"Row":None})
 	transfer({"StartPosition":"M2_POS27","EndPosition":"M2_POS10","LoosenOffsetOfZ":0})
 	# 第二套 50 uL 单枪头：从 POS20 cDNA 产物来源孔加入 5 uL 到对应 TA 目标孔。
 	ta_direct_sample_tips = tip_50.load(sample_num, 1)
@@ -950,7 +951,7 @@ for i in range(2):
 	for x in range(col_num):
 		p8_load_modified_BubblePurge(Ligation_purification_tips2[x])
 		p8_aspirate({"Position":"M2_POS23","Col":7+x,"Row":1,"PreAirVolume":2,"AspirateOffsetOfZ":0,"AspirateSpeed":10,"AspirateVolume":220,"PreAirSpeed":50,"DelayAfterAspirate":0.5,"TipTouchTimes":0,"PostAirSpeed":50,"PostAirVolume":5,"IfTrack":False,"FirstSegmentSpeed":100,"SpeedChangeOffsetOfZ":0,"SecondSegmentSpeed":80})
-		p8_empty({"Position":"M2_POS11","Col":waste_col_start+x,"Row":1,"EmptyOffsetOfZ":0.8,"EmptySpeed":50,"DelayAfterEmpty":0.8,"TipTouchTimes":3,"TipTouchOffsetOfZ":15,"TipTouchRangeOfX":1.2,"TipTouchSpeed":100,"PostAirSpeed":50,"PostAirVolume":5,"FirstSegmentSpeed":100,"SpeedChangeOffsetOfZ":0,"SecondSegmentSpeed":80})
+		p8_empty({"Position":"M2_POS11","Col":waste_col_start+x,"Row":1,"EmptyOffsetOfZ":10,"EmptySpeed":50,"DelayAfterEmpty":0.8,"TipTouchTimes":3,"TipTouchOffsetOfZ":15,"TipTouchRangeOfX":1.2,"TipTouchSpeed":100,"PostAirSpeed":50,"PostAirVolume":5,"FirstSegmentSpeed":100,"SpeedChangeOffsetOfZ":0,"SecondSegmentSpeed":80})
 		# 只在最后一轮丢弃枪头，第一轮放回原位
 		if i == 1:
 			p8_unload_tips({"Position":"M2_Trash","Col":None,"Row":None})
