@@ -250,23 +250,19 @@ PostAirSpeed= 50.0, PostAirVolume= 5.0,liquid = 0):
 # POS7 反应体系预分装的逐孔死体积计算。
 # 仅用于 POS7 Col9 cDNA 反应液、Col10 TA Master Mix、Col11 LA/PCR Master Mix。
 #   active_cols      = 当前行实际需要服务的下游列数
-#   extra_per_well   = clamp(单孔下游体积 * 0.2, min=10, max=30)
-#   pos7_dispense    = active_cols * (单孔下游体积 + 单孔死体积)
+#   pos7_dead_volume = 每个 POS7 中转孔保留的总冗余体积
+#   pos7_dispense    = active_cols * 单次下游吸取体积 + pos7_dead_volume
 # 不用于磁珠、乙醇、矿物油、T2/洗脱液、Qubit、DNB 等非反应体系预分装。
-def clamp_value(value, lower, upper):
-	return max(lower, min(value, upper))
-
 def active_col_count_for_row(sample_count, row_index):
 	full_cols = sample_count // 8
 	remainder = sample_count % 8
 	return full_cols + (1 if remainder != 0 and row_index < remainder else 0)
 
-def pos7_reaction_mix_dispense_volume(p8_volume_per_column, sample_count, row_index, min_dead=10, ratio=0.2, max_dead=30):
+def pos7_reaction_mix_dispense_volume(p8_volume_per_column, sample_count, row_index, pos7_dead_volume=10):
 	active_cols = active_col_count_for_row(sample_count, row_index)
 	if active_cols <= 0 or p8_volume_per_column <= 0:
 		return 0
-	extra_per_well = clamp_value(p8_volume_per_column * ratio, min_dead, max_dead)
-	return active_cols * (p8_volume_per_column + extra_per_well)
+	return active_cols * p8_volume_per_column + pos7_dead_volume
 
 # POS17 2 mL 混合管分装到 POS7 后保留 15 uL 死体积。
 MIX_TUBE_DEAD_VOLUME = 15
@@ -447,14 +443,15 @@ col_num = (sample_num+7)//8  # 样本占用的 PCR 板列数，每 8 个样本�
 
 transfer({"StartPosition":"M2_POS17","EndPosition":"M2_POS27","LoosenOffsetOfZ":0}) #开试剂盖
 
-# RT 第一步转移 2 uL T1 引物，使用 P1 单枪头逐样本加入 POS20。
-p1_load_modified(tip_50.load(1)[0])
-for i in range(col_num):
-	last_row = 8 if (i < col_num - 1 or sample_num % 8 == 0) else sample_num % 8
-	for j in range(last_row):
-		p1_aspirate_modified("M2_POS17", 1, 1, 2, AspirateSpeed=10)
-		p1_empty_modified("M2_POS20", j+1, i+1, EmptyOffsetOfZ=0.5)
-p1_unload_tips2({"Position":"M2_Trash","Col":None,"Row":None})
+# RT 第一步转移 2 uL T1 引物，使用 P1 逐样本加入 POS20；每最多 3 列更换一次 50 uL 枪头。
+for col_group_start in range(0, col_num, 3):
+	p1_load_modified(tip_50.load(1)[0])
+	for i in range(col_group_start, min(col_group_start + 3, col_num)):
+		last_row = 8 if (i < col_num - 1 or sample_num % 8 == 0) else sample_num % 8
+		for j in range(last_row):
+			p1_aspirate_modified("M2_POS17", 1, 1, 2, AspirateSpeed=10)
+			p1_empty_modified("M2_POS20", j+1, i+1, EmptyOffsetOfZ=0.5)
+	p1_unload_tips2({"Position":"M2_Trash","Col":None,"Row":None})
 transfer({"StartPosition":"M2_POS27","EndPosition":"M2_POS17","LoosenOffsetOfZ":0}) #盖试剂盖
 
 #将样本从POS8转移到POS20
