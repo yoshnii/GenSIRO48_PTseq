@@ -305,7 +305,7 @@ dilution_buffer_loc = ('M2_POS24',1,2)
 # pooling产物位置 - M2_POS13 Column 7
 target_tube_loc = [('M2_POS13',7,i) for i in range(1,9)]
 # DNB反应位置 - Column布局: Col 7 Row 1-6 为环化, Col 8 Row 1-6 为DNB制备
-# G99按每48个有效样本一个DNB切分，当前POS20最多支持6个DNB。
+# G99每个DNB最多48个有效样本，分组时避让同组重复barcode。
 target_dnb_loc_list = [('M2_POS20',7,1+i) for i in range(6)]
 
 # 混匀DNB的枪头位置
@@ -366,28 +366,51 @@ def assign_dilution_positions(samples):
 		s.DilutingWellRow = within_plate_idx % sample_dilution_row_count + 1
 		s.DilutingWell = format_well(s.DilutingWellRow, s.DilutingWellColumn)
 
-def check_barcode_uniqueness(groups):
+def get_barcode_key(sample):
+	raw_barcode = sample.barcode.strip()
+	if not raw_barcode:
+		raise Exception(f"样本 {sample.sample_id} 缺少 barcode，无法确认同一DNB内barcode唯一性")
+	try:
+		barcode_value = 0
+		for part in raw_barcode.split('-'):
+			barcode_value += 1 << int(part)
+		return barcode_value
+	except ValueError:
+		raise Exception(f"样本 {sample.sample_id} 的 barcode '{sample.barcode}' 格式不合法，应为数字或数字-数字组合")
+
+def validate_barcode_uniqueness(groups):
 	for i, group in enumerate(groups):
 		seen = {}
 		for sample in group:
-			if not sample.barcode:
-				raise Exception(f"样本 {sample.sample_id} 缺少 barcode，无法确认同一DNB内barcode唯一性")
-			if sample.barcode in seen:
-				raise Exception(f"DNB组 {i+1} 内 barcode 重复: {sample.barcode}; 样本 {seen[sample.barcode]} 和 {sample.sample_id}")
-			seen[sample.barcode] = sample.sample_id
+			barcode_key = get_barcode_key(sample)
+			if barcode_key in seen:
+				raise Exception(f"DNB组 {i+1} 内 barcode 重复: {sample.barcode}; 样本 {seen[barcode_key]} 和 {sample.sample_id}")
+			seen[barcode_key] = sample.sample_id
 
-def group_samples_fixed_order(samples):
+def group_samples_fixed_capacity_by_barcode(samples):
 	groups = []
-	for i in range(0, len(samples), single_dnb_sample_num):
-		group = samples[i:i + single_dnb_sample_num]
+	pending_samples = samples[:]
+	while pending_samples:
+		group = []
+		used_barcodes = set()
+		deferred_samples = []
+		for sample in pending_samples:
+			barcode_key = get_barcode_key(sample)
+			if len(group) < single_dnb_sample_num and barcode_key not in used_barcodes:
+				group.append(sample)
+				used_barcodes.add(barcode_key)
+			else:
+				deferred_samples.append(sample)
 		group_idx = len(groups) + 1
 		for sample in group:
 			sample.group_idx = group_idx
 		groups.append(group)
-	if len(groups) > len(target_dnb_loc_list):
-		raise Exception(f"G99 sequencing prep当前最多支持 {len(target_dnb_loc_list)} 个DNB，当前有效样本需要 {len(groups)} 个DNB")
+		if len(groups) > len(target_dnb_loc_list):
+			raise Exception(f"G99 sequencing prep当前最多支持 {len(target_dnb_loc_list)} 个DNB，当前有效样本需要超过 {len(target_dnb_loc_list)} 个DNB")
+		pending_samples = deferred_samples
 	if len(groups) > len(target_tube_loc):
 		raise Exception(f"Pooling暂存位不足：当前最多 {len(target_tube_loc)} 个，当前需要 {len(groups)} 个")
+	validate_barcode_uniqueness(groups)
 	return groups
 
 assign_source_positions(samples_from_csv)
@@ -412,8 +435,7 @@ if sample_num == 0:
 	raise Exception("过滤低浓度或空白样本后没有可 pooling 的有效样本，请检查CSV浓度和样本类型")
 assign_dilution_positions(sample_concentration)
 
-dnb_list = group_samples_fixed_order(sample_concentration)
-check_barcode_uniqueness(dnb_list)
+dnb_list = group_samples_fixed_capacity_by_barcode(sample_concentration)
 target_dnb_num = len(dnb_list)
 Hybridization_num = target_dnb_num
 
@@ -651,7 +673,7 @@ DNB_mix_cycling = tip_50.load(DNB_Num,1)
 for x in range(DNB_Num):
 	p8_load_modified(DNB_mix_cycling[x])
 	# DNB Cycling Mix: 12.1 µL per reaction (从D2源管取)
-	p8_aspirate({"Position":"M2_POS17", "Col":2, "Row":4,"PreAirVolume":5,"AspirateOffsetOfZ":0.6,"AspirateSpeed":15,"AspirateVolume":12.1,"PreAirSpeed":30,"DelayAfterAspirate":5,"PostAirSpeed":50,"PostAirVolume":1,"IfTrack":False,"FirstSegmentSpeed":100,"SpeedChangeOffsetOfZ":0,"SecondSegmentSpeed":80,"TipTouchTimes":2, "TipTouchOffsetOfZ": 3, "TipTouchRangeOfX": 1.2, "TipTouchSpeed": 100})
+	p8_aspirate({"Position":"M2_POS17", "Col":2, "Row":4,"PreAirVolume":5,"AspirateOffsetOfZ":0.6,"AspirateSpeed":15,"AspirateVolume":12.1,"PreAirSpeed":30,"DelayAfterAspirate":5,"PostAirSpeed":50,"PostAirVolume":5,"IfTrack":False,"FirstSegmentSpeed":100,"SpeedChangeOffsetOfZ":0,"SecondSegmentSpeed":80,"TipTouchTimes":2, "TipTouchOffsetOfZ": 3, "TipTouchRangeOfX": 1.2, "TipTouchSpeed": 100})
 	p8_empty({"Position":"M2_POS20","Col":7,"Row":1+x,"EmptyOffsetOfZ":0.5,"EmptySpeed":5,"DelayAfterEmpty":0.5,"PostAirSpeed":50,"PostAirVolume":0,"FirstSegmentSpeed":100,"SpeedChangeOffsetOfZ":0,"SecondSegmentSpeed":80,"TipTouchTimes":2, "TipTouchOffsetOfZ": 5, "TipTouchRangeOfX": 0, "TipTouchSpeed": 100})
 	p8_unload_tips({"Position":"M2_Trash","Col":None,"Row":None})
 
@@ -659,7 +681,7 @@ for x in range(DNB_Num):
 DNB_cycling_mix_300 = tip_300.load(DNB_Num,1)
 for x in range(DNB_Num):
 	p8_load_modified(DNB_cycling_mix_300[x])
-	p8_mix({"Position":"M2_POS20","Col":7,"Row":1+x,"PreAirVolume":0,"MixTimes":10,"MixAspirateSpeed":100,"MixAspirateOffsetOfZ":0.5,"MixVolume":40,"MixDispenseOffsetOfZ":12,"MixDispenseSpeed":100,"DelayAfterMixLoop":2,"MixEmptyOffsetOfZ":10,"MixEmptySpeed":50,"PreAirSpeed":50,"DelayAfterMixAspirate":0.5,"DelayAfterMixDispense":0.5,"DelayAfterMixEmpty":5,"TipTouchTimes":2,"PostAirSpeed":50,"PostAirVolume":10,"FirstSegmentSpeed":100,"SpeedChangeOffsetOfZ":0,"SecondSegmentSpeed":80,"TipTouchOffsetOfZ": 3, "TipTouchRangeOfX": 1.2, "TipTouchSpeed": 100})
+	p8_mix({"Position":"M2_POS20","Col":7,"Row":1+x,"PreAirVolume":10,"MixTimes":20,"MixAspirateSpeed":30,"MixAspirateOffsetOfZ":0.5,"MixVolume":40,"MixDispenseOffsetOfZ":12,"MixDispenseSpeed":30,"DelayAfterMixLoop":2,"MixEmptyOffsetOfZ":10,"MixEmptySpeed":50,"PreAirSpeed":50,"DelayAfterMixAspirate":0.5,"DelayAfterMixDispense":0.5,"DelayAfterMixEmpty":5,"TipTouchTimes":2,"PostAirSpeed":50,"PostAirVolume":10,"FirstSegmentSpeed":100,"SpeedChangeOffsetOfZ":0,"SecondSegmentSpeed":80,"TipTouchOffsetOfZ": 3, "TipTouchRangeOfX": 1.2, "TipTouchSpeed": 100})
 	p8_unload_tips({"Position":"M2_Trash","Col":None,"Row":None})
 
 # [已移除] MakeDNB环节不添加矿物油（与CNVseq/PTseq Plus/NIFTY保持一致）
@@ -746,7 +768,7 @@ transfer({"StartPosition":"M2_POS17","EndPosition":"M2_POS27","LoosenOffsetOfZ":
 DNB_mix_2 = tip_50.load(DNB_Num,1)
 for x in range(DNB_Num):
 	p8_load_modified(DNB_mix_2[x])
-	p8_aspirate({"Position":"M2_POS17", "Col":2, "Row":5,"PreAirVolume":3,"AspirateOffsetOfZ":0.6,"AspirateSpeed":15,"AspirateVolume":22,"PreAirSpeed":30,"DelayAfterAspirate":5,"PostAirSpeed":50,"PostAirVolume":1,"IfTrack":False,"FirstSegmentSpeed":100,"SpeedChangeOffsetOfZ":0,"SecondSegmentSpeed":80,"TipTouchTimes":2, "TipTouchOffsetOfZ": 10, "TipTouchRangeOfX": 3.5, "TipTouchSpeed": 100})
+	p8_aspirate({"Position":"M2_POS17", "Col":2, "Row":5,"PreAirVolume":5,"AspirateOffsetOfZ":0.6,"AspirateSpeed":15,"AspirateVolume":22,"PreAirSpeed":30,"DelayAfterAspirate":5,"PostAirSpeed":50,"PostAirVolume":3,"IfTrack":False,"FirstSegmentSpeed":100,"SpeedChangeOffsetOfZ":0,"SecondSegmentSpeed":80,"TipTouchTimes":2, "TipTouchOffsetOfZ": 3, "TipTouchRangeOfX": 1.2, "TipTouchSpeed": 100})
 	p8_empty({"Position":"M2_POS20","Col":8,"Row":1+x,"EmptyOffsetOfZ":0.5,"EmptySpeed":10,"DelayAfterEmpty":0.5,"PostAirSpeed":50,"PostAirVolume":0,"FirstSegmentSpeed":100,"SpeedChangeOffsetOfZ":0,"SecondSegmentSpeed":80,"TipTouchTimes":2, "TipTouchOffsetOfZ": 5, "TipTouchRangeOfX": 0, "TipTouchSpeed": 100})
 	p8_unload_tips({"Position":"M2_Trash","Col":None,"Row":None})
 
@@ -754,7 +776,7 @@ for x in range(DNB_Num):
 DNB_polymerase_mix_300 = tip_300.load(DNB_Num,1)
 for x in range(DNB_Num):
 	p8_load_modified(DNB_polymerase_mix_300[x])
-	p8_mix({"Position":"M2_POS20","Col":8,"Row":1+x,"PreAirVolume":0,"MixTimes":10,"MixAspirateSpeed":30,"MixAspirateOffsetOfZ":0.6,"MixVolume":35,"MixDispenseOffsetOfZ":8,"MixDispenseSpeed":30,"DelayAfterMixLoop":2,"MixEmptyOffsetOfZ":8,"MixEmptySpeed":50,"PreAirSpeed":50,"DelayAfterMixAspirate":0.5,"DelayAfterMixDispense":0.5,"DelayAfterMixEmpty":0.5,"TipTouchTimes":2, "TipTouchOffsetOfZ": 3, "TipTouchRangeOfX":1, "TipTouchSpeed": 100,"PostAirSpeed":50,"PostAirVolume":0,"FirstSegmentSpeed":100,"SpeedChangeOffsetOfZ":0,"SecondSegmentSpeed":80})
+	p8_mix({"Position":"M2_POS20","Col":8,"Row":1+x,"PreAirVolume":10,"MixTimes":20,"MixAspirateSpeed":30,"MixAspirateOffsetOfZ":0.5,"MixVolume":35,"MixDispenseOffsetOfZ":8,"MixDispenseSpeed":30,"DelayAfterMixLoop":2,"MixEmptyOffsetOfZ":2,"MixEmptySpeed":50,"PreAirSpeed":50,"DelayAfterMixAspirate":0.5,"DelayAfterMixDispense":0.5,"DelayAfterMixEmpty":0.5,"TipTouchTimes":0,"PostAirSpeed":50,"PostAirVolume":0,"FirstSegmentSpeed":100,"SpeedChangeOffsetOfZ":0,"SecondSegmentSpeed":80})
 	p8_unload_tips({"Position":"M2_Trash","Col":None,"Row":None})
 
 transfer({"StartPosition":"M2_POS27","EndPosition":"M2_POS17","LoosenOffsetOfZ":0})###关盖板
@@ -786,13 +808,13 @@ transfer({"StartPosition":"M2_POS17","EndPosition":"M2_POS27","LoosenOffsetOfZ":
 DNB_temp1_50 = tip_50.load(DNB_Num,1)
 DNB_stop_mix_300 = tip_300.load(DNB_Num,1)
 for x in range(DNB_Num):
-	p1_load_modified(DNB_temp1_50[x])
-	p1_aspirate({"Position":"M2_POS17", "Col":4, "Row":5,"PreAirVolume":5,"AspirateOffsetOfZ":0.6,"AspirateSpeed":15,"AspirateVolume":10,"PreAirSpeed":30,"DelayAfterAspirate":5,"PostAirSpeed":50,"PostAirVolume":1,"IfTrack":False,"FirstSegmentSpeed":100,"SpeedChangeOffsetOfZ":0,"SecondSegmentSpeed":80,"TipTouchTimes":2, "TipTouchOffsetOfZ": 10, "TipTouchRangeOfX": 3.5, "TipTouchSpeed": 100})
-	p1_empty({"Position":"M2_POS20","Col":8,"Row":1+x,"EmptyOffsetOfZ":0.5,"EmptySpeed":50,"DelayAfterEmpty":0.5,"PostAirSpeed":50,"PostAirVolume":0,"FirstSegmentSpeed":100,"SpeedChangeOffsetOfZ":0,"SecondSegmentSpeed":80,"TipTouchTimes":2, "TipTouchOffsetOfZ": 5, "TipTouchRangeOfX": 0, "TipTouchSpeed": 100})
-	p1_unload_tips2({"Position":"M2_Trash","Col":None,"Row":None})
-	p1_load_modified(DNB_stop_mix_300[x])
-	p1_mix({"Position":"M2_POS20","Col":8,"Row":1+x,"PreAirVolume":10,"MixTimes":15,"MixAspirateSpeed":20,"MixAspirateOffsetOfZ":0.5,"MixVolume":40,"MixDispenseOffsetOfZ":8,"MixDispenseSpeed":20,"DelayAfterMixLoop":2,"MixEmptyOffsetOfZ":2,"MixEmptySpeed":50,"PreAirSpeed":50,"DelayAfterMixAspirate":0.5,"DelayAfterMixDispense":0.5,"DelayAfterMixEmpty":0.5,"TipTouchTimes":0,"PostAirSpeed":50,"PostAirVolume":0,"FirstSegmentSpeed":100,"SpeedChangeOffsetOfZ":0,"SecondSegmentSpeed":80})
-	p1_unload_tips2({"Position":"M2_Trash","Col":None,"Row":None})
+	p8_load_modified(DNB_temp1_50[x])
+	p8_aspirate({"Position":"M2_POS17", "Col":4, "Row":5,"PreAirVolume":5,"AspirateOffsetOfZ":0.6,"AspirateSpeed":15,"AspirateVolume":10,"PreAirSpeed":30,"DelayAfterAspirate":5,"PostAirSpeed":50,"PostAirVolume":5,"IfTrack":False,"FirstSegmentSpeed":100,"SpeedChangeOffsetOfZ":0,"SecondSegmentSpeed":80,"TipTouchTimes":2, "TipTouchOffsetOfZ": 3, "TipTouchRangeOfX": 1.2, "TipTouchSpeed": 100})
+	p8_empty({"Position":"M2_POS20","Col":8,"Row":1+x,"EmptyOffsetOfZ":0.5,"EmptySpeed":50,"DelayAfterEmpty":0.5,"PostAirSpeed":50,"PostAirVolume":0,"FirstSegmentSpeed":100,"SpeedChangeOffsetOfZ":0,"SecondSegmentSpeed":80,"TipTouchTimes":2, "TipTouchOffsetOfZ": 5, "TipTouchRangeOfX": 0, "TipTouchSpeed": 100})
+	p8_unload_tips({"Position":"M2_Trash","Col":None,"Row":None})
+	p8_load_modified(DNB_stop_mix_300[x])
+	p8_mix({"Position":"M2_POS20","Col":8,"Row":1+x,"PreAirVolume":10,"MixTimes":15,"MixAspirateSpeed":20,"MixAspirateOffsetOfZ":0.5,"MixVolume":40,"MixDispenseOffsetOfZ":8,"MixDispenseSpeed":20,"DelayAfterMixLoop":2,"MixEmptyOffsetOfZ":2,"MixEmptySpeed":50,"PreAirSpeed":50,"DelayAfterMixAspirate":0.5,"DelayAfterMixDispense":0.5,"DelayAfterMixEmpty":0.5,"TipTouchTimes":0,"PostAirSpeed":50,"PostAirVolume":0,"FirstSegmentSpeed":100,"SpeedChangeOffsetOfZ":0,"SecondSegmentSpeed":80})
+	p8_unload_tips({"Position":"M2_Trash","Col":None,"Row":None})
 
 # DNB为单链DNA，机上dsDNA_HS无法准确定量，改为手动ssDNA kit定量
 

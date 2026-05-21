@@ -289,7 +289,7 @@ sample_dilution_row_count = 8
 min_sample_volume = 2
 max_sample_volume = 20
 
-# 单个DNB样本数 - E25: 固定按1-32、33-64、65-96切分
+# 单个DNB样本数 - E25每个DNB最多32个有效样本，分组时避让同组重复barcode。
 single_dnb_sample_num = 32
 # 单个DNB投入量 (E25说明书: 1pmol ≈ 200ng for ~300bp fragments)
 target_dna_ng = 200
@@ -375,28 +375,51 @@ def calculate_sample_data(samples):
 			sample.data_amount = default_product_data_amount
 			print(f"Warning: Unrecognized product type '{sample.product_type}' for sample {sample.sample_id}; using default data amount {default_product_data_amount}.")
 
-def check_barcode_uniqueness(groups):
+def get_barcode_key(sample):
+	raw_barcode = sample.barcode.strip()
+	if not raw_barcode:
+		raise Exception(f"样本 {sample.sample_id} 缺少 barcode，无法确认同一DNB内barcode唯一性")
+	try:
+		barcode_value = 0
+		for part in raw_barcode.split('-'):
+			barcode_value += 1 << int(part)
+		return barcode_value
+	except ValueError:
+		raise Exception(f"样本 {sample.sample_id} 的 barcode '{sample.barcode}' 格式不合法，应为数字或数字-数字组合")
+
+def validate_barcode_uniqueness(groups):
 	for i, group in enumerate(groups):
 		seen = {}
 		for sample in group:
-			if not sample.barcode:
-				raise Exception(f"样本 {sample.sample_id} 缺少 barcode，无法确认同一DNB内barcode唯一性")
-			if sample.barcode in seen:
-				raise Exception(f"DNB组 {i+1} 内 barcode 重复: {sample.barcode}; 样本 {seen[sample.barcode]} 和 {sample.sample_id}")
-			seen[sample.barcode] = sample.sample_id
+			barcode_key = get_barcode_key(sample)
+			if barcode_key in seen:
+				raise Exception(f"DNB组 {i+1} 内 barcode 重复: {sample.barcode}; 样本 {seen[barcode_key]} 和 {sample.sample_id}")
+			seen[barcode_key] = sample.sample_id
 
-def group_samples_fixed_order(samples):
+def group_samples_fixed_capacity_by_barcode(samples):
 	groups = []
-	for i in range(0, len(samples), single_dnb_sample_num):
-		group = samples[i:i + single_dnb_sample_num]
+	pending_samples = samples[:]
+	while pending_samples:
+		group = []
+		used_barcodes = set()
+		deferred_samples = []
+		for sample in pending_samples:
+			barcode_key = get_barcode_key(sample)
+			if len(group) < single_dnb_sample_num and barcode_key not in used_barcodes:
+				group.append(sample)
+				used_barcodes.add(barcode_key)
+			else:
+				deferred_samples.append(sample)
 		group_idx = len(groups) + 1
 		for sample in group:
 			sample.group_idx = group_idx
 		groups.append(group)
-	if len(groups) > len(target_dnb_loc_list):
-		raise Exception(f"E25 sequencing prep当前最多支持 {len(target_dnb_loc_list)} 个DNB，当前有效样本需要 {len(groups)} 个DNB")
+		if len(groups) > len(target_dnb_loc_list):
+			raise Exception(f"E25 sequencing prep当前最多支持 {len(target_dnb_loc_list)} 个DNB，当前有效样本需要超过 {len(target_dnb_loc_list)} 个DNB")
+		pending_samples = deferred_samples
 	if len(groups) > len(target_tube_loc):
 		raise Exception(f"Pooling暂存位不足：当前最多 {len(target_tube_loc)} 个，当前需要 {len(groups)} 个")
+	validate_barcode_uniqueness(groups)
 	return groups
 
 def preprocess_groups(groups):
@@ -430,8 +453,7 @@ if sample_num == 0:
 	raise Exception("过滤低浓度或空白样本后没有可 pooling 的有效样本，请检查CSV浓度和样本类型")
 assign_dilution_positions(sample_concentration)
 
-dnb_list = group_samples_fixed_order(sample_concentration)
-check_barcode_uniqueness(dnb_list)
+dnb_list = group_samples_fixed_capacity_by_barcode(sample_concentration)
 preprocess_groups(dnb_list)
 
 target_dnb_num = len(dnb_list)
