@@ -270,8 +270,8 @@ max_sample_volume = 20
 
 # 单个DNB样本数 - E25: ≤32样本1个pool, >32样本2个pool
 single_dnb_sample_num = 32
-# 单个DNB投入量 (E25说明书: 1pmol ≈ 200ng for ~300bp fragments)
-target_dna_ng = 200
+# 单个DNB目标投入量
+target_dna_ng = 15.84
 # pooling总体积
 target_pooling_volume = 48
 
