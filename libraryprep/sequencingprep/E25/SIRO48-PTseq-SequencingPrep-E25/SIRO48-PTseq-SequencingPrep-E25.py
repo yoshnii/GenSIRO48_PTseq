@@ -291,8 +291,8 @@ max_sample_volume = 20
 
 # 单个DNB样本数 - E25每个DNB最多32个有效样本，分组时避让同组重复barcode。
 single_dnb_sample_num = 32
-# 单个DNB投入量 (E25说明书: 1pmol ≈ 200ng for ~300bp fragments)
-target_dna_ng = 200
+# 单个DNB投入量 - E25使用15.84 ng总投入量
+target_dna_ng = 15.84
 # pooling总体积
 target_pooling_volume = 48
 # PTseq默认同产品等权；保留product_type映射，后续如中台给出不同数据量可直接扩展。
