@@ -823,6 +823,12 @@ transfer({"StartPosition":"M2_POS27","EndPosition":"M2_POS17","LoosenOffsetOfZ":
 transfer({"StartPosition":"M2_POS26","EndPosition":"M2_POS20","LoosenOffsetOfZ":0}) #PCR盖板
 pcr_close_door()
 
+lang=get_lang()
+if lang==1:
+ report({"Phase": "DNB制备", "Step": "4度保存", "TaskType": "library", "RemainingTime": None})
+elif lang==2:
+ report({"Phase": "DNB Preparation", "Step": "4C Hold", "TaskType": "library", "RemainingTime": None})
+
 def blockD3():
 	pcr_run_method({"Methods": ["4keep"]})
 d3 = parallel_block(blockD3)
