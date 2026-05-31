@@ -547,10 +547,14 @@ for group in dnb_list:
 			dilution_samples_by_plate[sample.DilutionPlateIndex].append(sample)
 
 def dispense_dilution_buffer_to_active_plate(samples):
+	if not samples:
+		return
+	p1_load_modified(tip_50.load(1)[0])
 	for sample in samples:
-		# 加入14µL T2 buffer到当前位于POS8的稀释PCR板 (2µL sample + 14µL buffer = 16µL, 8x dilution)
+		# 加入14µL T2 buffer到当前位于POS8的稀释PCR板 (2µL sample + 14µL buffer = 16µL, 8x dilution)。
 		p1_aspirate({"Position": dilution_buffer_loc[0], "Row": dilution_buffer_loc[2], "Col": dilution_buffer_loc[1], "FirstSegmentSpeed": 150, "SpeedChangeOffsetOfZ": 0, "PreAirSpeed": 100, "PreAirVolume": 10, "SecondSegmentSpeed": 100, "AspirateOffsetOfZ": 1.0, "AspirateSpeed": 20, "AspirateVolume": 14, "DelayAfterAspirate": 0.5, "TipTouchTimes": 0, "TipTouchOffsetOfZ": 10, "TipTouchRangeOfX": 2, "TipTouchSpeed": 100, "PostAirSpeed": 100, "PostAirVolume": 10})
 		p1_empty({"Position": dilution_access_position, "Row": sample.DilutingWellRow, "Col": sample.DilutingWellColumn, "FirstSegmentSpeed": 150, "SpeedChangeOffsetOfZ": 0, "SecondSegmentSpeed": 100, "EmptyOffsetOfZ": 1, "EmptySpeed": 190, "DelayAfterEmpty": 0.5, "TipTouchTimes": 0, "TipTouchOffsetOfZ": 10, "TipTouchRangeOfX": 2, "TipTouchSpeed": 100})
+	p1_unload_tips2({"Position":"M2_Trash","Col":None,"Row":None})
 
 def swap_dilution_plates():
 	transfer({"StartPosition":dilution_access_position,"EndPosition":dilution_transposition,"LoosenOffsetOfZ":0})
@@ -572,13 +576,12 @@ def transfer_sample_to_pooling(sample, pooling_index):
 	p8_unload_tips({"Position":"M2_Trash","Col":None,"Row":None})
 
 # Step 2: Normalization - 先处理初始位于POS8的第一块稀释PCR板。
-p1_load_tips({"Position":single_tip_loc[0],'Col':single_tip_loc[1],'Row':single_tip_loc[2]})
-
 dispense_dilution_buffer_to_active_plate(dilution_samples_by_plate[0])
 
 # Step 3 mix 并入 Step 5：sample 进入 POS8 稀释孔后再混匀。
 
 # Step 4: p1 加补水到pooling管 (POS13 Col 7) 和 DNB反应孔 (POS20)
+p1_load_tips({"Position":single_tip_loc[0],'Col':single_tip_loc[1],'Row':single_tip_loc[2]})
 for i in range(len(water_volume_list)):
 	if temp[i][0]>=8:
 		new_water_volume = target_pooling_volume-target_pooling_volume/(temp[i][0]/8)
@@ -601,10 +604,7 @@ for i,poolings in enumerate(temp):
 
 if deferred_second_dilution_plate_samples:
 	swap_dilution_plates()
-	second_dilution_tip = tip_1000.load(1)[0]
-	p1_load_tips({"Position":second_dilution_tip[0],'Col':second_dilution_tip[1],'Row':second_dilution_tip[2]})
 	dispense_dilution_buffer_to_active_plate(dilution_samples_by_plate[1])
-	p1_unload_tips2({"Position":"M2_Trash","Col":None,"Row":None})
 	for i,sample in deferred_second_dilution_plate_samples:
 		transfer_sample_to_pooling(sample, i)
 	swap_dilution_plates()
