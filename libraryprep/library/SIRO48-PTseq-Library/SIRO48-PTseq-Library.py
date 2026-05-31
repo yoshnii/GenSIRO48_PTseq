@@ -740,7 +740,7 @@ if low_throughput_p1_direct_col10:
 	ta_direct_sample_tips = tip_50.load(sample_num, 1)
 	for tip_index, (col_index, row) in enumerate(active_sample_wells(SampleCount)):
 		p1_load_modified(ta_direct_sample_tips[tip_index])
-		p1_aspirate_modified("M2_POS20", row, col_index+1, 5, PreAirVolume=5, AspirateSpeed=10, AspirateOffsetOfZ=0.5, DelayAfterAspirate=1, PostAirVolume=0, IfTrack=False)
+		p1_aspirate_modified("M2_POS20", row, col_index+1, 5, PreAirVolume=5, AspirateSpeed=10, AspirateOffsetOfZ=0.7, DelayAfterAspirate=1, PostAirVolume=0, IfTrack=False)
 		p1_empty_modified("M2_POS20", row, col_index+7, EmptyOffsetOfZ=3, EmptySpeed=50, DelayAfterEmpty=0.5, TipTouchTimes=0, PostAirVolume=0)
 		p1_unload_tips2({"Position":"M2_Trash","Col":None,"Row":None})
 	for i in range(col_num):
@@ -757,7 +757,7 @@ else:
 		p8_unload_tips({"Position":"M2_Trash","Col":None,"Row":None})
 	for i in range(col_num):
 		p8_load_modified(tip_50.load(target_tip_num_list[i])[0])
-		p8_aspirate({"Position":"M2_POS20","Col":i+1,"Row":1,"PreAirVolume":8,"AspirateOffsetOfZ":0.5,"AspirateSpeed":10,"AspirateVolume":5,"PreAirSpeed":50,"DelayAfterAspirate":1,"TipTouchTimes":0,"PostAirSpeed":50,"PostAirVolume":0,"IfTrack":False,"FirstSegmentSpeed":100,"SpeedChangeOffsetOfZ":0,"SecondSegmentSpeed":80})
+		p8_aspirate({"Position":"M2_POS20","Col":i+1,"Row":1,"PreAirVolume":8,"AspirateOffsetOfZ":0.7,"AspirateSpeed":10,"AspirateVolume":5,"PreAirSpeed":50,"DelayAfterAspirate":1,"TipTouchTimes":0,"PostAirSpeed":50,"PostAirVolume":0,"IfTrack":False,"FirstSegmentSpeed":100,"SpeedChangeOffsetOfZ":0,"SecondSegmentSpeed":80})
 		p8_empty({"Position":"M2_POS20","Col":i+7,"Row":1,"EmptyOffsetOfZ":3,"EmptySpeed":50,"DelayAfterEmpty":0.5,"TipTouchTimes":0,"PostAirSpeed":50,"PostAirVolume":0,"FirstSegmentSpeed":100,"SpeedChangeOffsetOfZ":0,"SecondSegmentSpeed":80})
 		p8_mix({"Position":"M2_POS20","Col":i+7,"Row":1,"PreAirVolume":10,"MixTimes":15,"MixAspirateSpeed":50,"MixAspirateOffsetOfZ":0.5,"MixVolume":22,"MixDispenseOffsetOfZ":5,"MixDispenseSpeed":50,"DelayAfterMixLoop":2,"MixEmptyOffsetOfZ":3,"MixEmptySpeed":50,"PreAirSpeed":50,"DelayAfterMixAspirate":0.5,"DelayAfterMixDispense":0.5,"DelayAfterMixEmpty":0.5,"TipTouchTimes":0,"PostAirSpeed":50,"PostAirVolume":0,"FirstSegmentSpeed":100,"SpeedChangeOffsetOfZ":0,"SecondSegmentSpeed":80})
 		p8_unload_tips({"Position":"M2_Trash","Col":None,"Row":None})
@@ -1106,6 +1106,11 @@ temp_shaker_set({"TempParameters":{"IsEnable":False,"Duration":-1},"ShakerParame
 # 第三步：把 POS16 Col7-12 的 30 uL 磁珠悬液转移到新 PCR 板 POS20 Col1-6。
 # 高通量分支使用 LA_dispense_tips；低通量直接分装分支使用新的 300 uL P8 枪头。
 # 这一步是 LA_dispense_tips 的最后一次使用，转移完成后直接丢弃到垃圾桶，不再放回枪头盒。
+def reshake_la_slurry_on_pos16():
+	# 每转移一列后短暂双向震荡 POS16，减少剩余磁珠悬液再次沉降。
+	temp_shaker_set({"TempParameters":{"IsEnable":False,"Duration":-1},"ShakerParameters":{"IsEnable":True,"Direction":0,"Speed":1200,"Duration":30}})
+	temp_shaker_set({"TempParameters":{"IsEnable":False,"Duration":-1},"ShakerParameters":{"IsEnable":True,"Direction":1,"Speed":1200,"Duration":30}})
+
 if low_throughput_p1_direct_col11:
 	LA_slurry_tips = tip_300.load(sample_num,8,0)
 else:
@@ -1117,6 +1122,7 @@ for i in range(col_num):
 	# 转移到新 PCR 板 POS20 Col1-6。
 	p8_empty({"Position":"M2_POS20","Col":1+i,"Row":1,"EmptyOffsetOfZ":0.5,"EmptySpeed":20,"DelayAfterEmpty":0.5,"TipTouchTimes":0,"PostAirSpeed":50,"PostAirVolume":0,"FirstSegmentSpeed":100,"SpeedChangeOffsetOfZ":0,"SecondSegmentSpeed":80})
 	p8_unload_tips({"Position":"M2_Trash","Col":None,"Row":None})
+	reshake_la_slurry_on_pos16()
 
 # 向 POS20 Col1-6 加入 10 uL T9 index 引物。
 transfer({"StartPosition":"M2_POS10","EndPosition":"M2_POS27","LoosenOffsetOfZ":0})# 打开 POS10 盖板，暴露 T9 index 引物
