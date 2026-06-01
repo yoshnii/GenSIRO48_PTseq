@@ -1339,14 +1339,14 @@ for x in range(col_num):
 
 # 纯化板从磁力架转到 POS16 振荡位，使干燥磁珠充分回溶。
 transfer({"StartPosition":"M2_POS23","EndPosition":"M2_POS16","LoosenOffsetOfZ":0})
-temp_shaker_set({"TempParameters": {"IsEnable": False, "Temp": 25.00, "Duration": -1}, "ShakerParameters": {"IsEnable": True, "Direction": 1, "Speed": 1200, "Duration": 30}})
+temp_shaker_set({"TempParameters": {"IsEnable": False, "Temp": 25.00, "Duration": -1}, "ShakerParameters": {"IsEnable": True, "Direction": 1, "Speed": 1200, "Duration": 150}})
 
-temp_shaker_set({"TempParameters": {"IsEnable": False, "Temp": 25.00, "Duration": -1}, "ShakerParameters": {"IsEnable": True, "Direction": 0, "Speed": 1200, "Duration": 30}})
+temp_shaker_set({"TempParameters": {"IsEnable": False, "Temp": 25.00, "Duration": -1}, "ShakerParameters": {"IsEnable": True, "Direction": 0, "Speed": 1200, "Duration": 150}})
 delay({"Duration": 300})
 
 # 回溶后转回 POS23 磁吸，准备回收最终文库产物。
 transfer({"StartPosition":"M2_POS16","EndPosition":"M2_POS23","LoosenOffsetOfZ":0})
-delay({"Duration": 180})
+delay({"Duration": 300})
 
 # 回收建库产物到 POS20 Col7-12，产物保存在该 PCR 板中。
 pcr_open_door()
@@ -1460,6 +1460,12 @@ for i in range(col_num):
 # 定量取样完成后关闭 POS20 盖板，并启动 PCR 模块 4 度过夜保存。
 transfer({"StartPosition":"M2_POS26","EndPosition":"M2_POS20","LoosenOffsetOfZ":0})  # 关PCR盖板
 pcr_close_door()
+
+lang=get_lang()
+if lang==1:
+ report({"Phase": "建库产物保存", "Step": "4度保存", "TaskType": "library", "RemainingTime": None})
+elif lang==2:
+ report({"Phase": "Library product storage", "Step": "4C Hold", "TaskType": "library", "RemainingTime": None})
 
 # 启动PCR 4keep保存（并行执行，不阻塞后续定量流程）
 def block_pcr_4keep():
