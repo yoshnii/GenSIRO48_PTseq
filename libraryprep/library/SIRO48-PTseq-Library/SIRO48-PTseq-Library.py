@@ -886,7 +886,7 @@ delay({"Duration": 180})
 TA_ethanol_predispense_wait.Wait()
 
 # POS11 deepwell 1.3 mL 板 Col1-6 作为 TA/LA 废液回收列，与样本列 1:1 映射。
-# 单孔累计废液约 1020 uL，低于 1.3 mL 深孔容量。
+# 单孔累计废液量随样本通量变化，需保持低于深孔板容量。
 waste_col_start = 1
 
 Ligation_purification_tips2 = tip_300.load(sample_num,8,0)  # reuse_index=0：TA 乙醇洗涤/弃液枪头用完直接丢弃。
