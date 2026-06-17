@@ -604,14 +604,20 @@ for i in range(target_dnb_num):
 	p8_unload_tips({"Position":"M2_Trash","Col":None,"Row":None})
 
 	# 转移到POS20 Col 7 (环化反应位)
-	dilution_transfer_tip_loc_tmp = tip_50.load(1)
-	target_tip_pos,target_tip_col,target_tip_row = dilution_transfer_tip_loc_tmp[0]
-	p8_load_tips({"Position": target_tip_pos, "Row": target_tip_row, "Col": target_tip_col})
 	if temp[i][0] >= 8:
 		target_sample_volume = target_pooling_volume/(temp[i][0]/8)
 	else:
 		target_sample_volume = target_pooling_volume
-	p8_aspirate_modified(pooling_tube_pos,i+1,pooling_tube_col,target_sample_volume,AspirateSpeed=10)
+	if target_sample_volume > 35:
+		dilution_transfer_tip_loc_tmp = tip_300.load(1)
+		target_tip_pos,target_tip_col,target_tip_row = dilution_transfer_tip_loc_tmp[0]
+		p8_load_tips({"Position": target_tip_pos, "Row": target_tip_row, "Col": target_tip_col})
+		p8_aspirate({"Position":pooling_tube_pos,"Col":pooling_tube_col,"Row":i+1,"PreAirVolume":5,"AspirateOffsetOfZ":0.5,"AspirateSpeed":10,"AspirateVolume":target_sample_volume,"PreAirSpeed":50,"DelayAfterAspirate":1,"TipTouchTimes":0,"PostAirSpeed":50,"PostAirVolume":5,"IfTrack":False,"FirstSegmentSpeed":100,"SpeedChangeOffsetOfZ":0,"SecondSegmentSpeed":80})
+	else:
+		dilution_transfer_tip_loc_tmp = tip_50.load(1)
+		target_tip_pos,target_tip_col,target_tip_row = dilution_transfer_tip_loc_tmp[0]
+		p8_load_tips({"Position": target_tip_pos, "Row": target_tip_row, "Col": target_tip_col})
+		p8_aspirate_modified(pooling_tube_pos,i+1,pooling_tube_col,target_sample_volume,AspirateSpeed=10)
 	p8_empty_modified(target_dnb_loc_list[i][0],target_dnb_loc_list[i][2],target_dnb_loc_list[i][1])
 	p8_mix({"Position":target_dnb_loc_list[i][0],"Col":target_dnb_loc_list[i][1],"Row":target_dnb_loc_list[i][2],"PreAirVolume":0,"MixTimes":3,"MixAspirateSpeed":100,"MixAspirateOffsetOfZ":0.5,"MixVolume":40,"MixDispenseOffsetOfZ":8,"MixDispenseSpeed":100,"DelayAfterMixLoop":1,"MixEmptyOffsetOfZ":5,"MixEmptySpeed":200,"PreAirSpeed":50,"DelayAfterMixAspirate":0.5,"DelayAfterMixDispense":0.5,"DelayAfterMixEmpty":0.5,"PostAirSpeed":50,"PostAirVolume":0,"FirstSegmentSpeed":100,"SpeedChangeOffsetOfZ":0,"SecondSegmentSpeed":80, "TipTouchTimes": 0, "TipTouchOffsetOfZ": 5, "TipTouchRangeOfX": 1.2, "TipTouchSpeed": 100})
 	p8_empty_modified(target_dnb_loc_list[i][0],target_dnb_loc_list[i][2],target_dnb_loc_list[i][1])
