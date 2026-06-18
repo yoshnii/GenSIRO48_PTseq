@@ -250,8 +250,11 @@ def pos7_reaction_mix_dispense_volume(p8_volume_per_column, sample_count, row_in
 		return 0
 	return active_cols * p8_volume_per_column + pos7_dead_volume
 
-# POS17 2 mL 混合管分装到 POS7 后保留 15 uL 死体积。
+# POS17 混合管分装完成后保留死体积。
 MIX_TUBE_DEAD_VOLUME = 15
+# TA 和 LA/PCR Master Mix 额外增加 10 uL 冗余，降低最后一枪不足的风险。
+TA_LA_MIX_TUBE_EXTRA_DEAD_VOLUME = 10
+TA_LA_MIX_TUBE_DEAD_VOLUME = MIX_TUBE_DEAD_VOLUME + TA_LA_MIX_TUBE_EXTRA_DEAD_VOLUME
 
 # 低通量直接分装阈值：SampleCount <= 16 走 P1 50 uL 直接分装，>16 走 POS7/P8。
 LOW_THROUGHPUT_P1_DIRECT_MAX_SAMPLE_COUNT = 16
@@ -484,7 +487,7 @@ transfer({"StartPosition":"M2_POS17","EndPosition":"M2_POS27","LoosenOffsetOfZ":
 low_throughput_p1_direct_col9 = use_low_throughput_p1_direct(SampleCount)
 report_low_throughput_branch("第9列cDNA反应液", "Col9 cDNA mix", low_throughput_p1_direct_col9, SampleCount)
 # 低通量分支直接从 POS17 混合管分装到反应孔，只计算 POS17 混合管死体积。
-# 高通量分支使用 POS7 Col9 中转，并采用逐孔 10-30 uL 封顶死体积算法。
+# 高通量分支使用 POS7 Col9 中转，每个 POS7 中转孔保留 10 uL 总冗余。
 if low_throughput_p1_direct_col9:
 	pos7_col9_volumes = [0] * 8
 	mix_total_col9 = 4 * SampleCount + MIX_TUBE_DEAD_VOLUME
@@ -508,7 +511,7 @@ p1_empty({"Position":"M2_POS17","Col":4,"Row":1,"EmptyOffsetOfZ":0.2*SampleCount
 p1_unload_tips2({"Position":"M2_Trash","Col":None,"Row":None})
 
 if not low_throughput_p1_direct_col9:
-	# POS7 Col9 每行预分装体积来自上方逐孔封顶死体积算法。
+		# POS7 Col9 每行预分装体积来自上方中转孔总冗余算法。
 	target_volume_list = pos7_col9_volumes
 
 	# 将 cDNA 一链反应液预分装到 POS7 Col9 中转深孔板；POS7 无盖板，不需要开关盖动作。
@@ -588,17 +591,17 @@ elif lang==2: #
 
 # 配置靶向扩增反应试剂
 transfer({"StartPosition":"M2_POS17","EndPosition":"M2_POS27","LoosenOffsetOfZ":0})
-c = 1.4  # T2 缓冲液预分装到 POS7 Col7 的安全系数；该位置不使用 10-30 uL 逐孔封顶死体积算法。
+c = 1.4  # T2 缓冲液预分装到 POS7 Col7 的安全系数；该位置不使用反应液中转孔总冗余算法。
 low_throughput_p1_direct_col10 = use_low_throughput_p1_direct(SampleCount)
 report_low_throughput_branch("第10列靶向扩增反应液", "Col10 targeted amplification mix", low_throughput_p1_direct_col10, SampleCount)
 # 低通量分支直接从 POS17 混合管分装到反应孔，只计算 POS17 混合管死体积。
-# 高通量分支使用 POS7 Col10 中转，并采用逐孔 10-30 uL 封顶死体积算法。
+# 高通量分支使用 POS7 Col10 中转，每个 POS7 中转孔保留 10 uL 总冗余。
 if low_throughput_p1_direct_col10:
 	pos7_col10_volumes = [0] * 8
-	mix_total_col10 = 15 * SampleCount + MIX_TUBE_DEAD_VOLUME
+	mix_total_col10 = 15 * SampleCount + TA_LA_MIX_TUBE_DEAD_VOLUME
 else:
 	pos7_col10_volumes = [pos7_reaction_mix_dispense_volume(15, SampleCount, r) for r in range(8)]
-	mix_total_col10 = sum(pos7_col10_volumes) + MIX_TUBE_DEAD_VOLUME  # POS17 2 mL 混合管保留 15 uL 死体积。
+	mix_total_col10 = sum(pos7_col10_volumes) + TA_LA_MIX_TUBE_DEAD_VOLUME
 ta_t2_vol = mix_total_col10 * 7 / 15
 ta_t4_vol = mix_total_col10 * 5 / 15
 ta_t5_vol = mix_total_col10 * 3 / 15
@@ -675,7 +678,7 @@ p1_empty({"Position":"M2_POS17","Col":4,"Row":2,"EmptyOffsetOfZ":0.2*SampleCount
 p1_unload_tips2({"Position":"M2_Trash","Col":None,"Row":None})
 
 if not low_throughput_p1_direct_col10:
-	# POS7 Col10 每行预分装体积来自上方逐孔封顶死体积算法。
+		# POS7 Col10 每行预分装体积来自上方中转孔总冗余算法。
 	target_volume_list = pos7_col10_volumes
 	# 8 行预分装共用 1 支 P1 枪头。
 	# 使用 300 uL 枪头：该混合管最大需求体积超过 50 uL 枪头范围。
@@ -726,7 +729,7 @@ if low_throughput_p1_direct_col10:
 		last_row = 8 if (col_index < col_num - 1 or SampleCount % 8 == 0) else SampleCount % 8
 		for row in range(1, last_row + 1):
 			p1_aspirate_modified("M2_POS17", 2, 4, 15, PreAirVolume=5, AspirateSpeed=10, AspirateOffsetOfZ=0.6, DelayAfterAspirate=1, PostAirVolume=0, IfTrack=False)
-			p1_empty_modified("M2_POS20", row, col_index+7, EmptyOffsetOfZ=3, EmptySpeed=50, DelayAfterEmpty=0.5, TipTouchTimes=0, PostAirVolume=0)
+		p1_empty_modified("M2_POS20", row, col_index+7, EmptyOffsetOfZ=3, EmptySpeed=50, DelayAfterEmpty=0.5, TipTouchTimes=0, PostAirVolume=0)
 		p1_unload_tips2({"Position":"M2_Trash","Col":None,"Row":None})
 	transfer({"StartPosition":"M2_POS27","EndPosition":"M2_POS17","LoosenOffsetOfZ":0})
 	# POS10 T6/index 引物一次开盖处理完全部样本，处理完立即关盖。
@@ -742,8 +745,8 @@ if low_throughput_p1_direct_col10:
 	ta_direct_sample_tips = tip_50.load(sample_num, 1)
 	for tip_index, (col_index, row) in enumerate(active_sample_wells(SampleCount)):
 		p1_load_modified(ta_direct_sample_tips[tip_index])
-		p1_aspirate_modified("M2_POS20", row, col_index+1, 10, PreAirVolume=0, AspirateSpeed=5, AspirateOffsetOfZ=0.7, DelayAfterAspirate=3, PostAirVolume=1, IfTrack=False)
-		p1_dispense({"Position":"M2_POS20","Col":col_index+7,"Row":row,"IsEmpty":False,"DispenseOffsetOfZ":3,"DispenseSpeed":50,"DispenseVolume":5,"DelayAfterDispense":0.5,"TipTouchTimes":0,"PostAirSpeed":50,"PostAirVolume":1,"FirstSegmentSpeed":100,"SpeedChangeOffsetOfZ":0,"SecondSegmentSpeed":80})
+		p1_aspirate_modified("M2_POS20", row, col_index+1, 5, PreAirVolume=0, AspirateSpeed=5, AspirateOffsetOfZ=0.7, DelayAfterAspirate=3, PostAirVolume=0, IfTrack=False)
+		p1_empty_modified("M2_POS20", row, col_index+7, EmptyOffsetOfZ=3, EmptySpeed=50, DelayAfterEmpty=0.5, TipTouchTimes=0, PostAirVolume=0)
 		p1_unload_tips2({"Position":"M2_Trash","Col":None,"Row":None})
 	for i in range(col_num):
 		p8_load_modified(tip_50.load(target_tip_num_list[i])[0])
@@ -759,8 +762,8 @@ else:
 		p8_unload_tips({"Position":"M2_Trash","Col":None,"Row":None})
 	for i in range(col_num):
 		p8_load_modified(tip_50.load(target_tip_num_list[i])[0])
-		p8_aspirate({"Position":"M2_POS20","Col":i+1,"Row":1,"PreAirVolume":0,"AspirateOffsetOfZ":0.7,"AspirateSpeed":5,"AspirateVolume":10,"PreAirSpeed":50,"DelayAfterAspirate":3,"TipTouchTimes":0,"PostAirSpeed":50,"PostAirVolume":1,"IfTrack":False,"FirstSegmentSpeed":100,"SpeedChangeOffsetOfZ":0,"SecondSegmentSpeed":80})
-		p8_dispense({"Position":"M2_POS20","Col":i+7,"Row":1,"IsEmpty":False,"DispenseOffsetOfZ":3,"DispenseSpeed":50,"DispenseVolume":5,"DelayAfterDispense":0.5,"TipTouchTimes":0,"PostAirSpeed":50,"PostAirVolume":1,"FirstSegmentSpeed":100,"SpeedChangeOffsetOfZ":0,"SecondSegmentSpeed":80})
+		p8_aspirate({"Position":"M2_POS20","Col":i+1,"Row":1,"PreAirVolume":0,"AspirateOffsetOfZ":0.7,"AspirateSpeed":5,"AspirateVolume":5,"PreAirSpeed":50,"DelayAfterAspirate":3,"TipTouchTimes":0,"PostAirSpeed":50,"PostAirVolume":0,"IfTrack":False,"FirstSegmentSpeed":100,"SpeedChangeOffsetOfZ":0,"SecondSegmentSpeed":80})
+		p8_empty({"Position":"M2_POS20","Col":i+7,"Row":1,"EmptyOffsetOfZ":3,"EmptySpeed":50,"DelayAfterEmpty":0.5,"TipTouchTimes":0,"PostAirSpeed":50,"PostAirVolume":0,"FirstSegmentSpeed":100,"SpeedChangeOffsetOfZ":0,"SecondSegmentSpeed":80})
 		p8_mix({"Position":"M2_POS20","Col":i+7,"Row":1,"PreAirVolume":10,"MixTimes":15,"MixAspirateSpeed":50,"MixAspirateOffsetOfZ":0.5,"MixVolume":22,"MixDispenseOffsetOfZ":5,"MixDispenseSpeed":50,"DelayAfterMixLoop":2,"MixEmptyOffsetOfZ":3,"MixEmptySpeed":50,"PreAirSpeed":50,"DelayAfterMixAspirate":0.5,"DelayAfterMixDispense":0.5,"DelayAfterMixEmpty":0.5,"TipTouchTimes":0,"PostAirSpeed":50,"PostAirVolume":0,"FirstSegmentSpeed":100,"SpeedChangeOffsetOfZ":0,"SecondSegmentSpeed":80})
 		p8_unload_tips({"Position":"M2_Trash","Col":None,"Row":None})
 
@@ -956,15 +959,15 @@ def _t8_vol(n):
 low_throughput_p1_direct_col11 = use_low_throughput_p1_direct(SampleCount)
 report_low_throughput_branch("第11列文库扩增PCR反应液", "Col11 library amplification PCR mix", low_throughput_p1_direct_col11, SampleCount)
 # 低通量分支直接从 POS17 混合管分装到反应孔，只计算 POS17 混合管死体积。
-# 高通量分支使用 POS7 Col11 中转，并采用逐孔 10-30 uL 封顶死体积算法。
+# 高通量分支使用 POS7 Col11 中转，每个 POS7 中转孔保留 10 uL 总冗余。
 if low_throughput_p1_direct_col11:
 	pos7_col11_volumes = [0] * 8
-	mix_total_col11 = 30 * SampleCount + MIX_TUBE_DEAD_VOLUME
+	mix_total_col11 = 30 * SampleCount + TA_LA_MIX_TUBE_DEAD_VOLUME
 else:
 	pos7_col11_volumes = [pos7_reaction_mix_dispense_volume(30, SampleCount, r) for r in range(8)]
-	mix_total_col11 = sum(pos7_col11_volumes) + MIX_TUBE_DEAD_VOLUME  # POS17 2 mL 混合管保留 15 uL 死体积。
+	mix_total_col11 = sum(pos7_col11_volumes) + TA_LA_MIX_TUBE_DEAD_VOLUME
 la_t7_vol = mix_total_col11 * 20 / 30
-la_t8_vol = max(_t8_vol(SampleCount), mix_total_col11 * 1 / 30)  # _t8_vol acts as min-floor for T8
+la_t8_vol = max(_t8_vol(SampleCount) + TA_LA_MIX_TUBE_EXTRA_DEAD_VOLUME * 1 / 30, mix_total_col11 * 1 / 30)  # _t8_vol acts as min-floor for T8
 la_t2_vol = mix_total_col11 * 9 / 30
 
 transfer({"StartPosition":"M2_POS17","EndPosition":"M2_POS27","LoosenOffsetOfZ":0})
@@ -1063,7 +1066,7 @@ elif lang==2: #
 # 计算 LA Master Mix 预分装体积：每个样本最终加入 30 uL。
 # 分段策略：样本数 <=15 用基数 35（每孔死体积约 5 uL）；样本数 >=16 用基数 33（所有孔至少被吸 2 次，约 6 uL 死体积已足够）。
 if not low_throughput_p1_direct_col11:
-	# POS7 Col11 每行预分装体积来自上方逐孔封顶死体积算法。
+		# POS7 Col11 每行预分装体积来自上方中转孔总冗余算法。
 	target_volume_list_pre_PCR = pos7_col11_volumes
 	transfer({"StartPosition":"M2_POS17","EndPosition":"M2_POS27","LoosenOffsetOfZ":0})
 
