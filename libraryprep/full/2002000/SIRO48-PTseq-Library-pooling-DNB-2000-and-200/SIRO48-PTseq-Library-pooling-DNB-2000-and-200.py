@@ -263,7 +263,7 @@ PostAirSpeed= 50.0, PostAirVolume= 5.0,liquid = 0):
 # ================================输入部分=============================================
 
 # 样本信息文件位置
-sample_info_file_path = r'D:/Pathogens/PTseq.csv'
+sample_info_file_path = r'D:/Pathogens/PTseq48.csv'
 # 是否有样本孔需要过滤，默认值位True，即有样本孔需要过滤，反之则设为 False
 is_filter = False
 # 提取过滤的样本质控类型（仅在 is_filter 为 True 时生效）

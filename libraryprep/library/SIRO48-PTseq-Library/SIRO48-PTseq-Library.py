@@ -284,9 +284,9 @@ def report_low_throughput_branch(section_cn, section_en, direct_branch, sample_c
 
 
 '''=====================================样本信息读取=============================================================='''
-# 输入文件由中台写入 D:/Pathogens/PTseq.csv。脚本按 CSV 中的有效样本数量决定后续列数和枪头数量；
+# 输入文件由中台写入 D:/Pathogens/PTseq48.csv。脚本按 CSV 中的有效样本数量决定后续列数和枪头数量；
 # 如果文件不存在或为空，则弹窗要求人工输入样本数。
-sample_info_file_path = r'D:/Pathogens/PTseq.csv'
+sample_info_file_path = r'D:/Pathogens/PTseq48.csv'
 # is_filter=True 时会跳过 filtered_sample_qc_type 中定义的 QC 类型。
 is_filter = False
 filtered_sample_qc_type = {'N','P'}
@@ -729,7 +729,7 @@ if low_throughput_p1_direct_col10:
 		last_row = 8 if (col_index < col_num - 1 or SampleCount % 8 == 0) else SampleCount % 8
 		for row in range(1, last_row + 1):
 			p1_aspirate_modified("M2_POS17", 2, 4, 15, PreAirVolume=5, AspirateSpeed=10, AspirateOffsetOfZ=0.6, DelayAfterAspirate=1, PostAirVolume=0, IfTrack=False)
-		p1_empty_modified("M2_POS20", row, col_index+7, EmptyOffsetOfZ=3, EmptySpeed=50, DelayAfterEmpty=0.5, TipTouchTimes=0, PostAirVolume=0)
+			p1_empty_modified("M2_POS20", row, col_index+7, EmptyOffsetOfZ=3, EmptySpeed=50, DelayAfterEmpty=0.5, TipTouchTimes=0, PostAirVolume=0)
 		p1_unload_tips2({"Position":"M2_Trash","Col":None,"Row":None})
 	transfer({"StartPosition":"M2_POS27","EndPosition":"M2_POS17","LoosenOffsetOfZ":0})
 	# POS10 T6/index 引物一次开盖处理完全部样本，处理完立即关盖。
