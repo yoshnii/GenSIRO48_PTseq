@@ -306,8 +306,8 @@ default_product_data_amount = 1
 single_tip_loc = tip_1000.load(1)[0]
 # pooling稀释buffer位置 - M2_POS24 B1 (Col 1, Row 2) contains T2 buffer
 dilution_buffer_loc = ('M2_POS24',1,2)
-# pooling产物位置 - M2_POS13 Column 7
-target_tube_loc = [('M2_POS13',7,i) for i in range(1,9)]
+# pooling产物位置 - M2_POS16 Column 7
+target_tube_loc = [('M2_POS16',7,i) for i in range(1,9)]
 # DNB反应位置 - E25 pooling产物直接进入Col 8 Row 1-6
 # E25按每32个有效样本一个DNB切分，当前POS20最多支持6个DNB。
 target_dnb_loc_list = [('M2_POS20',8,1+i) for i in range(6)]
@@ -622,7 +622,7 @@ if lang==1:
 elif lang==2:
  report({"Phase": "Sequencing Prep", "Step": "Pooling", "TaskType": "library", "RemainingTime": None})
 
-pooling_tube_pos = 'M2_POS13'
+pooling_tube_pos = 'M2_POS16'
 pooling_tube_col = 7
 
 dilution_samples_by_plate = {i: [] for i in range(len(sample_dilution_positions))}
@@ -707,7 +707,12 @@ if deferred_second_dilution_plate_samples:
 		transfer_sample_to_pooling(sample, i)
 	swap_dilution_plates()
 
-# Step 6: 混匀pooling管并转移到POS20 Col 8 Row 1-6 (E25 DNB反应位)
+def shake_pooling_plate_on_pos16():
+	temp_shaker_set({"TempParameters":{"IsEnable":False,"Duration":-1},"ShakerParameters":{"IsEnable":True,"Direction":0,"Speed":1000,"Duration":60}})
+	temp_shaker_set({"TempParameters":{"IsEnable":False,"Duration":-1},"ShakerParameters":{"IsEnable":True,"Direction":1,"Speed":1000,"Duration":60}})
+
+# Step 6: POS16震荡混匀pooling管，并转移到POS20 Col 8 Row 1-6 (E25 DNB反应位)
+shake_pooling_plate_on_pos16()
 for i in range(target_dnb_num):
 	target_tip_loc = tip_300.load(1)
 	target_tip_pos,target_tip_col,target_tip_row = target_tip_loc[0]
