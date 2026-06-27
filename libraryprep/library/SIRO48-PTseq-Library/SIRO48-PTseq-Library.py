@@ -745,8 +745,8 @@ if low_throughput_p1_direct_col10:
 	ta_direct_sample_tips = tip_50.load(sample_num, 1)
 	for tip_index, (col_index, row) in enumerate(active_sample_wells(SampleCount)):
 		p1_load_modified(ta_direct_sample_tips[tip_index])
-		p1_aspirate_modified("M2_POS20", row, col_index+1, 5, PreAirVolume=0, AspirateSpeed=5, AspirateOffsetOfZ=0.7, DelayAfterAspirate=3, PostAirVolume=0, IfTrack=False)
-		p1_empty_modified("M2_POS20", row, col_index+7, EmptyOffsetOfZ=3, EmptySpeed=50, DelayAfterEmpty=0.5, TipTouchTimes=0, PostAirVolume=0)
+		p1_aspirate_modified("M2_POS20", row, col_index+1, 5, PreAirVolume=0, AspirateSpeed=5, AspirateOffsetOfZ=1.0, DelayAfterAspirate=3, PostAirVolume=1, IfTrack=False)
+		p1_dispense({"Position":"M2_POS20","Col":col_index+7,"Row":row,"IsEmpty":False,"DispenseOffsetOfZ":0.5,"DispenseSpeed":50,"DispenseVolume":30,"DelayAfterDispense":0.5,"TipTouchTimes":0,"PostAirSpeed":50,"PostAirVolume":0,"FirstSegmentSpeed":100,"SpeedChangeOffsetOfZ":0,"SecondSegmentSpeed":80})
 		p1_unload_tips2({"Position":"M2_Trash","Col":None,"Row":None})
 	for i in range(col_num):
 		p8_load_modified(tip_50.load(target_tip_num_list[i])[0])
@@ -762,8 +762,8 @@ else:
 		p8_unload_tips({"Position":"M2_Trash","Col":None,"Row":None})
 	for i in range(col_num):
 		p8_load_modified(tip_50.load(target_tip_num_list[i])[0])
-		p8_aspirate({"Position":"M2_POS20","Col":i+1,"Row":1,"PreAirVolume":0,"AspirateOffsetOfZ":0.7,"AspirateSpeed":5,"AspirateVolume":5,"PreAirSpeed":50,"DelayAfterAspirate":3,"TipTouchTimes":0,"PostAirSpeed":50,"PostAirVolume":0,"IfTrack":False,"FirstSegmentSpeed":100,"SpeedChangeOffsetOfZ":0,"SecondSegmentSpeed":80})
-		p8_empty({"Position":"M2_POS20","Col":i+7,"Row":1,"EmptyOffsetOfZ":3,"EmptySpeed":50,"DelayAfterEmpty":0.5,"TipTouchTimes":0,"PostAirSpeed":50,"PostAirVolume":0,"FirstSegmentSpeed":100,"SpeedChangeOffsetOfZ":0,"SecondSegmentSpeed":80})
+		p8_aspirate({"Position":"M2_POS20","Col":i+1,"Row":1,"PreAirVolume":0,"AspirateOffsetOfZ":1.0,"AspirateSpeed":5,"AspirateVolume":5,"PreAirSpeed":50,"DelayAfterAspirate":3,"TipTouchTimes":0,"PostAirSpeed":50,"PostAirVolume":1,"IfTrack":False,"FirstSegmentSpeed":100,"SpeedChangeOffsetOfZ":0,"SecondSegmentSpeed":80})
+		p8_dispense({"Position":"M2_POS20","Col":i+7,"Row":1,"IsEmpty":False,"DispenseOffsetOfZ":0.5,"DispenseSpeed":50,"DispenseVolume":30,"DelayAfterDispense":0.5,"TipTouchTimes":0,"PostAirSpeed":50,"PostAirVolume":0,"FirstSegmentSpeed":100,"SpeedChangeOffsetOfZ":0,"SecondSegmentSpeed":80})
 		p8_mix({"Position":"M2_POS20","Col":i+7,"Row":1,"PreAirVolume":10,"MixTimes":15,"MixAspirateSpeed":50,"MixAspirateOffsetOfZ":0.5,"MixVolume":22,"MixDispenseOffsetOfZ":5,"MixDispenseSpeed":50,"DelayAfterMixLoop":2,"MixEmptyOffsetOfZ":3,"MixEmptySpeed":50,"PreAirSpeed":50,"DelayAfterMixAspirate":0.5,"DelayAfterMixDispense":0.5,"DelayAfterMixEmpty":0.5,"TipTouchTimes":0,"PostAirSpeed":50,"PostAirVolume":0,"FirstSegmentSpeed":100,"SpeedChangeOffsetOfZ":0,"SecondSegmentSpeed":80})
 		p8_unload_tips({"Position":"M2_Trash","Col":None,"Row":None})
 
