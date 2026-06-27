@@ -1,0 +1,155 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1320" height="1480" viewBox="0 0 1320 1480">
+<rect width="100%" height="100%" fill="#ffffff"/>
+<style>text{font-family:Arial,Helvetica,sans-serif}.title{font-size:24px;font-weight:700}.subtitle{font-size:13px;fill:#555}.axis{font-size:12px;fill:#555}.method{font-size:16px;font-weight:700}.small{font-size:11px;fill:#555}.grid{stroke:#d9e2f3;stroke-width:1}.line{fill:none;stroke:#1f77b4;stroke-width:2.2}.ramp{stroke:#6aaed6;stroke-width:1.3}.hold{stroke:#1f77b4;stroke-width:2.2}.box{fill:#f8fbff;stroke:#d9e2f3}</style>
+<text x="78" y="34" class="title">SIRO48_PTseq_Libprep.xml PCR temperature curves</text>
+<text x="78" y="55" class="subtitle">Loops expanded as total cycle count: TA step 2-4 x30, LA step 3-5 x8. Time axis includes ramp time estimated from Slope.</text>
+<rect x="78" y="70" width="1212" height="180" class="box"/>
+<line x1="78" x2="1290" y1="247.6" y2="247.6" class="grid"/>
+<text x="68" y="251.6" text-anchor="end" class="axis">0</text>
+<line x1="78" x2="1290" y1="198.9" y2="198.9" class="grid"/>
+<text x="68" y="202.9" text-anchor="end" class="axis">20</text>
+<line x1="78" x2="1290" y1="150.3" y2="150.3" class="grid"/>
+<text x="68" y="154.3" text-anchor="end" class="axis">40</text>
+<line x1="78" x2="1290" y1="101.6" y2="101.6" class="grid"/>
+<text x="68" y="105.6" text-anchor="end" class="axis">60</text>
+<line x1="78.0" x2="78.0" y1="70" y2="250" class="grid"/>
+<text x="78.0" y="268" text-anchor="middle" class="axis">0</text>
+<line x1="686.7" x2="686.7" y1="70" y2="250" class="grid"/>
+<text x="686.7" y="268" text-anchor="middle" class="axis">2</text>
+<line x1="1290.0" x2="1290.0" y1="70" y2="250" class="grid"/>
+<text x="1290.0" y="268" text-anchor="middle" class="axis">3.98247</text>
+<polyline points="78.0,186.8 124.1,89.5 732.8,89.5 823.4,150.3 828.4,150.3 955.2,198.9 960.3,198.9 1284.9,237.8 1290.0,237.8" class="line"/>
+<text x="78" y="56" class="method">PTseq_RT</text>
+<text x="258" y="56" class="small">total 4.0 min | expanded steps 4 | start lid 110 C</text>
+<text x="428.4" y="82.5" text-anchor="middle" class="small">65C/120s</text>
+<text x="1287.5" y="230.8" text-anchor="middle" class="small">4C/1s</text>
+<text x="26" y="160.0" transform="rotate(-90 26 160.0)" text-anchor="middle" class="axis">Block C</text>
+<rect x="78" y="305" width="1212" height="180" class="box"/>
+<line x1="78" x2="1290" y1="483.1" y2="483.1" class="grid"/>
+<text x="68" y="487.1" text-anchor="end" class="axis">0</text>
+<line x1="78" x2="1290" y1="444.8" y2="444.8" class="grid"/>
+<text x="68" y="448.8" text-anchor="end" class="axis">20</text>
+<line x1="78" x2="1290" y1="406.5" y2="406.5" class="grid"/>
+<text x="68" y="410.5" text-anchor="end" class="axis">40</text>
+<line x1="78" x2="1290" y1="368.2" y2="368.2" class="grid"/>
+<text x="68" y="372.2" text-anchor="end" class="axis">60</text>
+<line x1="78" x2="1290" y1="329.9" y2="329.9" class="grid"/>
+<text x="68" y="333.9" text-anchor="end" class="axis">80</text>
+<line x1="78.0" x2="78.0" y1="305" y2="485" class="grid"/>
+<text x="78.0" y="503" text-anchor="middle" class="axis">0</text>
+<line x1="402.3" x2="402.3" y1="305" y2="485" class="grid"/>
+<text x="402.3" y="503" text-anchor="middle" class="axis">10</text>
+<line x1="726.7" x2="726.7" y1="305" y2="485" class="grid"/>
+<text x="726.7" y="503" text-anchor="middle" class="axis">20</text>
+<line x1="1051.0" x2="1051.0" y1="305" y2="485" class="grid"/>
+<text x="1051.0" y="503" text-anchor="middle" class="axis">30</text>
+<line x1="1290.0" x2="1290.0" y1="305" y2="485" class="grid"/>
+<text x="1290.0" y="503" text-anchor="middle" class="axis">37.3676</text>
+<polyline points="78.0,475.4 80.6,435.2 242.8,435.2 244.2,412.2 1217.3,412.2 1223.2,320.3 1225.9,320.3 1232.0,368.2 1232.5,368.2 1240.3,406.5 1240.8,406.5 1254.3,444.8 1254.9,444.8 1289.5,475.4 1290.0,475.4" class="line"/>
+<text x="78" y="291" class="method">PTseq_cDNA</text>
+<text x="258" y="291" class="small">total 37.4 min | expanded steps 7 | start lid 110 C</text>
+<text x="161.7" y="428.2" text-anchor="middle" class="small">25C/300s</text>
+<text x="730.7" y="405.2" text-anchor="middle" class="small">37C/1800s</text>
+<text x="1289.7" y="468.4" text-anchor="middle" class="small">4C/1s</text>
+<text x="26" y="395.0" transform="rotate(-90 26 395.0)" text-anchor="middle" class="axis">Block C</text>
+<rect x="78" y="540" width="1212" height="180" class="box"/>
+<line x1="78" x2="1290" y1="718.3" y2="718.3" class="grid"/>
+<text x="68" y="722.3" text-anchor="end" class="axis">0</text>
+<line x1="78" x2="1290" y1="683.7" y2="683.7" class="grid"/>
+<text x="68" y="687.7" text-anchor="end" class="axis">20</text>
+<line x1="78" x2="1290" y1="649.0" y2="649.0" class="grid"/>
+<text x="68" y="653.0" text-anchor="end" class="axis">40</text>
+<line x1="78" x2="1290" y1="614.4" y2="614.4" class="grid"/>
+<text x="68" y="618.4" text-anchor="end" class="axis">60</text>
+<line x1="78" x2="1290" y1="579.8" y2="579.8" class="grid"/>
+<text x="68" y="583.8" text-anchor="end" class="axis">80</text>
+<line x1="78" x2="1290" y1="545.2" y2="545.2" class="grid"/>
+<text x="68" y="549.2" text-anchor="end" class="axis">100</text>
+<line x1="78.0" x2="78.0" y1="540" y2="720" class="grid"/>
+<text x="78.0" y="738" text-anchor="middle" class="axis">0</text>
+<line x1="360.8" x2="360.8" y1="540" y2="720" class="grid"/>
+<text x="360.8" y="738" text-anchor="middle" class="axis">20</text>
+<line x1="643.6" x2="643.6" y1="540" y2="720" class="grid"/>
+<text x="643.6" y="738" text-anchor="middle" class="axis">40</text>
+<line x1="926.4" x2="926.4" y1="540" y2="720" class="grid"/>
+<text x="926.4" y="738" text-anchor="middle" class="axis">60</text>
+<line x1="1209.2" x2="1209.2" y1="540" y2="720" class="grid"/>
+<text x="1209.2" y="738" text-anchor="middle" class="axis">80</text>
+<line x1="1290.0" x2="1290.0" y1="540" y2="720" class="grid"/>
+<text x="1290.0" y="738" text-anchor="middle" class="axis">85.7163</text>
+<polyline points="78.0,711.3 82.9,553.8 125.3,553.8 132.4,553.8 136.1,614.4 150.3,614.4 150.9,593.7 161.5,593.7 162.7,553.8 169.8,553.8 173.5,614.4 187.7,614.4 188.3,593.7 198.9,593.7 200.2,553.8 207.2,553.8 211.0,614.4 225.1,614.4 225.8,593.7 236.4,593.7 237.6,553.8 244.7,553.8 248.4,614.4 262.6,614.4 263.2,593.7 273.8,593.7 275.0,553.8 282.1,553.8 285.9,614.4 300.0,614.4 300.6,593.7 311.3,593.7 312.5,553.8 319.6,553.8 323.3,614.4 337.4,614.4 338.1,593.7 348.7,593.7 349.9,553.8 357.0,553.8 360.7,614.4 374.9,614.4 375.5,593.7 386.1,593.7 387.4,553.8 394.4,553.8 398.2,614.4 412.3,614.4 413.0,593.7 423.6,593.7 424.8,553.8 431.9,553.8 435.6,614.4 449.8,614.4 450.4,593.7 461.0,593.7 462.2,553.8 469.3,553.8 473.1,614.4 487.2,614.4 487.8,593.7 498.4,593.7 499.7,553.8 506.7,553.8 510.5,614.4 524.6,614.4 525.3,593.7 535.9,593.7 537.1,553.8 544.2,553.8 547.9,614.4 562.1,614.4 562.7,593.7 573.3,593.7 574.5,553.8 581.6,553.8 585.4,614.4 599.5,614.4 600.1,593.7 610.8,593.7 612.0,553.8 619.1,553.8 622.8,614.4 636.9,614.4 637.6,593.7 648.2,593.7 649.4,553.8 656.5,553.8 660.2,614.4 674.4,614.4 675.0,593.7 685.6,593.7 686.9,553.8 693.9,553.8 697.7,614.4 711.8,614.4 712.5,593.7 723.1,593.7 724.3,553.8 731.4,553.8 735.1,614.4 749.3,614.4 749.9,593.7 760.5,593.7 761.7,553.8 768.8,553.8 772.6,614.4 786.7,614.4 787.3,593.7 797.9,593.7 799.2,553.8 806.2,553.8 810.0,614.4 824.1,614.4 824.8,593.7 835.4,593.7 836.6,553.8 843.7,553.8 847.4,614.4 861.6,614.4 862.2,593.7 872.8,593.7 874.1,553.8 881.1,553.8 884.9,614.4 899.0,614.4 899.7,593.7 910.3,593.7 911.5,553.8 918.6,553.8 922.3,614.4 936.4,614.4 937.1,593.7 947.7,593.7 948.9,553.8 956.0,553.8 959.7,614.4 973.9,614.4 974.5,593.7 985.1,593.7 986.4,553.8 993.4,553.8 997.2,614.4 1011.3,614.4 1012.0,593.7 1022.6,593.7 1023.8,553.8 1030.9,553.8 1034.6,614.4 1048.8,614.4 1049.4,593.7 1060.0,593.7 1061.2,553.8 1068.3,553.8 1072.1,614.4 1086.2,614.4 1086.8,593.7 1097.4,593.7 1098.7,553.8 1105.7,553.8 1109.5,614.4 1123.6,614.4 1124.3,593.7 1134.9,593.7 1136.1,553.8 1143.2,553.8 1146.9,614.4 1161.1,614.4 1161.7,593.7 1172.3,593.7 1173.6,553.8 1180.6,553.8 1184.4,614.4 1198.5,614.4 1199.2,593.7 1209.8,593.7 1211.0,553.8 1218.1,553.8 1221.8,614.4 1236.0,614.4 1236.6,593.7 1247.2,593.7 1261.3,593.7 1262.8,614.4 1263.0,614.4 1266.6,649.0 1266.9,649.0 1273.1,683.7 1273.4,683.7 1289.8,711.3 1290.0,711.3" class="line"/>
+<text x="78" y="526" class="method">PTseq_TA</text>
+<text x="258" y="526" class="small">total 85.7 min | expanded steps 96 | start lid 110 C</text>
+<text x="104.1" y="546.8" text-anchor="middle" class="small">95C/180s</text>
+<text x="203.7" y="546.8" text-anchor="middle" class="small">95C/30s</text>
+<text x="278.6" y="546.8" text-anchor="middle" class="small">95C/30s</text>
+<text x="353.5" y="546.8" text-anchor="middle" class="small">95C/30s</text>
+<text x="428.3" y="546.8" text-anchor="middle" class="small">95C/30s</text>
+<text x="503.2" y="546.8" text-anchor="middle" class="small">95C/30s</text>
+<text x="578.1" y="546.8" text-anchor="middle" class="small">95C/30s</text>
+<text x="653.0" y="546.8" text-anchor="middle" class="small">95C/30s</text>
+<text x="727.8" y="546.8" text-anchor="middle" class="small">95C/30s</text>
+<text x="26" y="630.0" transform="rotate(-90 26 630.0)" text-anchor="middle" class="axis">Block C</text>
+<rect x="78" y="775" width="1212" height="180" class="box"/>
+<line x1="78" x2="1290" y1="953.3" y2="953.3" class="grid"/>
+<text x="68" y="957.3" text-anchor="end" class="axis">0</text>
+<line x1="78" x2="1290" y1="919.7" y2="919.7" class="grid"/>
+<text x="68" y="923.7" text-anchor="end" class="axis">20</text>
+<line x1="78" x2="1290" y1="886.0" y2="886.0" class="grid"/>
+<text x="68" y="890.0" text-anchor="end" class="axis">40</text>
+<line x1="78" x2="1290" y1="852.4" y2="852.4" class="grid"/>
+<text x="68" y="856.4" text-anchor="end" class="axis">60</text>
+<line x1="78" x2="1290" y1="818.7" y2="818.7" class="grid"/>
+<text x="68" y="822.7" text-anchor="end" class="axis">80</text>
+<line x1="78" x2="1290" y1="785.1" y2="785.1" class="grid"/>
+<text x="68" y="789.1" text-anchor="end" class="axis">100</text>
+<line x1="78.0" x2="78.0" y1="775" y2="955" class="grid"/>
+<text x="78.0" y="973" text-anchor="middle" class="axis">0</text>
+<line x1="452.0" x2="452.0" y1="775" y2="955" class="grid"/>
+<text x="452.0" y="973" text-anchor="middle" class="axis">10</text>
+<line x1="826.0" x2="826.0" y1="775" y2="955" class="grid"/>
+<text x="826.0" y="973" text-anchor="middle" class="axis">20</text>
+<line x1="1200.0" x2="1200.0" y1="775" y2="955" class="grid"/>
+<text x="1200.0" y="973" text-anchor="middle" class="axis">30</text>
+<line x1="1290.0" x2="1290.0" y1="775" y2="955" class="grid"/>
+<text x="1290.0" y="973" text-anchor="middle" class="axis">32.4057</text>
+<polyline points="78.0,946.6 82.7,891.1 456.7,891.1 464.9,793.5 577.1,793.5 577.5,788.5 590.0,788.5 600.8,852.4 610.1,852.4 611.8,832.2 630.5,832.2 634.2,788.5 646.7,788.5 657.4,852.4 666.8,852.4 668.5,832.2 687.2,832.2 690.9,788.5 703.3,788.5 714.1,852.4 723.4,852.4 725.1,832.2 743.8,832.2 747.5,788.5 760.0,788.5 770.8,852.4 780.1,852.4 781.8,832.2 800.5,832.2 804.2,788.5 816.7,788.5 827.4,852.4 836.8,852.4 838.5,832.2 857.2,832.2 860.9,788.5 873.3,788.5 884.1,852.4 893.5,852.4 895.2,832.2 913.9,832.2 917.5,788.5 930.0,788.5 940.8,852.4 950.1,852.4 951.8,832.2 970.5,832.2 974.2,788.5 986.7,788.5 997.4,852.4 1006.8,852.4 1008.5,832.2 1027.2,832.2 1214.2,832.2 1217.9,852.4 1218.6,852.4 1228.1,886.0 1228.8,886.0 1245.4,919.7 1246.0,919.7 1289.4,946.6 1290.0,946.6" class="line"/>
+<text x="78" y="761" class="method">PTseq_LA</text>
+<text x="258" y="761" class="small">total 32.4 min | expanded steps 31 | start lid 110 C</text>
+<text x="269.7" y="884.1" text-anchor="middle" class="small">37C/600s</text>
+<text x="521.0" y="786.5" text-anchor="middle" class="small">95C/180s</text>
+<text x="640.4" y="781.5" text-anchor="middle" class="small">98C/20s</text>
+<text x="753.8" y="781.5" text-anchor="middle" class="small">98C/20s</text>
+<text x="867.1" y="781.5" text-anchor="middle" class="small">98C/20s</text>
+<text x="980.4" y="781.5" text-anchor="middle" class="small">98C/20s</text>
+<text x="1120.7" y="825.2" text-anchor="middle" class="small">72C/300s</text>
+<text x="1289.7" y="939.6" text-anchor="middle" class="small">4C/1s</text>
+<text x="26" y="865.0" transform="rotate(-90 26 865.0)" text-anchor="middle" class="axis">Block C</text>
+<rect x="78" y="1010" width="1212" height="180" class="box"/>
+<line x1="78" x2="1290" y1="1176.2" y2="1176.2" class="grid"/>
+<text x="68" y="1180.2" text-anchor="end" class="axis">0</text>
+<line x1="78.0" x2="78.0" y1="1010" y2="1190" class="grid"/>
+<text x="78.0" y="1208" text-anchor="middle" class="axis">0</text>
+<line x1="1290.0" x2="1290.0" y1="1010" y2="1190" class="grid"/>
+<text x="1290.0" y="1208" text-anchor="middle" class="axis">0.0166667</text>
+<polyline points="78.0,1120.8 1290.0,1120.8" class="line"/>
+<text x="78" y="996" class="method">4keep</text>
+<text x="258" y="996" class="small">total 0.0 min | expanded steps 1 | start lid 25 C</text>
+<text x="684.0" y="1113.8" text-anchor="middle" class="small">4C/1s</text>
+<text x="26" y="1100.0" transform="rotate(-90 26 1100.0)" text-anchor="middle" class="axis">Block C</text>
+<rect x="78" y="1245" width="1212" height="180" class="box"/>
+<line x1="78" x2="1290" y1="1419.7" y2="1419.7" class="grid"/>
+<text x="68" y="1423.7" text-anchor="end" class="axis">0</text>
+<line x1="78" x2="1290" y1="1313.8" y2="1313.8" class="grid"/>
+<text x="68" y="1317.8" text-anchor="end" class="axis">20</text>
+<line x1="78.0" x2="78.0" y1="1245" y2="1425" class="grid"/>
+<text x="78.0" y="1443" text-anchor="middle" class="axis">0</text>
+<line x1="1290.0" x2="1290.0" y1="1245" y2="1425" class="grid"/>
+<text x="1290.0" y="1443" text-anchor="middle" class="axis">0.258333</text>
+<polyline points="78.0,1287.4 899.0,1398.5 1290.0,1398.5" class="line"/>
+<text x="78" y="1231" class="method">25-4</text>
+<text x="258" y="1231" class="small">total 0.3 min | expanded steps 1 | start lid 110 C</text>
+<text x="1094.5" y="1391.5" text-anchor="middle" class="small">4C/5s</text>
+<text x="26" y="1335.0" transform="rotate(-90 26 1335.0)" text-anchor="middle" class="axis">Block C</text>
+<text x="660.0" y="1464" text-anchor="middle" class="axis">Time (min)</text>
+</svg>
