@@ -504,7 +504,7 @@
       </PID>
     </PIDSet>
   </Method>
-  <Method methodName="4keep" creator="Shan" dateTime="2026-02-20T10:00:00.0000000+08:00">
+  <Method methodName="Keep4_8h" creator="Shan" dateTime="2026-02-20T10:00:00.0000000+08:00">
     <Variant>960000</Variant>
     <PlateType>0</PlateType>
     <FluidQuantity>0</FluidQuantity>
@@ -515,7 +515,7 @@
       <Number>1</Number>
       <Slope>2</Slope>
       <PlateauTemperature>4</PlateauTemperature>
-      <PlateauTime>57600</PlateauTime>
+      <PlateauTime>28800</PlateauTime>
       <OverShootSlope1>0.1</OverShootSlope1>
       <OverShootTemperature>0</OverShootTemperature>
       <OverShootTime>0</OverShootTime>

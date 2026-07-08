@@ -841,7 +841,7 @@ elif lang==2:
  report({"Phase": "DNB Preparation", "Step": "4C Hold", "TaskType": "library", "RemainingTime": None})
 
 def blockD3():
-	pcr_run_method({"Methods": ["4keep"]})
+	pcr_run_method({"Methods": ["Keep4_8h"]})
 d3 = parallel_block(blockD3)
 
 d3.Wait()

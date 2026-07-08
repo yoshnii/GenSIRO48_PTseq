@@ -152,7 +152,7 @@
       </PID>
     </PIDSet>
   </Method>
-  <Method methodName="4keep" creator="WSR" dateTime="2025-10-06T11:30:38.0886434+08:00">
+  <Method methodName="Keep4_8h" creator="WSR" dateTime="2025-10-06T11:30:38.0886434+08:00">
     <Variant>960000</Variant>
     <PlateType>0</PlateType>
     <FluidQuantity>2</FluidQuantity>
@@ -163,7 +163,7 @@
       <Number>1</Number>
       <Slope>4.4</Slope>
       <PlateauTemperature>4</PlateauTemperature>
-      <PlateauTime>10</PlateauTime>
+      <PlateauTime>28800</PlateauTime>
       <OverShootSlope1>0.1</OverShootSlope1>
       <OverShootTemperature>0</OverShootTemperature>
       <OverShootTime>0</OverShootTime>

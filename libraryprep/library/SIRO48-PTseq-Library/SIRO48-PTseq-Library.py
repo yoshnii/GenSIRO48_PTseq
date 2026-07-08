@@ -5,7 +5,7 @@
 # 流程从 POS8 提取产物板开始，依次执行 cDNA 合成、靶向扩增、文库扩增、
 # TA/LA 两轮磁珠纯化和 Qubit dsDNA HS 定量。
 # 本脚本不执行 pooling 和 make DNB；流程状态通过 report(...) 输出到中台软件。
-# 最终文库产物保存在 POS20 Col7-12；定量取样后 PCR 模块运行 4keep。
+# 最终文库产物保存在 POS20 Col7-12；定量取样后 PCR 模块运行 Keep4_8h。
 #####################################################################
 # 共用头部包含平台初始化、枪头管理、移液封装和通用辅助函数。
 
@@ -1202,7 +1202,7 @@ target_volume_list = [55*(SampleCount//8+1)]*(SampleCount%8)+[55*(SampleCount//8
 ethanol_pos = {"Position":"M2_POS7","Col":1,"Row":1}
 
 # 最终文库产物回收到 POS20 Col7-12。
-# 产物定量后 POS20 密封并由 PCR 模块 4keep 保存。
+# 产物定量后 POS20 密封并由 PCR 模块 Keep4_8h 保存。
 product_pos = {"Position":"M2_POS20","Col":7,"Row":1}
 
 
@@ -1470,10 +1470,10 @@ if lang==1:
 elif lang==2:
  report({"Phase": "Library product storage", "Step": "4C Hold", "TaskType": "library", "RemainingTime": None})
 
-# 启动PCR 4keep保存（并行执行，不阻塞后续定量流程）
-def block_pcr_4keep():
-	pcr_run_method({"Methods": ["4keep"]})
-keep = parallel_block(block_pcr_4keep)
+# 启动PCR Keep4_8h保存（并行执行，不阻塞后续定量流程）
+def block_pcr_Keep4_8h():
+	pcr_run_method({"Methods": ["Keep4_8h"]})
+keep = parallel_block(block_pcr_Keep4_8h)
 
 # 第三步：执行定量混合板震荡换位；先腾空 POS16，再把 POS13 混合板移入 POS16 震荡，震荡后恢复。
 # 先把当前 POS16 上的板移到 POS23 暂存，腾出震荡位。
@@ -1540,7 +1540,7 @@ except:
 	pass
 
 
-# 等待 PCR 模块 4keep 进入保持状态后结束脚本。
+# 等待 PCR 模块 Keep4_8h 进入保持状态后结束脚本。
 keep.Wait()
 
 # 产物保存位置：POS20 Col7-12。

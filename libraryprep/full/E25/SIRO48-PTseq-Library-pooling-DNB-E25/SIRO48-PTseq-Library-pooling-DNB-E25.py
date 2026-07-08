@@ -1547,7 +1547,7 @@ for i in range(col_num):
 	p8_mix({"Position":dye_mix_plate[0],"Col":dye_mix_plate[1]+i,"Row":1,"PreAirVolume":10,"MixTimes":2,"MixAspirateSpeed":100,"MixAspirateOffsetOfZ":1,"MixVolume":40,"MixDispenseOffsetOfZ":15,"MixDispenseSpeed":100,"DelayAfterMixLoop":0.5,"MixEmptyOffsetOfZ":5,"MixEmptySpeed":50,"PreAirSpeed":50,"DelayAfterMixAspirate":0.5,"DelayAfterMixDispense":0.5,"DelayAfterMixEmpty":0.5,"PostAirSpeed":50,"PostAirVolume":0,"FirstSegmentSpeed":100,"SpeedChangeOffsetOfZ":0,"SecondSegmentSpeed":80, "TipTouchTimes": 0, "TipTouchOffsetOfZ": 5, "TipTouchRangeOfX": 1.2, "TipTouchSpeed": 100})
 	p8_unload_modified(sample_dilute_tip_loc[i])
 
-# Full E25: 定量取样后不启动 4keep，继续进入 pooling/DNB。
+# Full E25: 定量取样后不启动 Keep4_8h，继续进入 pooling/DNB。
 
 # 第三步：执行定量混合板震荡换位；先腾空 POS16，再把 POS13 混合板移入 POS16 震荡，震荡后恢复。
 # 先把当前 POS16 上的板移到 POS23 暂存，腾出震荡位。
@@ -2063,7 +2063,7 @@ transfer({"StartPosition":"M2_POS26","EndPosition":"M2_POS20","LoosenOffsetOfZ":
 pcr_close_door()
 
 def blockD3():
-	pcr_run_method({"Methods": ["4keep"]})
+	pcr_run_method({"Methods": ["Keep4_8h"]})
 d3 = parallel_block(blockD3)
 
 d3.Wait()
