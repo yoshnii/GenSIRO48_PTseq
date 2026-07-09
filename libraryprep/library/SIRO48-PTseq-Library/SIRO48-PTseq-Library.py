@@ -288,9 +288,9 @@ def report_low_throughput_branch(section_cn, section_en, direct_branch, sample_c
 
 
 '''=====================================样本信息读取=============================================================='''
-# 输入文件由中台写入 D:/Pathogens/PTseq48.csv。脚本按 CSV 中的有效样本数量决定后续列数和枪头数量；
+# 输入文件由中台写入 D:/Pathogens/PTseq.csv。脚本按 CSV 中的有效样本数量决定后续列数和枪头数量；
 # 如果文件不存在或为空，则弹窗要求人工输入样本数。
-sample_info_file_path = r'D:/Pathogens/PTseq48.csv'
+sample_info_file_path = r'D:/Pathogens/PTseq.csv'
 # is_filter=True 时会跳过 filtered_sample_qc_type 中定义的 QC 类型。
 is_filter = False
 filtered_sample_qc_type = {'N','P'}

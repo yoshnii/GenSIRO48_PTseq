@@ -308,7 +308,7 @@ def report_low_throughput_branch(section_cn, section_en, direct_branch, sample_c
 # ================================输入部分=============================================
 
 # 样本信息文件位置
-sample_info_file_path = r'D:/Pathogens/PTseq48.csv'
+sample_info_file_path = r'D:/Pathogens/PTseq.csv'
 # 是否有样本孔需要过滤，默认值位True，即有样本孔需要过滤，反之则设为 False
 is_filter = False
 # 提取过滤的样本质控类型（仅在 is_filter 为 True 时生效）
