@@ -7,3 +7,9 @@ __pycache__/
 *.zip
 *.xlsx
 
+
+# 中台配置: 只版本化 PTseq 流程配置 db + 其 SQL dump; 其余(样本记录db/dll/日志/其它产品线)不进 git
+中台配置/**/SIRO16sampleinfoV3.db
+中台配置/**/*.log
+中台配置/**/*.dll
+中台配置/**/*.exe
