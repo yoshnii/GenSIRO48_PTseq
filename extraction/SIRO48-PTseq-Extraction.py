@@ -408,12 +408,12 @@ if sample_num <= 9:
 		target_col = target_col_list[target_col_index]
 		target_row = target_row_list[target_rows_index]
 
-		p8_aspirate_modified('M1_POS14',1,2,45,PreAirVolume=0,AspirateOffsetOfZ=0.5)
+		p8_aspirate_modified('M1_POS14',1,2,90,PreAirVolume=0,AspirateOffsetOfZ=0.5)
 		p8_empty_modified(f'{target_pos}',target_row,target_col)
 	p8_unload_tips({"Position": "M1_Trash", "Col": 1, "Row": 1})
 
 else:
-	target_volume_list = [50*(sample_num//8 + 1)]*rest_8 + [50*(sample_num//8)]*(8-rest_8)
+	target_volume_list = [95*(sample_num//8 + 1)]*rest_8 + [95*(sample_num//8)]*(8-rest_8)
 	#分装回溶液到POS3第11列
 	temp = tip_1000.load(1)[0]
 	p8_load_modified(temp)
@@ -434,7 +434,7 @@ else:
 		target_pos = magnet_pos_list[target_pos_index]
 		target_col = target_col_list[target_col_index]
 		target_row = 1
-		p8_aspirate_modified('M1_POS2',1,11,45)
+		p8_aspirate_modified('M1_POS2',1,11,90)
 		p8_empty_modified(f'{target_pos}',target_row,target_col,EmptyOffsetOfZ=2)
 	p8_unload_tips({"Position": "M1_Trash", "Col": 1, "Row": 1})
 
