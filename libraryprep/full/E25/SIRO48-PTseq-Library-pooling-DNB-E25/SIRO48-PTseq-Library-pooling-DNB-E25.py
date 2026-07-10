@@ -262,7 +262,7 @@ def active_col_count_for_row(sample_count, row_index):
 	remainder = sample_count % 8
 	return full_cols + (1 if remainder != 0 and row_index < remainder else 0)
 
-def pos7_reaction_mix_dispense_volume(p8_volume_per_column, sample_count, row_index, pos7_dead_volume=10):
+def pos7_reaction_mix_dispense_volume(p8_volume_per_column, sample_count, row_index, pos7_dead_volume=20):
 	active_cols = active_col_count_for_row(sample_count, row_index)
 	if active_cols <= 0 or p8_volume_per_column <= 0:
 		return 0
@@ -522,7 +522,7 @@ transfer({"StartPosition":"M2_POS17","EndPosition":"M2_POS27","LoosenOffsetOfZ":
 low_throughput_p1_direct_col9 = use_low_throughput_p1_direct(SampleCount)
 report_low_throughput_branch("第9列cDNA反应液", "Col9 cDNA mix", low_throughput_p1_direct_col9, SampleCount)
 # 低通量分支直接从 POS17 混合管分装到反应孔，只计算 POS17 混合管死体积。
-# 高通量分支使用 POS7 Col9 中转，每个 POS7 中转孔保留 10 uL 总冗余。
+# 高通量分支使用 POS7 Col9 中转，每个 POS7 中转孔保留 20 uL 总冗余。
 if low_throughput_p1_direct_col9:
 	pos7_col9_volumes = [0] * 8
 	mix_total_col9 = 4 * SampleCount + MIX_TUBE_DEAD_VOLUME
@@ -632,7 +632,7 @@ c = 1.4  # T2 缓冲液预分装到 POS7 Col7 的历史安全系数；该位置�
 low_throughput_p1_direct_col10 = use_low_throughput_p1_direct(SampleCount)
 report_low_throughput_branch("第10列靶向扩增反应液", "Col10 targeted amplification mix", low_throughput_p1_direct_col10, SampleCount)
 # 低通量分支直接从 POS17 混合管分装到反应孔，只计算 POS17 混合管死体积。
-# 高通量分支使用 POS7 Col10 中转，每个 POS7 中转孔保留 10 uL 总冗余。
+# 高通量分支使用 POS7 Col10 中转，每个 POS7 中转孔保留 20 uL 总冗余。
 if low_throughput_p1_direct_col10:
 	pos7_col10_volumes = [0] * 8
 	mix_total_col10 = 15 * SampleCount + TA_LA_MIX_TUBE_DEAD_VOLUME
@@ -994,7 +994,7 @@ def _t8_vol(n):
 low_throughput_p1_direct_col11 = use_low_throughput_p1_direct(SampleCount)
 report_low_throughput_branch("第11列文库扩增PCR反应液", "Col11 library amplification PCR mix", low_throughput_p1_direct_col11, SampleCount)
 # 低通量分支直接从 POS17 C2R3 mixing tube 分装到反应孔，只计算 mixing tube 冗余。
-# 高通量分支使用 POS7 Col11 中转，每个 POS7 中转孔保留 10 uL 总冗余，再叠加 mixing tube 冗余。
+# 高通量分支使用 POS7 Col11 中转，每个 POS7 中转孔保留 20 uL 总冗余，再叠加 mixing tube 冗余。
 # LA mixing tube 冗余使用 LA_MIX_TUBE_DEAD_VOLUME（独立于 TA），冗余计入总体系后按 20:1:9 分摊。
 if low_throughput_p1_direct_col11:
 	pos7_col11_volumes = [0] * 8
