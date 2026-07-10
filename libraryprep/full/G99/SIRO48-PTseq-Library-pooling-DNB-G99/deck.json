@@ -507,14 +507,14 @@
           "Wells": "C2",
           "ConsumableInfo": {
             "ConsumableType": "CryovialTube",
-            "ConsumableName": "0.5mL SC micro tube, PCR-PT",
+            "ConsumableName": "2mL SC micro tube, PCR-PT",
             "WellInfo": [
               {
                 "Wells": "*",
                 "ContentInfo": {
                   "Type": "Reagent",
-                  "Name": "T8 UDG Enzyme",
-                  "Volume": 500
+                  "Name": "T8 UDG Enzyme + LA/PCR Master Mix tube",
+                  "Volume": 2000
                 }
               }
             ],
