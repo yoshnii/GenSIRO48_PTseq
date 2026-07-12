@@ -586,7 +586,7 @@ target_dna_ng = 2000
 #pooling总体积
 target_pooling_volume = 80
 # 质控浓度
-sample_qc_concentration = 25
+sample_qc_concentration = 1
 #pooling取buffer使用1ml枪头
 single_tip_loc = tip_1000.load(1)[0]
 #pooling稀释buffer位置，板-列-行

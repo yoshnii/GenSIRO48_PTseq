@@ -41,7 +41,7 @@ import time
 sample_info_file_path = r'D:/Pathogens/PTseq_concentration.csv'
 
 # 样本质控浓度阈值 (ng/µL)
-sample_qc_concentration = 10
+sample_qc_concentration = 1
 
 class Sample:
 	"""样本信息类 - 兼容全流程pooling代码的属性名"""
