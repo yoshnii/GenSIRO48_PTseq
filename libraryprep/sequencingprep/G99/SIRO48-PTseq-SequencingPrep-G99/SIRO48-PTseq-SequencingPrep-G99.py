@@ -369,7 +369,10 @@ def assign_dilution_positions(samples):
 def get_barcode_key(sample):
 	raw_barcode = sample.barcode.strip()
 	if not raw_barcode:
-		raise Exception(f"样本 {sample.sample_id} 缺少 barcode，无法确认同一DNB内barcode唯一性")
+		if not getattr(sample, "_missing_barcode_warned", False):
+			print(f"[WARNING] 样本 {sample.sample_id} 缺少 barcode；已忽略barcode唯一性检查并继续运行")
+			sample._missing_barcode_warned = True
+		return ("MISSING_BARCODE", getattr(sample, "sample_initial_index", sample.sample_id))
 	try:
 		barcode_value = 0
 		for part in raw_barcode.split('-'):
@@ -438,6 +441,12 @@ assign_dilution_positions(sample_concentration)
 dnb_list = group_samples_fixed_capacity_by_barcode(sample_concentration)
 target_dnb_num = len(dnb_list)
 Hybridization_num = target_dnb_num
+
+# 本轮拆分为 2 个及以上 DNB 时提示操作员（重复 barcode 会被避让到不同 DNB，或样本数超单 DNB 容量）；仅告警，不中断运行。
+if target_dnb_num >= 2:
+	dnb_split_message = f"本轮 pooling 将拆分为 {target_dnb_num} 个 DNB；请确认下游杂交/上机按 {target_dnb_num} 个 DNB 准备。"
+	print(f"[WARNING] {dnb_split_message}")
+	report({"Phase":"pooling","Step":dnb_split_message,"TaskType":"library","RemainingTime":None})
 
 initial_dnb_list = [group.copy() for group in dnb_list]
 

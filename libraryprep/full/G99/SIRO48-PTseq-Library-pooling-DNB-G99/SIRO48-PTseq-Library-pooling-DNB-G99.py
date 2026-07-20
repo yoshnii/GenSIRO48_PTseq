@@ -1835,6 +1835,12 @@ target_dnb_num = len(dnb_list)
 # 根据计算出的 DNB 数量更新 Hybridization_num。
 Hybridization_num = target_dnb_num
 
+# 本轮拆分为 2 个及以上 DNB 时提示操作员（重复 barcode 会被避让到不同 DNB，或样本数超单 DNB 容量）；仅告警，不中断运行。
+if target_dnb_num >= 2:
+	dnb_split_message = f"本轮 pooling 将拆分为 {target_dnb_num} 个 DNB；请确认下游杂交/上机按 {target_dnb_num} 个 DNB 准备。"
+	print(f"[WARNING] {dnb_split_message}")
+	report({"Phase":"pooling","Step":dnb_split_message,"TaskType":"library","RemainingTime":None})
+
 # 保存初始 dnb_list；必须在 dnb_list 填充完成后执行。
 initial_dnb_list = [group.copy() for group in dnb_list]  # 深拷贝每个分组，保留原始 pooling 分组。
 
