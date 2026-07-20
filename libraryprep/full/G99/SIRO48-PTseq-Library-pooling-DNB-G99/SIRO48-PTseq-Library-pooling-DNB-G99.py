@@ -396,6 +396,12 @@ def get_sample_info(sample_info_file_path, is_filter, filtered_sample_qc_type):
 
 
 filtered_samples=get_sample_info(sample_info_file_path, False, filtered_sample_qc_type)
+# 中台在启动任务前生成 D:/Pathogens/PTseq.csv；脚本开局读取后立即检查barcode。
+missing_barcode_sample_ids = [sample.sample_id for sample in filtered_samples if not sample.barcode.strip()]
+if missing_barcode_sample_ids:
+	missing_barcode_message = "以下样本缺少barcode，将忽略这些样本的barcode唯一性检查并继续运行：" + "、".join(missing_barcode_sample_ids)
+	print(f"[WARNING] {missing_barcode_message}")
+	report({"Phase":"样本信息检查","Step":missing_barcode_message,"TaskType":"library","RemainingTime":None})
 SampleCount = len(filtered_samples)
 if not filtered_samples:
 	a = dialog_textbox({"Title": "请输入样本数量", "Timeout": "02:00:00","Parameters":[{"Name": "样本数量", "Value": "48", "Notes": "未检测到样本信息文件，请输入样本数量"}]})
@@ -1780,7 +1786,7 @@ if sample_num == 0:
 def get_barcode_key(sample):
 	raw_barcode = sample.barcode.strip()
 	if not raw_barcode:
-		raise Exception(f"样本 {sample.sample_id} 缺少 barcode，无法确认同一DNB内barcode唯一性")
+		return ("MISSING_BARCODE", getattr(sample, "sample_initial_index", sample.sample_id))
 	try:
 		barcode_value = 0
 		for part in raw_barcode.split('-'):
