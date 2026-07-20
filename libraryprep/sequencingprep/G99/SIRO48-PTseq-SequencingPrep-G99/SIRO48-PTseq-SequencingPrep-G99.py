@@ -108,6 +108,13 @@ concentration_list = [s.Concentration for s in samples_from_csv]
 sample_num = len(samples_from_csv)
 print(f"读取到 {sample_num} 个有效样本")
 
+# 开局立即检查 barcode：缺 barcode 的样本不建议投入，但仅告警不中断；若忽略告警则继续运行。
+missing_barcode_sample_ids = [sample.sample_id for sample in samples_from_csv if not sample.barcode.strip()]
+if missing_barcode_sample_ids:
+	missing_barcode_message = "以下样本缺少barcode（不建议投入），将忽略其barcode唯一性检查并继续运行：" + "、".join(missing_barcode_sample_ids)
+	print(f"[WARNING] {missing_barcode_message}")
+	report({"Phase":"样本信息检查","Step":missing_barcode_message,"TaskType":"library","RemainingTime":None})
+
 '''=====================================以上为样本信息读取====================================='''
 
 
