@@ -904,8 +904,9 @@ def predispense_TA_ethanol_to_POS7():
 	# 该动作与 POS23 磁吸等待并行执行，确保 TA 弃上清后可以立即加乙醇，降低磁珠过早干燥风险。
 	Alcohol_1 = tip_1000.load(8,8)
 	p8_load_modified(Alcohol_1[0])
-	for x in range(col_num):
-		for tt in range(5):
+	for tt in range(5):
+		target_columns = range(col_num) if tt % 2 == 0 else range(col_num - 1, -1, -1)
+		for x in target_columns:
 			p8_aspirate({"Position":"M2_POS3","Col":1,"Row":1,"PreAirVolume":10,"AspirateOffsetOfZ":1.0,"AspirateSpeed":80,"AspirateVolume":195,"PreAirSpeed":50,"DelayAfterAspirate":2,"PostAirSpeed":50,"PostAirVolume":10,"IfTrack":False,"FirstSegmentSpeed":100,"SpeedChangeOffsetOfZ":0,"SecondSegmentSpeed":80,"TipTouchTimes":0})
 			p8_empty({"Position":"M2_POS7","Col":1+x,"Row":1,"EmptyOffsetOfZ":0.5+4*tt,"EmptySpeed":50,"DelayAfterEmpty":0.8,"PostAirSpeed":50,"PostAirVolume":0,"FirstSegmentSpeed":100,"SpeedChangeOffsetOfZ":0,"SecondSegmentSpeed":80,"TipTouchTimes":2, "TipTouchOffsetOfZ": 10, "TipTouchRangeOfX": 1.2, "TipTouchSpeed": 100})
 	p8_unload_tips({"Position":"M2_Trash","Col":None,"Row":None})
