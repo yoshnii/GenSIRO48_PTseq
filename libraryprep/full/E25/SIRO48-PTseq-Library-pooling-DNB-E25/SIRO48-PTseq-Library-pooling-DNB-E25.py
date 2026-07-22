@@ -274,6 +274,17 @@ MIX_TUBE_DEAD_VOLUME = 15
 TA_LA_MIX_TUBE_EXTRA_DEAD_VOLUME = 10
 TA_LA_MIX_TUBE_DEAD_VOLUME = MIX_TUBE_DEAD_VOLUME + TA_LA_MIX_TUBE_EXTRA_DEAD_VOLUME
 LA_MIX_TUBE_DEAD_VOLUME = 30
+# 高通量 POS7/P8 中转分装时，上游 mixing tube 额外保留两个完整 POS7 中转孔的体积。
+# 额外体积只留在 mixing tube 内，不会分装到不存在的样本孔。
+EXTRA_COLLECTION_WELL_COUNT = 2
+# 2.0 mL LA mixing tube 的已验证工作上限；超过时，T2 改为直接加入 POS7 Col11。
+LA_MIX_TUBE_MAX_WORKING_VOLUME = 1421
+
+def mix_total_with_collection_reserve(pos7_volumes, base_dead_volume):
+	active_volumes = [volume for volume in pos7_volumes if volume > 0]
+	if not active_volumes:
+		return base_dead_volume
+	return sum(active_volumes) + base_dead_volume + EXTRA_COLLECTION_WELL_COUNT * max(active_volumes)
 
 # 本分支低通量直接分装阈值：SampleCount <= 16 走 P1 50 uL 直接分装，>16 保持 POS7/P8。
 LOW_THROUGHPUT_P1_DIRECT_MAX_SAMPLE_COUNT = 16
@@ -528,7 +539,7 @@ if low_throughput_p1_direct_col9:
 	mix_total_col9 = 4 * SampleCount + MIX_TUBE_DEAD_VOLUME
 else:
 	pos7_col9_volumes = [pos7_reaction_mix_dispense_volume(4, SampleCount, r) for r in range(8)]
-	mix_total_col9 = sum(pos7_col9_volumes) + MIX_TUBE_DEAD_VOLUME  # POS17 2 mL 混合管保留 15 uL 死体积。
+	mix_total_col9 = mix_total_with_collection_reserve(pos7_col9_volumes, MIX_TUBE_DEAD_VOLUME)
 t23_vol = mix_total_col9 / 2  # T2 缓冲液和 T3 酶按 1:1 配制，各占总量一半。
 # 吸T2 一链合成缓冲液
 p1_load_modified(tip_300.load(1)[0])
@@ -638,7 +649,7 @@ if low_throughput_p1_direct_col10:
 	mix_total_col10 = 15 * SampleCount + TA_LA_MIX_TUBE_DEAD_VOLUME
 else:
 	pos7_col10_volumes = [pos7_reaction_mix_dispense_volume(15, SampleCount, r) for r in range(8)]
-	mix_total_col10 = sum(pos7_col10_volumes) + TA_LA_MIX_TUBE_DEAD_VOLUME
+	mix_total_col10 = mix_total_with_collection_reserve(pos7_col10_volumes, TA_LA_MIX_TUBE_DEAD_VOLUME)
 ta_t2_vol = mix_total_col10 * 7 / 15
 ta_t4_vol = mix_total_col10 * 5 / 15
 ta_t5_vol = mix_total_col10 * 3 / 15
@@ -1002,11 +1013,14 @@ if low_throughput_p1_direct_col11:
 	mix_total_col11 = 30 * SampleCount + LA_MIX_TUBE_DEAD_VOLUME
 else:
 	pos7_col11_volumes = [pos7_reaction_mix_dispense_volume(30, SampleCount, r) for r in range(8)]
-	mix_total_col11 = sum(pos7_col11_volumes) + LA_MIX_TUBE_DEAD_VOLUME
+	mix_total_col11 = mix_total_with_collection_reserve(pos7_col11_volumes, LA_MIX_TUBE_DEAD_VOLUME)
 # T7:T8:T2 严格 20:1:9。T8 手工预置在 C2R3，la_t8_vol 仅用于总量记账/分装表，机器不吸取。
 la_t7_vol = mix_total_col11 * 20 / 30
 la_t8_vol = mix_total_col11 * 1 / 30
 la_t2_vol = mix_total_col11 * 9 / 30
+la_split_t2_to_pos7 = not low_throughput_p1_direct_col11 and mix_total_col11 > LA_MIX_TUBE_MAX_WORKING_VOLUME
+la_t7_t8_pos7_volumes = [volume * 21 / 30 for volume in pos7_col11_volumes]
+la_t2_pos7_volumes = [volume * 9 / 30 for volume in pos7_col11_volumes]
 
 transfer({"StartPosition":"M2_POS17","EndPosition":"M2_POS27","LoosenOffsetOfZ":0})
 # T8 已手工预置在 POS17 C2R3 的 2.0 mL mixing tube 内，机器不再单独吸取 T8。
@@ -1024,16 +1038,16 @@ if SampleCount > 20:
 	p1_empty({"Position":"M2_POS17","Col":2,"Row":3,"EmptyOffsetOfZ":2,"LiquidLevelDetection":"None","EmptySpeed":50,"DelayAfterEmpty":0.5,"TipTouchTimes":5,"PostAirSpeed":100,"PostAirVolume":0,"FirstSegmentSpeed":190,"SpeedChangeOffsetOfZ":0,"SecondSegmentSpeed":100,"TipTouchOffsetOfZ": 35, "TipTouchRangeOfX": 3.5, "TipTouchSpeed": 100})
 	p1_unload_tips2({"Position":"M2_Trash","Col":None,"Row":None})
 
-	# 吸取 T2 溶解液：每孔 9 uL，用于 30 uL LA Master Mix。分两次转移。
-	# POS24 Row2 存放 T2 缓冲液；Row1 保留给磁珠，不能混用。
-	p1_load_modified(tip_1000.load(1)[0])
-	p1_aspirate({"Position":"M2_POS24","Col":1,"Row":2,"PreAirVolume":5,"AspirateOffsetOfZ":0.8,"AspirateSpeed":150,"AspirateVolume":la_t2_vol/2,"PreAirSpeed":100,"DelayAfterAspirate":0.5,"TipTouchTimes":0,"PostAirSpeed":100,"PostAirVolume":5,"IfTrack":True,"FirstSegmentSpeed":190,"SpeedChangeOffsetOfZ":0,"SecondSegmentSpeed":100})
-	p1_empty({"Position":"M2_POS17","Col":2,"Row":3,"EmptyOffsetOfZ":2,"LiquidLevelDetection":"None","EmptySpeed":100,"DelayAfterEmpty":0.5,"TipTouchTimes":0,"PostAirSpeed":100,"PostAirVolume":0,"FirstSegmentSpeed":190,"SpeedChangeOffsetOfZ":0,"SecondSegmentSpeed":100})
-	p1_unload_tips2({"Position":"M2_Trash","Col":None,"Row":None})
-	p1_load_modified(tip_1000.load(1)[0])
-	p1_aspirate({"Position":"M2_POS24","Col":1,"Row":2,"PreAirVolume":5,"AspirateOffsetOfZ":0.8,"AspirateSpeed":150,"AspirateVolume":la_t2_vol/2,"PreAirSpeed":100,"DelayAfterAspirate":0.5,"TipTouchTimes":0,"PostAirSpeed":100,"PostAirVolume":5,"IfTrack":True,"FirstSegmentSpeed":190,"SpeedChangeOffsetOfZ":0,"SecondSegmentSpeed":100})
-	p1_empty({"Position":"M2_POS17","Col":2,"Row":3,"EmptyOffsetOfZ":2,"LiquidLevelDetection":"None","EmptySpeed":100,"DelayAfterEmpty":0.5,"TipTouchTimes":0,"PostAirSpeed":100,"PostAirVolume":0,"FirstSegmentSpeed":190,"SpeedChangeOffsetOfZ":0,"SecondSegmentSpeed":100})
-	p1_unload_tips2({"Position":"M2_Trash","Col":None,"Row":None})
+	if not la_split_t2_to_pos7:
+		# 总体积不超过 2.0 mL 管工作上限时，T2 在 C2R3 内完成配制。分两次转移。
+		p1_load_modified(tip_1000.load(1)[0])
+		p1_aspirate({"Position":"M2_POS24","Col":1,"Row":2,"PreAirVolume":5,"AspirateOffsetOfZ":0.8,"AspirateSpeed":150,"AspirateVolume":la_t2_vol/2,"PreAirSpeed":100,"DelayAfterAspirate":0.5,"TipTouchTimes":0,"PostAirSpeed":100,"PostAirVolume":5,"IfTrack":True,"FirstSegmentSpeed":190,"SpeedChangeOffsetOfZ":0,"SecondSegmentSpeed":100})
+		p1_empty({"Position":"M2_POS17","Col":2,"Row":3,"EmptyOffsetOfZ":2,"LiquidLevelDetection":"None","EmptySpeed":100,"DelayAfterEmpty":0.5,"TipTouchTimes":0,"PostAirSpeed":100,"PostAirVolume":0,"FirstSegmentSpeed":190,"SpeedChangeOffsetOfZ":0,"SecondSegmentSpeed":100})
+		p1_unload_tips2({"Position":"M2_Trash","Col":None,"Row":None})
+		p1_load_modified(tip_1000.load(1)[0])
+		p1_aspirate({"Position":"M2_POS24","Col":1,"Row":2,"PreAirVolume":5,"AspirateOffsetOfZ":0.8,"AspirateSpeed":150,"AspirateVolume":la_t2_vol/2,"PreAirSpeed":100,"DelayAfterAspirate":0.5,"TipTouchTimes":0,"PostAirSpeed":100,"PostAirVolume":5,"IfTrack":True,"FirstSegmentSpeed":190,"SpeedChangeOffsetOfZ":0,"SecondSegmentSpeed":100})
+		p1_empty({"Position":"M2_POS17","Col":2,"Row":3,"EmptyOffsetOfZ":2,"LiquidLevelDetection":"None","EmptySpeed":100,"DelayAfterEmpty":0.5,"TipTouchTimes":0,"PostAirSpeed":100,"PostAirVolume":0,"FirstSegmentSpeed":190,"SpeedChangeOffsetOfZ":0,"SecondSegmentSpeed":100})
+		p1_unload_tips2({"Position":"M2_Trash","Col":None,"Row":None})
 else:
 	p1_load_modified(tip_1000.load(1)[0])
 	# 吸取 T7 PCR mix：每孔 20 uL，并降低第一段进液速度。
@@ -1042,12 +1056,12 @@ else:
 	delay({"Duration": 10})
 	p1_empty({"Position":"M2_POS17","Col":2,"Row":3,"EmptyOffsetOfZ":2,"LiquidLevelDetection":"None","EmptySpeed":50,"DelayAfterEmpty":0.5,"TipTouchTimes":3,"PostAirSpeed":100,"PostAirVolume":0,"FirstSegmentSpeed":190,"SpeedChangeOffsetOfZ":0,"SecondSegmentSpeed":100,"TipTouchOffsetOfZ": 35, "TipTouchRangeOfX": 3.5, "TipTouchSpeed": 100})
 	p1_unload_tips2({"Position":"M2_Trash","Col":None,"Row":None})
-	# 吸取 T2 溶解液：每孔 9 uL，用于 30 uL LA Master Mix。
-	# POS24 Row2 存放 T2 缓冲液；Row1 保留给磁珠，不能混用。
-	p1_load_modified(tip_1000.load(1)[0])
-	p1_aspirate({"Position":"M2_POS24","Col":1,"Row":2,"PreAirVolume":5,"AspirateOffsetOfZ":0.8,"AspirateSpeed":150,"AspirateVolume":la_t2_vol,"PreAirSpeed":100,"DelayAfterAspirate":0.5,"TipTouchTimes":0,"PostAirSpeed":100,"PostAirVolume":5,"IfTrack":True,"FirstSegmentSpeed":190,"SpeedChangeOffsetOfZ":0,"SecondSegmentSpeed":100})
-	p1_empty({"Position":"M2_POS17","Col":2,"Row":3,"EmptyOffsetOfZ":2,"LiquidLevelDetection":"None","EmptySpeed":100,"DelayAfterEmpty":0.5,"TipTouchTimes":0,"PostAirSpeed":100,"PostAirVolume":0,"FirstSegmentSpeed":190,"SpeedChangeOffsetOfZ":0,"SecondSegmentSpeed":100})
-	p1_unload_tips2({"Position":"M2_Trash","Col":None,"Row":None})
+	if not la_split_t2_to_pos7:
+		# 低体积体系在 C2R3 内完成 T2 配制。
+		p1_load_modified(tip_1000.load(1)[0])
+		p1_aspirate({"Position":"M2_POS24","Col":1,"Row":2,"PreAirVolume":5,"AspirateOffsetOfZ":0.8,"AspirateSpeed":150,"AspirateVolume":la_t2_vol,"PreAirSpeed":100,"DelayAfterAspirate":0.5,"TipTouchTimes":0,"PostAirSpeed":100,"PostAirVolume":5,"IfTrack":True,"FirstSegmentSpeed":190,"SpeedChangeOffsetOfZ":0,"SecondSegmentSpeed":100})
+		p1_empty({"Position":"M2_POS17","Col":2,"Row":3,"EmptyOffsetOfZ":2,"LiquidLevelDetection":"None","EmptySpeed":100,"DelayAfterEmpty":0.5,"TipTouchTimes":0,"PostAirSpeed":100,"PostAirVolume":0,"FirstSegmentSpeed":190,"SpeedChangeOffsetOfZ":0,"SecondSegmentSpeed":100})
+		p1_unload_tips2({"Position":"M2_Trash","Col":None,"Row":None})
 # POS17 盖处于打开状态，无需关盖再开盖。
 # 混匀 LA/PCR Master Mix。
 if SampleCount <=20:
@@ -1102,11 +1116,26 @@ if not low_throughput_p1_direct_col11:
 
 	p1_load_modified(tip_1000.load(1)[0])
 	for i in range(8):
-		# 已移除错误的二次汇集步骤：所有 LA/PCR Master Mix 已经在 POS17 C2R3 混匀。
-		p1_aspirate({"Position":"M2_POS17","Col":2,"Row":3,"PreAirVolume":5,"AspirateOffsetOfZ":0.5,"AspirateSpeed":50,"AspirateVolume":target_volume_list_pre_PCR[i],"PreAirSpeed":100,"DelayAfterAspirate":0.5,"TipTouchTimes":3,"PostAirSpeed":100,"PostAirVolume":5,"IfTrack":True,"FirstSegmentSpeed":190,"SpeedChangeOffsetOfZ":0,"SecondSegmentSpeed":100, "TipTouchOffsetOfZ": 35, "TipTouchRangeOfX": 3.5, "TipTouchSpeed": 100})
+		pos17_dispense_volume = la_t7_t8_pos7_volumes[i] if la_split_t2_to_pos7 else target_volume_list_pre_PCR[i]
+		p1_aspirate({"Position":"M2_POS17","Col":2,"Row":3,"PreAirVolume":5,"AspirateOffsetOfZ":0.5,"AspirateSpeed":50,"AspirateVolume":pos17_dispense_volume,"PreAirSpeed":100,"DelayAfterAspirate":0.5,"TipTouchTimes":3,"PostAirSpeed":100,"PostAirVolume":5,"IfTrack":True,"FirstSegmentSpeed":190,"SpeedChangeOffsetOfZ":0,"SecondSegmentSpeed":100, "TipTouchOffsetOfZ": 35, "TipTouchRangeOfX": 3.5, "TipTouchSpeed": 100})
 		p1_empty({"Position":"M2_POS7","Col":11,"Row":i+1,"EmptyOffsetOfZ":0.5,"LiquidLevelDetection":"None","EmptySpeed":100,"DelayAfterEmpty":0.5,"TipTouchTimes":3,"PostAirSpeed":100,"PostAirVolume":0,"FirstSegmentSpeed":190,"SpeedChangeOffsetOfZ":0,"SecondSegmentSpeed":100, "TipTouchOffsetOfZ": 15, "TipTouchRangeOfX": 1.2, "TipTouchSpeed": 100})
 	p1_unload_tips2({"Position":"M2_Trash","Col":None,"Row":None})
+	if la_split_t2_to_pos7:
+		# C2R3 只保留 T7+T8；T2 按 9/30 比例直接补入 POS7 Col11，避免 2.0 mL 管溢出。
+		p1_load_modified(tip_1000.load(1)[0])
+		for i in range(8):
+			p1_aspirate({"Position":"M2_POS24","Col":1,"Row":2,"PreAirVolume":5,"AspirateOffsetOfZ":0.8,"AspirateSpeed":150,"AspirateVolume":la_t2_pos7_volumes[i],"PreAirSpeed":100,"DelayAfterAspirate":0.5,"TipTouchTimes":0,"PostAirSpeed":100,"PostAirVolume":5,"IfTrack":True,"FirstSegmentSpeed":190,"SpeedChangeOffsetOfZ":0,"SecondSegmentSpeed":100})
+			p1_empty({"Position":"M2_POS7","Col":11,"Row":i+1,"EmptyOffsetOfZ":0.5,"LiquidLevelDetection":"None","EmptySpeed":100,"DelayAfterEmpty":0.5,"TipTouchTimes":3,"PostAirSpeed":100,"PostAirVolume":0,"FirstSegmentSpeed":190,"SpeedChangeOffsetOfZ":0,"SecondSegmentSpeed":100, "TipTouchOffsetOfZ": 15, "TipTouchRangeOfX": 1.2, "TipTouchSpeed": 100})
+		p1_unload_tips2({"Position":"M2_Trash","Col":None,"Row":None})
 	transfer({"StartPosition":"M2_POS27","EndPosition":"M2_POS17","LoosenOffsetOfZ":0})
+	LA_dispense_tips = tip_300.load(sample_num,8,1)
+	p8_load_modified(LA_dispense_tips[0])
+	p8_mix({"Position":"M2_POS7","Col":11,"Row":1,"PreAirVolume":20,"MixTimes":10,"MixAspirateSpeed":100,"MixAspirateOffsetOfZ":0.5,"MixVolume":150,"MixDispenseOffsetOfZ":15,"MixDispenseSpeed":100,"DelayAfterMixLoop":2,"MixEmptyOffsetOfZ":15,"MixEmptySpeed":50,"PreAirSpeed":50,"DelayAfterMixAspirate":0.5,"DelayAfterMixDispense":0.5,"DelayAfterMixEmpty":0.5,"PostAirSpeed":50,"PostAirVolume":0,"FirstSegmentSpeed":100,"SpeedChangeOffsetOfZ":0,"SecondSegmentSpeed":80,"TipTouchTimes":2,"TipTouchOffsetOfZ":14,"TipTouchRangeOfX":1.2,"TipTouchSpeed":100})
+	p8_unload_modified(LA_dispense_tips[0])
+	transfer({"StartPosition":"M2_POS7","EndPosition":"M2_POS16","LoosenOffsetOfZ":0})
+	temp_shaker_set({"TempParameters":{"IsEnable":False,"Duration":-1},"ShakerParameters":{"IsEnable":True,"Direction":0,"Speed":1000,"Duration":30}})
+	temp_shaker_set({"TempParameters":{"IsEnable":False,"Duration":-1},"ShakerParameters":{"IsEnable":True,"Direction":1,"Speed":1000,"Duration":30}})
+	transfer({"StartPosition":"M2_POS16","EndPosition":"M2_POS7","LoosenOffsetOfZ":0})
 
 magetic_wait.Wait()
 
@@ -1122,7 +1151,6 @@ if low_throughput_p1_direct_col11:
 		p1_unload_tips2({"Position":"M2_Trash","Col":None,"Row":None})
 	transfer({"StartPosition":"M2_POS27","EndPosition":"M2_POS17","LoosenOffsetOfZ":0})
 else:
-	LA_dispense_tips = tip_300.load(sample_num,8,1)
 	for i in range(col_num):
 		p8_load_modified(LA_dispense_tips[i])
 		# 从 POS7 Col11 预分装槽吸取 30 uL LA/PCR Master Mix。
