@@ -1467,6 +1467,7 @@ delay({"Duration": 300})
 ###回收建库产物
 # 最终文库目标位置已设为 M2_POS13 Col7，回收产物会直接打入该位置。
 # 无需更新位置变量：浓缩后文库的固定目标位置就是 POS13。
+# HIGH RISK：下方 P8 将在 POS13 深孔板打液和混匀，运行前必须确认 POS13/POS14 相邻区域无机械干涉。
 for x in range(col_num):
 	p8_load_modified_BubblePurge(Product[x])
 	# 回收 21 uL 最终文库产物；对应 SOP 中 23 uL 洗脱、21 uL 回收。
@@ -1576,6 +1577,7 @@ for i in range(col_num-1,-1,-1):
 p8_unload_tips({"Position":"M2_Trash","Col":None,"Row":None})
 
 # 第二步：向染液混合板加入样本并在孔内混匀。
+# HIGH RISK：P8 在 POS13 深孔板吸取 2.2 uL 文库；该位置邻近 POS14，必须确认板架无干涉。
 for i in range(col_num):
 	p8_load_modified(sample_dilute_tip_loc[i])
 	p8_aspirate_modified(source_plate[0], 1, source_plate[1]+i, 2.2, AspirateSpeed=2, AspirateOffsetOfZ=0.5, IfTrack=True)
@@ -1955,6 +1957,7 @@ for i in range(len(water_volume_list)):
 p1_unload_tips2({"Position":"M2_Trash","Col":None,"Row":None})
 
 # Step 5: p8 从POS13 Col 7-12取样 → POS23 Col 7 pooling管 (所有样本统一流程，不再区分稀释/非稀释)
+# HIGH RISK：P8 将访问 POS13 深孔板；POS14 上的 pooling 板已在 Step 1 移至 POS23，当前 POS14 为空，不会产生相邻干涉。
 for i,poolings in enumerate(temp):
 	samples = dnb_list[i]
 	for sample in samples:
@@ -1962,10 +1965,10 @@ for i,poolings in enumerate(temp):
 		sample_volume = sample.DilutingSampleVolume
 		sample_col = sample.SampleWellColumn
 		sample_row = sample.SampleWellRow
-		p8_aspirate_modified(source_plate[0],sample_row,sample_col,sample_volume,PreAirVolume=10)
+		# HIGH RISK：从 POS13 深孔板直接吸取文库到 pooling 孔。
+		p8_aspirate_modified(source_plate[0],sample_row,sample_col,sample_volume,PreAirVolume=10,AspirateSpeed=80,AspirateOffsetOfZ=0.5,DelayAfterAspirate=0.5,PostAirVolume=0)
 		p8_empty_modified(pooling_tube_pos,i+1,pooling_tube_col)
 		p8_unload_tips({"Position":"M2_Trash","Col":None,"Row":None})
-
 # Step 6: 混匀pooling管并转移到POS20 Col 7 Row 1-6 (DNB环化反应位)
 for i in range(target_dnb_num):
 	target_tip_loc = tip_300.load(1)

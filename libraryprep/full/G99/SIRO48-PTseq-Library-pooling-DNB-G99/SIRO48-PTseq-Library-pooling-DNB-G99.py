@@ -1474,6 +1474,7 @@ delay({"Duration": 300})
 ###回收建库产物
 # 最终文库目标位置已设为 M2_POS13 Col7，回收产物会直接打入该位置。
 # 无需更新位置变量：浓缩后文库的固定目标位置就是 POS13。
+# HIGH RISK：下方 P8 将在 POS13 深孔板打液和混匀，运行前必须确认 POS13/POS14 相邻区域无机械干涉。
 for x in range(col_num):
 	p8_load_modified_BubblePurge(Product[x])
 	# 回收 21 uL 最终文库产物；对应 SOP 中 23 uL 洗脱、21 uL 回收。
@@ -1583,6 +1584,7 @@ for i in range(col_num-1,-1,-1):
 p8_unload_tips({"Position":"M2_Trash","Col":None,"Row":None})
 
 # 第二步：向染液混合板加入样本并在孔内混匀。
+# HIGH RISK：P8 在 POS13 深孔板吸取 2.2 uL 文库；该位置邻近 POS14，必须确认板架无干涉。
 for i in range(col_num):
 	p8_load_modified(sample_dilute_tip_loc[i])
 	p8_aspirate_modified(source_plate[0], 1, source_plate[1]+i, 2.2, AspirateSpeed=2, AspirateOffsetOfZ=0.5, IfTrack=True)
@@ -1998,21 +2000,28 @@ for i in range(len(water_volume_list)):
 p1_unload_tips2({"Position":"M2_Trash","Col":None,"Row":None})
 
 # 第五步：P8 执行 pooling 转移；非稀释样本从 POS13 直转 POS23，需稀释样本先在 POS8 稀释后再转入 POS23。
+# HIGH RISK：P8 将访问 POS13 深孔板。先把 POS14 定量管架移到 POS30，避免机械干涉。
+transfer({"StartPosition":"M2_POS14","EndPosition":"M2_POS30","LoosenOffsetOfZ":0})
 for i,poolings in enumerate(temp):
 	samples = dnb_list[i]
 	for sample in samples:
 		p8_load_modified(tip_50.load(1)[0])
 		sample_volume = sample.DilutingSampleVolume
 		if not sample.NeedDilution:
-			p8_aspirate_modified(sample.SampleWellPosition, sample.SampleWellRow, sample.SampleWellColumn, sample_volume, PreAirVolume=10)
+			# HIGH RISK：从 POS13 深孔板直接吸取文库到 pooling 孔。
+			p8_aspirate_modified(sample.SampleWellPosition, sample.SampleWellRow, sample.SampleWellColumn, sample_volume, PreAirVolume=10, AspirateSpeed=80, AspirateOffsetOfZ=0.5, DelayAfterAspirate=0.5, PostAirVolume=0)
 			p8_empty_modified(pooling_tube_pos, i+1, pooling_tube_col)
 		else:
-			p8_aspirate_modified(sample.SampleWellPosition, sample.SampleWellRow, sample.SampleWellColumn, 2, PreAirVolume=5, PostAirVolume=0)
+			# HIGH RISK：P8 从 POS13 深孔板吸取 2 uL 文库到 POS8，同一列枪头完成混匀和 pooling 转移。
+			p8_aspirate_modified(sample.SampleWellPosition, sample.SampleWellRow, sample.SampleWellColumn, 2, PreAirVolume=10, AspirateSpeed=80, AspirateOffsetOfZ=0.5, DelayAfterAspirate=0.5, PostAirVolume=0)
 			p8_empty_modified(sample.DilutingWellPosition, sample.DilutingWellRow, sample.DilutingWellColumn, EmptyOffsetOfZ=0.5, EmptySpeed=10)
 			p8_mix({"Position":sample.DilutingWellPosition,"Col":sample.DilutingWellColumn,"Row":sample.DilutingWellRow,"PreAirVolume":10,"MixTimes":5,"MixAspirateSpeed":100,"MixAspirateOffsetOfZ":0.5,"MixVolume":10,"MixDispenseOffsetOfZ":10,"MixDispenseSpeed":100,"DelayAfterMixLoop":0.5,"MixEmptyOffsetOfZ":10,"MixEmptySpeed":100,"PreAirSpeed":50,"DelayAfterMixAspirate":0.5,"DelayAfterMixDispense":0.5,"DelayAfterMixEmpty":0.5,"PostAirSpeed":50,"PostAirVolume":0,"FirstSegmentSpeed":100,"SpeedChangeOffsetOfZ":0,"SecondSegmentSpeed":80,"TipTouchTimes":0,"TipTouchOffsetOfZ":5,"TipTouchRangeOfX":1.2,"TipTouchSpeed":100})
-			p8_aspirate_modified(sample.DilutingWellPosition, sample.DilutingWellRow, sample.DilutingWellColumn, sample_volume, PreAirVolume=0, PostAirVolume=0)
+			p8_aspirate_modified(sample.DilutingWellPosition, sample.DilutingWellRow, sample.DilutingWellColumn, sample_volume, PreAirVolume=10, AspirateSpeed=80, AspirateOffsetOfZ=0.5, DelayAfterAspirate=0.5, PostAirVolume=0)
 			p8_empty_modified(pooling_tube_pos, i+1, pooling_tube_col)
 		p8_unload_tips({"Position":"M2_Trash","Col":None,"Row":None})
+
+# POS13 pooling 取样完成后立即恢复 POS14，释放 POS30，避免后续板位交换发生碰撞。
+transfer({"StartPosition":"M2_POS30","EndPosition":"M2_POS14","LoosenOffsetOfZ":0})
 
 # 第六步：混匀 pooling 汇集管，并转移到 POS20 Col7 Row1-6 的 DNB 环化反应位。
 for i in range(target_dnb_num):
