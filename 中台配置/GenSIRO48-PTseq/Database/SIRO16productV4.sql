@@ -103,7 +103,7 @@ CREATE TABLE IF NOT EXISTS "workflow" (
 INSERT INTO workflow VALUES(649,'1','f33df7a7-e3b5-4830-bf74-3db4a911145a','GenSIRO48-PTseq-提取（全流程）','code0000007','48建库','ExecuteExperiment','{"ScriptId": "cc5f0fa6-81fa-427f-a754-48a587116279", "ScriptName": "SIRO48-PTseq-开启温控", "MethodType": "ExecuteExperiment", "DeskData": "", "PositionParams": "", "PlateTypeAssociation": "Library"}',NULL);
 INSERT INTO workflow VALUES(650,'2','f33df7a7-e3b5-4830-bf74-3db4a911145a','GenSIRO48-PTseq-提取（全流程）','code0000004','图片弹窗','ShowPicture','{"Path": "Resources\\PTseq-layout\\SIRO48-PTseq-Full-Process-Extraction.jpg", "Remark": null}',NULL);
 INSERT INTO workflow VALUES(651,'3','f33df7a7-e3b5-4830-bf74-3db4a911145a','GenSIRO48-PTseq-提取（全流程）','code0000004','图片弹窗','ShowPicture','{"Path": "Resources\\PTseq-layout\\SIRO48-PTseq-Full-Process-Library.jpg", "Remark": null}',NULL);
-INSERT INTO workflow VALUES(652,'4','f33df7a7-e3b5-4830-bf74-3db4a911145a','GenSIRO48-PTseq-提取（全流程）','code0000004','图片弹窗','ShowPicture','{"Path": "Resources\\PTseq-layout\\SIRO48-PTseq-Full-Process Reagent Bench Diagram.jpg", "Remark": null}',NULL);
+INSERT INTO workflow VALUES(652,'4','f33df7a7-e3b5-4830-bf74-3db4a911145a','GenSIRO48-PTseq-提取（全流程）','code0000004','图片弹窗','ShowPicture','{"Path": "Resources\\PTseq-layout\\SIRO48-PTseq-Full-Process Reagent Bench Diagram(G99&200).jpg", "Remark": null}',NULL);
 INSERT INTO workflow VALUES(653,'5','f33df7a7-e3b5-4830-bf74-3db4a911145a','GenSIRO48-PTseq-提取（全流程）','code0000006','48提取','DeckScan','{"ScriptId": "", "ScriptName": "", "ScanString": "[{\"lane\": 1, \"pos\": 1, \"consumable\": \"1\", \"barcode\": null, \"position\": \"1\", \"barcode_number_type\": null, \"result\": \"1\", \"error_message\": null, \"is_row_valid\": false, \"IsSelect\": false, \"Sort\": 1, \"OrderIndex\": 1, \"Index\": 1, \"IsLocked\": false, \"ValidationBackgroundColor\": \"Transparent\", \"IsInputReadOnly\": false, \"sample_number\": null, \"IsScan\": false}]", "DeskData": "", "PositionParams": "", "PlateTypeAssociation": "Pretreatment"}',NULL);
 INSERT INTO workflow VALUES(654,'6','f33df7a7-e3b5-4830-bf74-3db4a911145a','GenSIRO48-PTseq-提取（全流程）','code0000005','Barcode录入','UpdateBarcodeId','{"SampleInfoProperty": "BarcodeId", "ScanString": "[{\"lane\": 1, \"pos\": 1, \"consumable\": \"1\", \"barcode\": null, \"position\": \"1\", \"barcode_number_type\": null, \"result\": \"1\", \"error_message\": null, \"is_row_valid\": false, \"IsSelect\": false, \"Sort\": 1, \"OrderIndex\": 1, \"Index\": 1, \"sample_number\": null, \"IsScan\": false}]"}',NULL);
 INSERT INTO workflow VALUES(655,'7','f33df7a7-e3b5-4830-bf74-3db4a911145a','GenSIRO48-PTseq-提取（全流程）','code0000006','48提取','ExecuteExperiment','{"ScriptId": "2025ec6a-8bac-4349-97bb-a93a6fc7d528", "ScriptName": "SIRO48-PTseq-提取", "ScanString": "", "DeskData": "", "PositionParams": "", "PlateTypeAssociation": "Pretreatment"}',NULL);
@@ -133,6 +133,13 @@ INSERT INTO workflow VALUES(678,'3','84e67d61-e6cd-401a-bb5a-e3db66181bce','GenS
 INSERT INTO workflow VALUES(679,'4','84e67d61-e6cd-401a-bb5a-e3db66181bce','GenSIRO48-PTseq-上机前准备-200','code0000007','48 Library Prep','ExecuteExperiment','{"ScriptId": "11547208-aef4-42e6-9061-1d2a9dea720a", "ScriptName": "GenSIRO48-PTseq-上机前准备-200", "MethodType": "ExecuteExperiment", "DeskData": "", "PositionParams": "", "PlateTypeAssociation": "Library"}',NULL);
 INSERT INTO workflow VALUES(680,'1','003f01ca-bd44-4142-9a2f-e4ee87cba24b','GenSIRO48-过夜孵育','code0000007','48建库','ExecuteExperiment','{"ScriptId": "ab8eba8f-a258-4b05-9ddb-287678a4adc8", "ScriptName": "SIRO48-PTseq-DNB-Overnight", "MethodType": "ExecuteExperiment", "DeskData": "", "PositionParams": "", "PlateTypeAssociation": "Library"}',NULL);
 INSERT INTO workflow VALUES(681,'1','d20649e5-f920-46f8-b2a2-3a58e29bdff0','SIRO48-DNB-Incubation','code0000007','48建库','ExecuteExperiment','{"ScriptId": "29051113-3662-43aa-877d-56c750bebee3", "ScriptName": "GenSIRO48-DNB-Incubation", "MethodType": "ExecuteExperiment", "DeskData": "", "PositionParams": "", "PlateTypeAssociation": "Library"}',NULL);
+INSERT INTO workflow VALUES(682,'1','fa5f7e77-4005-434b-bafb-2e7f9896ab26','GenSIRO48-PTseq-提取（全流程E25）','code0000007','48建库','ExecuteExperiment','{"ScriptId": "cc5f0fa6-81fa-427f-a754-48a587116279", "ScriptName": "SIRO48-PTseq-开启温控", "MethodType": "ExecuteExperiment", "DeskData": "", "PositionParams": "", "PlateTypeAssociation": "Library"}',NULL);
+INSERT INTO workflow VALUES(683,'2','fa5f7e77-4005-434b-bafb-2e7f9896ab26','GenSIRO48-PTseq-提取（全流程E25）','code0000004','图片弹窗','ShowPicture','{"Path": "Resources\\PTseq-layout\\SIRO48-PTseq-Full-Process-Extraction.jpg", "Remark": null}',NULL);
+INSERT INTO workflow VALUES(684,'3','fa5f7e77-4005-434b-bafb-2e7f9896ab26','GenSIRO48-PTseq-提取（全流程E25）','code0000004','图片弹窗','ShowPicture','{"Path": "Resources\\PTseq-layout\\SIRO48-PTseq-Full-Process-Library.jpg", "Remark": null}',NULL);
+INSERT INTO workflow VALUES(685,'4','fa5f7e77-4005-434b-bafb-2e7f9896ab26','GenSIRO48-PTseq-提取（全流程E25）','code0000004','图片弹窗','ShowPicture','{"Path": "Resources\\PTseq-layout\\SIRO48-PTseq-Full-Process Reagent Bench Diagram(E25).jpg", "Remark": null}',NULL);
+INSERT INTO workflow VALUES(686,'5','fa5f7e77-4005-434b-bafb-2e7f9896ab26','GenSIRO48-PTseq-提取（全流程E25）','code0000006','48提取','DeckScan','{"ScriptId": "", "ScriptName": "", "ScanString": "[{\"lane\": 1, \"pos\": 1, \"consumable\": \"1\", \"barcode\": null, \"position\": \"1\", \"barcode_number_type\": null, \"result\": \"1\", \"error_message\": null, \"is_row_valid\": false, \"IsSelect\": false, \"Sort\": 1, \"OrderIndex\": 1, \"Index\": 1, \"IsLocked\": false, \"ValidationBackgroundColor\": \"Transparent\", \"IsInputReadOnly\": false, \"sample_number\": null, \"IsScan\": false}]", "DeskData": "", "PositionParams": "", "PlateTypeAssociation": "Pretreatment"}',NULL);
+INSERT INTO workflow VALUES(687,'6','fa5f7e77-4005-434b-bafb-2e7f9896ab26','GenSIRO48-PTseq-提取（全流程E25）','code0000005','Barcode录入','UpdateBarcodeId','{"SampleInfoProperty": "BarcodeId", "ScanString": "[{\"lane\": 1, \"pos\": 1, \"consumable\": \"1\", \"barcode\": null, \"position\": \"1\", \"barcode_number_type\": null, \"result\": \"1\", \"error_message\": null, \"is_row_valid\": false, \"IsSelect\": false, \"Sort\": 1, \"OrderIndex\": 1, \"Index\": 1, \"sample_number\": null, \"IsScan\": false}]"}',NULL);
+INSERT INTO workflow VALUES(688,'7','fa5f7e77-4005-434b-bafb-2e7f9896ab26','GenSIRO48-PTseq-提取（全流程E25）','code0000006','48提取','ExecuteExperiment','{"ScriptId": "2025ec6a-8bac-4349-97bb-a93a6fc7d528", "ScriptName": "SIRO48-PTseq-提取", "ScanString": "", "DeskData": "", "PositionParams": "", "PlateTypeAssociation": "Pretreatment"}',NULL);
 CREATE TABLE IF NOT EXISTS "sampleinfoproperty" (
   "id" text,
   "name" text,
@@ -288,7 +295,7 @@ CREATE TABLE IF NOT EXISTS "process" (
   "remark" TEXT,
   PRIMARY KEY ("id")
 );
-INSERT INTO process VALUES('f33df7a7-e3b5-4830-bf74-3db4a911145a','GenSIRO48-PTseq-Extraction（FullProcess）','1','','PreTreatment','0','[]','0','','','0','',NULL);
+INSERT INTO process VALUES('f33df7a7-e3b5-4830-bf74-3db4a911145a','GenSIRO48-PTseq-Extraction（FullProcess-G99&200）','1','','PreTreatment','0','[]','0','','','0','',NULL);
 INSERT INTO process VALUES('ae66a0e8-32f6-4a3c-98bd-6862d1db80dc','GenSIRO48-PTseq-LibraryBuilding&SequencingPrep-E25','1','PreTreatment','LibraryPrep','0','[]','0','','','0','',NULL);
 INSERT INTO process VALUES('3168b048-41af-4c36-991d-a93838750c0b','GenSIRO48-PTseq-LibraryBuilding&SequencingPrep-G99','1','PreTreatment','LibraryPrep','0','[]','0','','','0','',NULL);
 INSERT INTO process VALUES('d981428e-9a8f-4fff-aebb-841cf48853f2','GenSIRO48-PTseq-LibraryBuilding&SequencingPrep-200','1','PreTreatment','LibraryPrep','0','[]','0','','','0','',NULL);
@@ -300,6 +307,7 @@ INSERT INTO process VALUES('a830c028-f1bd-46cb-8b17-de09138e0eb5','GenSIRO48-PTs
 INSERT INTO process VALUES('84e67d61-e6cd-401a-bb5a-e3db66181bce','GenSIRO48-PTseq-SequencingPrep-200','1','LibraryPrep','SequencingPrep','0','[]','0','','','0','',NULL);
 INSERT INTO process VALUES('003f01ca-bd44-4142-9a2f-e4ee87cba24b','GenSIRO48-Overnight','1','SequencingPrep','SaveProduct','0','[]','0','','','0','',NULL);
 INSERT INTO process VALUES('d20649e5-f920-46f8-b2a2-3a58e29bdff0','SIRO48-DNB-Incubation','1','SequencingPrep','SaveProduct','0','[]','0','','','0','',NULL);
+INSERT INTO process VALUES('fa5f7e77-4005-434b-bafb-2e7f9896ab26','GenSIRO48-PTseq-Extraction（FullProcess-E25）','1','','PreTreatment','0','[]','0','','','0','',NULL);
 CREATE TABLE sequencer_product (id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT, product_name TEXT, analysis_type TEXT, sequencer TEXT, chip_type TEXT, sequencer_data TEXT, product_label_data TEXT, standard_library_volume TEXT, pooling_type TEXT, pooling_total_volume TEXT, total_volume TEXT, hybrid_mix_number TEXT, hybrid_mix_total_volume TEXT, remark TEXT);
 INSERT INTO sequencer_product VALUES(1,'PMseq','1M','MGISEQ-200','FCL','41.6','20','21','1','200','48',NULL,NULL,NULL);
 INSERT INTO sequencer_product VALUES(2,'PMseq','1M','DNBSEQ-G99','FCL','20','20','21','1','200','48',NULL,NULL,NULL);
@@ -356,12 +364,12 @@ CREATE TABLE IF NOT EXISTS "siro48_script_table_mapping" (
   "order_index" INTEGER,
   PRIMARY KEY ("id")
 );
-INSERT INTO siro48_script_table_mapping VALUES('adb25255-a4a7-42b3-8f8a-2234e3cd7f4c','69e1bcd1-fe87-4b40-a9d4-93637cedfc39','376c5abf-c5f3-4781-a6a7-268659a482b9',1);
-INSERT INTO siro48_script_table_mapping VALUES('4944ec4b-2bf4-4c61-a2c5-cbf1822a4ce9','69e1bcd1-fe87-4b40-a9d4-93637cedfc39','13f49971-63b2-4b98-98af-9b452325c280',3);
-INSERT INTO siro48_script_table_mapping VALUES('90c16405-630f-40d2-ade1-29b6e9bc4bd2','aee82507-2a98-41de-a5be-823577f065ac','376c5abf-c5f3-4781-a6a7-268659a482b9',1);
-INSERT INTO siro48_script_table_mapping VALUES('db6214c4-7957-4fe7-be06-c17ffca41197','aee82507-2a98-41de-a5be-823577f065ac','13f49971-63b2-4b98-98af-9b452325c280',3);
-INSERT INTO siro48_script_table_mapping VALUES('35cf88a5-50a9-48e8-85dc-951892f545d3','a09f6afe-95f3-427c-8d7d-e644f2e4ce83','376c5abf-c5f3-4781-a6a7-268659a482b9',1);
-INSERT INTO siro48_script_table_mapping VALUES('7ad1f2bb-69d5-4e5d-bba9-e9fe5d4e13da','a09f6afe-95f3-427c-8d7d-e644f2e4ce83','13f49971-63b2-4b98-98af-9b452325c280',3);
+INSERT INTO siro48_script_table_mapping VALUES('adb25255-a4a7-42b3-8f8a-2234e3cd7f4c','69e1bcd1-fe87-4b40-a9d4-93637cedfc39','376c5abf-c5f3-4781-a6a7-268659a482b9',4);
+INSERT INTO siro48_script_table_mapping VALUES('4944ec4b-2bf4-4c61-a2c5-cbf1822a4ce9','69e1bcd1-fe87-4b40-a9d4-93637cedfc39','13f49971-63b2-4b98-98af-9b452325c280',5);
+INSERT INTO siro48_script_table_mapping VALUES('90c16405-630f-40d2-ade1-29b6e9bc4bd2','aee82507-2a98-41de-a5be-823577f065ac','376c5abf-c5f3-4781-a6a7-268659a482b9',4);
+INSERT INTO siro48_script_table_mapping VALUES('db6214c4-7957-4fe7-be06-c17ffca41197','aee82507-2a98-41de-a5be-823577f065ac','13f49971-63b2-4b98-98af-9b452325c280',5);
+INSERT INTO siro48_script_table_mapping VALUES('35cf88a5-50a9-48e8-85dc-951892f545d3','a09f6afe-95f3-427c-8d7d-e644f2e4ce83','376c5abf-c5f3-4781-a6a7-268659a482b9',4);
+INSERT INTO siro48_script_table_mapping VALUES('7ad1f2bb-69d5-4e5d-bba9-e9fe5d4e13da','a09f6afe-95f3-427c-8d7d-e644f2e4ce83','13f49971-63b2-4b98-98af-9b452325c280',5);
 INSERT INTO siro48_script_table_mapping VALUES('86442893-7b4d-47bd-94fa-15ebd8a8f5c8','27e2a5bb-3fc7-4565-b807-7ef90200d99b','257331d8-36cb-44a1-bd10-ed6e8d4be983',1);
 INSERT INTO siro48_script_table_mapping VALUES('14ca255f-ef5f-477d-9858-c9e868fa3087','27e2a5bb-3fc7-4565-b807-7ef90200d99b','c396b882-532d-4c28-ad43-90fb89b1a292',2);
 INSERT INTO siro48_script_table_mapping VALUES('46377d75-21ae-4728-a261-f930183b3747','8ec0aa83-2ef6-4706-94a6-3f0aec99dcf9','257331d8-36cb-44a1-bd10-ed6e8d4be983',1);
@@ -371,6 +379,17 @@ INSERT INTO siro48_script_table_mapping VALUES('1f84950d-8e12-4d61-9ea2-4c77f2db
 INSERT INTO siro48_script_table_mapping VALUES('c0740377-1037-49c6-8638-931c10543112','47f2bf6c-a6d3-405e-a3a9-65ab8ae84f2d','26d160f5-8e4f-440c-80f1-6d1248962c80',1);
 INSERT INTO siro48_script_table_mapping VALUES('b3e367b2-410e-492e-b51c-3cd08a8fa1ef','47f2bf6c-a6d3-405e-a3a9-65ab8ae84f2d','376c5abf-c5f3-4781-a6a7-268659a482b9',4);
 INSERT INTO siro48_script_table_mapping VALUES('151127a4-d51b-41c7-a09b-5f1fa4bdce98','2025ec6a-8bac-4349-97bb-a93a6fc7d528','42ead651-83df-4c1d-b0d5-74156a7cb3c5',1);
+INSERT INTO siro48_script_table_mapping VALUES('064a4bf8-a150-48bd-8ae7-3b3a0225112e','47f2bf6c-a6d3-405e-a3a9-65ab8ae84f2d','ae8471ca-40cb-46ba-af9d-574f801add72',2);
+INSERT INTO siro48_script_table_mapping VALUES('0d83707a-8601-4a81-bc1e-c73b85f8a808','47f2bf6c-a6d3-405e-a3a9-65ab8ae84f2d','4a42636c-d895-48e2-93e5-40b3415e5ba4',3);
+INSERT INTO siro48_script_table_mapping VALUES('71f7729d-5471-4618-ad44-9bcbb5243502','69e1bcd1-fe87-4b40-a9d4-93637cedfc39','26d160f5-8e4f-440c-80f1-6d1248962c80',1);
+INSERT INTO siro48_script_table_mapping VALUES('f9806fca-58c1-46e4-86ed-ff0cedde1151','a09f6afe-95f3-427c-8d7d-e644f2e4ce83','26d160f5-8e4f-440c-80f1-6d1248962c80',1);
+INSERT INTO siro48_script_table_mapping VALUES('f66bcdb8-f402-432e-948d-edcd55b46a59','aee82507-2a98-41de-a5be-823577f065ac','26d160f5-8e4f-440c-80f1-6d1248962c80',1);
+INSERT INTO siro48_script_table_mapping VALUES('e7cf8ede-57c0-4e16-8e1e-0bf18712daa5','69e1bcd1-fe87-4b40-a9d4-93637cedfc39','ae8471ca-40cb-46ba-af9d-574f801add72',2);
+INSERT INTO siro48_script_table_mapping VALUES('bab14999-1912-4008-a721-bd444e9e3db3','a09f6afe-95f3-427c-8d7d-e644f2e4ce83','ae8471ca-40cb-46ba-af9d-574f801add72',2);
+INSERT INTO siro48_script_table_mapping VALUES('5b3acf6d-f79a-4c08-9e00-e4fff4881e08','aee82507-2a98-41de-a5be-823577f065ac','ae8471ca-40cb-46ba-af9d-574f801add72',2);
+INSERT INTO siro48_script_table_mapping VALUES('3592f744-5073-4893-a37f-e3807a914514','69e1bcd1-fe87-4b40-a9d4-93637cedfc39','4a42636c-d895-48e2-93e5-40b3415e5ba4',3);
+INSERT INTO siro48_script_table_mapping VALUES('19a0ae77-555d-4238-b83e-e097df266b08','a09f6afe-95f3-427c-8d7d-e644f2e4ce83','4a42636c-d895-48e2-93e5-40b3415e5ba4',3);
+INSERT INTO siro48_script_table_mapping VALUES('b3b04173-152a-4c4a-88c0-89ddd270642c','aee82507-2a98-41de-a5be-823577f065ac','4a42636c-d895-48e2-93e5-40b3415e5ba4',3);
 CREATE TABLE IF NOT EXISTS "siro48_table_config" (
   "id" TEXT,
   "table_name" TEXT NOT NULL,
@@ -388,8 +407,10 @@ INSERT INTO siro48_table_config VALUES('376c5abf-c5f3-4781-a6a7-268659a482b9','G
 INSERT INTO siro48_table_config VALUES('13f49971-63b2-4b98-98af-9b452325c280','GenSIRO48-PTseq-LibraryBuilding-Pooling-output-form','Output','D:\data\PTseq_pooling_info.csv','[{"SampleInfoProperty":"PoolingId","ColumnIndex":2},{"SampleInfoProperty":"LibraryVolume","ColumnIndex":3}]',NULL,'2026-03-11 10:53:10','2026-07-12 00:00:00');
 INSERT INTO siro48_table_config VALUES('c396b882-532d-4c28-ad43-90fb89b1a292','GenSIRO48-PTseq-SequencingPrep-Pooling-output-form','Output','D:\data\PTseq_pooling_info.csv','[{"SampleInfoProperty":"PoolingId","ColumnIndex":2},{"SampleInfoProperty":"LibraryVolume","ColumnIndex":3}]',NULL,'2026-03-11 11:02:34','2026-03-11 11:05:25');
 INSERT INTO siro48_table_config VALUES('26d160f5-8e4f-440c-80f1-6d1248962c80','GenSIRO48-PTseq-LibraryBuilding-input-form','Input','D:\Pathogens\PTseq.csv','[{"SampleInfoProperty": "SampleNumber", "ColumnIndex": 1}, {"SampleInfoProperty": "PreptreatmentWell", "ColumnIndex": 2}, {"SampleInfoProperty": "PreptreatmentPlate", "ColumnIndex": 3}, {"SampleInfoProperty": "QcType", "ColumnIndex": 4}, {"SampleInfoProperty": "ProductName", "ColumnIndex": 5}, {"SampleInfoProperty": "BarcodeId", "ColumnIndex": 6}, {"SampleInfoProperty": "SampleType", "ColumnIndex": 7}]',NULL,'2026-03-26 16:17:18','2026-03-26 16:30:00');
+INSERT INTO siro48_table_config VALUES('ae8471ca-40cb-46ba-af9d-574f801add72','GenSIRO48-PTseq-提取产物定量输出表格','Output','D:\data\PTseq_Extraction.xlsx','[{"SampleInfoProperty":"ExtractionQC","ColumnIndex":5}]','建库开始前在POS14 Col7-12完成的提取产物定量结果','2026-07-20 00:00:00','2026-07-20 00:00:00');
+INSERT INTO siro48_table_config VALUES('4a42636c-d895-48e2-93e5-40b3415e5ba4','GenSIRO48-PTseq-提取产物均一化输出表格','Output','D:\data\PTseq_normalization_info.csv','[{"SampleInfoProperty":"SampleNumber","ColumnIndex":1},{"SampleInfoProperty":"DnaVolume","ColumnIndex":8},{"SampleInfoProperty":"DnaReplenishmentVolume","ColumnIndex":9}]','20 ng/uL、30 uL目标体系的样本取样量和补水量','2026-07-20 00:00:00','2026-07-20 00:00:00');
 CREATE TABLE product (id text, file_ID TEXT, product_class text, show_product_class TEXT, test_name TEXT, technical_route text, show_technical_route text, experimental_stage text, show_experimental_stage TEXT, sequencer TEXT, chip_type TEXT, is_permit text, process_id_list TEXT, max_count TEXT, start_property TEXT, is_pooling TEXT, remark text, min_count TEXT);
-INSERT INTO product VALUES('7f732593-0569-46ec-8589-3f658de2c54e','PTseq001','PTseq','PTseq','PTseq','PTseq','PTseq','Full-process','Full-process','DNBSEQ-E25','FCL','Yes','f33df7a7-e3b5-4830-bf74-3db4a911145a;ae66a0e8-32f6-4a3c-98bd-6862d1db80dc;da0bbb53-c5d7-4268-8939-69b8f743c921;003f01ca-bd44-4142-9a2f-e4ee87cba24b','48','SampleNumber','0',NULL,'5');
+INSERT INTO product VALUES('7f732593-0569-46ec-8589-3f658de2c54e','PTseq001','PTseq','PTseq','PTseq','PTseq','PTseq','Full-process','Full-process','DNBSEQ-E25','FCL','Yes','fa5f7e77-4005-434b-bafb-2e7f9896ab26;ae66a0e8-32f6-4a3c-98bd-6862d1db80dc;da0bbb53-c5d7-4268-8939-69b8f743c921;003f01ca-bd44-4142-9a2f-e4ee87cba24b','48','SampleNumber','0',NULL,'5');
 INSERT INTO product VALUES('2e61c7a3-bfcc-4640-8e9c-ba60e2bda834','PTseq002','PTseq','PTseq','PTseq','PTseq','PTseq','Full-process','Full-process','DNBSEQ-G99','FCL','Yes','f33df7a7-e3b5-4830-bf74-3db4a911145a;3168b048-41af-4c36-991d-a93838750c0b;da0bbb53-c5d7-4268-8939-69b8f743c921;003f01ca-bd44-4142-9a2f-e4ee87cba24b','48','SampleNumber','0',NULL,'5');
 INSERT INTO product VALUES('3e3d4333-8a93-4d6e-be16-2d88a245aff8','PTseq003','PTseq','PTseq','PTseq','PTseq','PTseq','Full-process','Full-process','MGISEQ-200','FCL','Yes','f33df7a7-e3b5-4830-bf74-3db4a911145a;d981428e-9a8f-4fff-aebb-841cf48853f2;da0bbb53-c5d7-4268-8939-69b8f743c921;003f01ca-bd44-4142-9a2f-e4ee87cba24b','48','SampleNumber','0',NULL,'5');
 INSERT INTO product VALUES('c93f8831-2071-4eb1-8541-dd9342e7c1f3','PTseq004','PTseq','PTseq','PTseq','PTseq','PTseq','Pretreatment-LibraryPrep','Pretreatment-LibraryPrep','DNBSEQ-E25','FCL','Yes','eab536d5-e9e6-4332-b8a2-35e1718b1a4e;b11875de-7bf3-43d9-98bd-ed349a9aa2f0;d20649e5-f920-46f8-b2a2-3a58e29bdff0','48','SampleNumber','0',NULL,'5');
@@ -400,7 +421,7 @@ INSERT INTO product VALUES('15d971b9-5d1a-4d71-9825-2511857d55d9','PTseq008','PT
 INSERT INTO product VALUES('6da73ab1-a06c-404d-8dd9-4dca62e27ded','PTseq009','PTseq','PTseq','PTseq','PTseq','PTseq','SequencingPrep','SequencingPrep','MGISEQ-200','FCL','Yes','84e67d61-e6cd-401a-bb5a-e3db66181bce;003f01ca-bd44-4142-9a2f-e4ee87cba24b','192','SampleNumber','0',NULL,'1');
 INSERT INTO sqlite_sequence VALUES('script_worklist',161);
 INSERT INTO sqlite_sequence VALUES('equipment',7);
-INSERT INTO sqlite_sequence VALUES('workflow',681);
+INSERT INTO sqlite_sequence VALUES('workflow',688);
 INSERT INTO sqlite_sequence VALUES('quantify_coefficient_type','2');
 INSERT INTO sqlite_sequence VALUES('user','2');
 INSERT INTO sqlite_sequence VALUES('sequencer_product',26);
