@@ -46,7 +46,6 @@ a = parallel_block(blockA)
 import sys
 class Tips:
 	def __init__(self,tip_pos,backup_tip_pos=[]):
-		self.transposition =  "M2_POS30" # 交换枪头的中转板位
 		self.tip_pos = tip_pos
 		self.backup_tip_pos = backup_tip_pos
 		self.tip_list = []
@@ -56,13 +55,8 @@ class Tips:
 			self.add_tips(self.tip_pos[i])
 	def exchange(self,x,y):
 		print('exchange:',x,y)
-		try:
-			transfer({"StartPosition":x,"EndPosition":self.transposition,"LoosenOffsetOfZ":0})
-			transfer({"StartPosition":y,"EndPosition":x,"LoosenOffsetOfZ":0})
-			transfer({"StartPosition":self.transposition,"EndPosition":y,"LoosenOffsetOfZ":0})
-			return (x,y)
-		except:
-		   pass
+		exchange_tip_racks_via_pos13(x,y)
+		return (x,y)
 	# 将列表中所有枪头依次存入tip_list,存储顺序为剩余枪头数、枪头所在板位、
 	def add_tips(self,target):
 		for i in range(1,13):
@@ -151,40 +145,8 @@ tip_1000 = Tips(tip_1000_loc)
 
 # POS19 已随本分支从 300 uL 备用枪头位改为 50 uL 备用枪头位；deck.json 中 POS19 也必须是 50 uL 枪头盒。
 tip_50_loc = ['M2_POS15','M2_POS12']
-backup_tip_50_loc = ['M2_POS25','M2_POS19']
+backup_tip_50_loc = ['M2_POS25','M2_POS19','M2_POS30']
 tip_50 = Tips(tip_50_loc,backup_tip_50_loc)
-
-'''============================================================震荡位换板逻辑=============================================================='''
-# POS16 是共享温控震荡位，POS23 是共享磁力架位；二者不是某一块板子的永久 home。
-# 当某块板需要震荡但 POS16 已有板时，先把 POS16 上的板临时移到 POS30，再把目标板移入 POS16。
-# 震荡结束后，目标板回到自己的原位置；如果原先 POS16 有板，再从 POS30 恢复到 POS16。
-# POS30 只作为换板过程中的临时中转位，不能长期放置带液体的流程板。
-
-def shaker_swap(target_plate_pos, operation_callback, current_shaker_occupant=None):
-	"""
-	执行一次“目标板进入 POS16 震荡、震荡后恢复原位”的换板操作。
-
-	参数：
-		target_plate_pos: 需要震荡的目标板当前所在位置，例如 M2_POS13 或 M2_POS14。
-		operation_callback: 目标板到达 POS16 后要执行的震荡函数。
-		current_shaker_occupant: 当前已经在 POS16 的板；如果没有则传 None。
-	"""
-	# 第一步：如果 POS16 已有板，先把这块板移到 POS30 暂存。
-	if current_shaker_occupant:
-		transfer({"StartPosition":"M2_POS16","EndPosition":"M2_POS30","LoosenOffsetOfZ":0})
-
-	# 第二步：把目标板移动到 POS16 震荡位。
-	transfer({"StartPosition":target_plate_pos,"EndPosition":"M2_POS16","LoosenOffsetOfZ":0})
-
-	# 第三步：执行调用方传入的震荡/混匀动作。
-	operation_callback()
-
-	# 第四步：目标板回到原位置，确保后续移液仍然访问正确物理板位。
-	transfer({"StartPosition":"M2_POS16","EndPosition":target_plate_pos,"LoosenOffsetOfZ":0})
-
-	# 第五步：如果 POS16 原来有板，从 POS30 恢复回 POS16。
-	if current_shaker_occupant:
-		transfer({"StartPosition":"M2_POS30","EndPosition":"M2_POS16","LoosenOffsetOfZ":0})
 
 #===========================================================================优化吸液逻辑=======================================================================
 
@@ -410,12 +372,237 @@ target_tip_num_list = [8]*(sample_num//8) + [sample_num%8]
 def blockB():
 	pcr_run_method({"Methods": ["PTseq_START"]})
 	pcr_run_method({"Methods": ["25-4"]})
+
+
+
+'''============================================================板位状态与中转逻辑=============================================================='''
+# POS30 固定放置第 5 盒 50 uL 枪头。POS13 在中转前必须先腾空，PCR 板不进入 POS16。
+purification_plate_pos = "M2_POS16"
+dye_deepwell_pos = "M2_POS13"
+purification_parking_pos = "M2_POS23"
+
+def set_purification_parking_pos(target_pos):
+	global purification_parking_pos
+	if target_pos not in ("M2_POS23", "M2_POS11"):
+		raise RuntimeError("Unsupported purification parking position")
+	purification_parking_pos = target_pos
+
+def move_purification_plate(target_pos):
+	global purification_plate_pos
+	if purification_plate_pos == target_pos:
+		return
+	transfer({"StartPosition":purification_plate_pos,"EndPosition":target_pos,"LoosenOffsetOfZ":0})
+	purification_plate_pos = target_pos
+
+def move_dye_deepwell(target_pos):
+	global dye_deepwell_pos
+	if dye_deepwell_pos == target_pos:
+		return
+	transfer({"StartPosition":dye_deepwell_pos,"EndPosition":target_pos,"LoosenOffsetOfZ":0})
+	dye_deepwell_pos = target_pos
+
+def clear_pos13_for_transit():
+	if dye_deepwell_pos != "M2_POS13":
+		raise RuntimeError("POS13 deepwell state mismatch before transit")
+	moved_purification_plate = False
+	if purification_plate_pos == "M2_POS16":
+		move_purification_plate(purification_parking_pos)
+		moved_purification_plate = True
+	elif purification_plate_pos != purification_parking_pos:
+		raise RuntimeError("Purification plate is not at POS16 or its current parking position")
+	move_dye_deepwell("M2_POS16")
+	return moved_purification_plate
+
+def restore_pos13_after_transit(moved_purification_plate):
+	if dye_deepwell_pos != "M2_POS16":
+		raise RuntimeError("POS13 deepwell was not parked at POS16")
+	move_dye_deepwell("M2_POS13")
+	if moved_purification_plate:
+		move_purification_plate("M2_POS16")
+
+def exchange_tip_racks_via_pos13(active_rack_pos, backup_rack_pos):
+	moved_purification_plate = clear_pos13_for_transit()
+	transfer({"StartPosition":active_rack_pos,"EndPosition":"M2_POS13","LoosenOffsetOfZ":0})
+	transfer({"StartPosition":backup_rack_pos,"EndPosition":active_rack_pos,"LoosenOffsetOfZ":0})
+	transfer({"StartPosition":"M2_POS13","EndPosition":backup_rack_pos,"LoosenOffsetOfZ":0})
+	restore_pos13_after_transit(moved_purification_plate)
+
+def swap_pos20_and_pos9_pcr_plates():
+	moved_purification_plate = clear_pos13_for_transit()
+	transfer({"StartPosition":"M2_POS20","EndPosition":"M2_POS13","LoosenOffsetOfZ":0})
+	transfer({"StartPosition":"M2_POS9","EndPosition":"M2_POS20","LoosenOffsetOfZ":0})
+	transfer({"StartPosition":"M2_POS13","EndPosition":"M2_POS9","LoosenOffsetOfZ":0})
+	restore_pos13_after_transit(moved_purification_plate)
+
+'''=====================================提取产物定量与均一化=============================================================='''
+EXTRACTION_TARGET_CONCENTRATION = 20.0
+EXTRACTION_NORMALIZED_VOLUME = 30.0
+EXTRACTION_MIN_SAMPLE_VOLUME = 3.0
+EXTRACTION_MAX_DIRECT_CONCENTRATION = (
+	EXTRACTION_TARGET_CONCENTRATION * EXTRACTION_NORMALIZED_VOLUME / EXTRACTION_MIN_SAMPLE_VOLUME
+)
+EXTRACTION_SOURCE_PLATE = "M2_POS8"
+EXTRACTION_SOURCE_START_COL = 1
+EXTRACTION_NORMALIZED_START_COL = 7
+EXTRACTION_WATER_LOC = ("M2_POS24", 2, 1)
+EXTRACTION_QUANT_TUBE_START_COL = 7
+
+def get_extraction_concentration(pos):
+	try:
+		result = find_sampling_concentration(pos[0], pos[2], pos[1])
+		if result is None:
+			return 0.0
+		return float(result.Consistence)
+	except Exception as e:
+		print(f"[WARNING] Extraction concentration read failed at {pos}: {e}")
+		return 0.0
+
+def sample_number_for_output(index):
+	if index < len(filtered_samples):
+		return filtered_samples[index].sample_id
+	return f"Sample{index + 1}"
+
+def plate_well(index, start_col):
+	return f"{chr(ord('A') + index % 8)}{start_col + index // 8}"
+
+def write_normalization_plan(plans):
+	import csv
+	file_path = r"D:\data\PTseq_normalization_info.csv"
+	with open(file_path, "w", newline="") as file:
+		writer = csv.writer(file)
+		writer.writerow([
+			"SampleNumber", "SourcePlate", "SourceWell", "TargetPlate", "TargetWell",
+			"MeasuredConcentration", "TargetConcentration", "SampleVolume", "WaterVolume",
+			"ExpectedConcentration", "Status"
+		])
+		for plan in plans:
+			writer.writerow([
+				plan["sample_number"], EXTRACTION_SOURCE_PLATE, plan["source_well"],
+				EXTRACTION_SOURCE_PLATE, plan["target_well"], plan["concentration"],
+				EXTRACTION_TARGET_CONCENTRATION, plan["sample_volume"], plan["water_volume"],
+				plan["expected_concentration"], plan["status"]
+			])
+
+def quantify_extraction_products():
+	lang = get_lang()
+	if lang == 1:
+		report({"Phase":"提取产物定量","Step":"POS14 Col7-12 提取产物定量","TaskType":"library","RemainingTime":None})
+	elif lang == 2:
+		report({"Phase":"Extraction quantification","Step":"Extraction products in POS14 Col7-12","TaskType":"library","RemainingTime":None})
+
+	dye_loc = ("M2_POS4", 1, 1)
+	dye_tip = tip_300.load(8, 8, 1)[0]
+	sample_tips = tip_50.load(sample_num, 8, 1)
+	moved_purification_plate = clear_pos13_for_transit()
+	transfer({"StartPosition":"M2_POS14","EndPosition":"M2_POS13","LoosenOffsetOfZ":0})
+
+	last_row = 1 if sample_num % 8 == 0 else 9 - sample_num % 8
+	for i in range(col_num - 1, -1, -1):
+		if i == col_num - 1:
+			p8_load_tips({"Position":dye_tip[0],"Col":dye_tip[1],"Row":last_row,"Tips":8})
+		p8_aspirate_modified(dye_loc[0], Row=dye_loc[2], Col=dye_loc[1], AspirateVolume=217.8, PreAirVolume=10, AspirateOffsetOfZ=1.0)
+		p8_empty_modified("M2_POS13", Row=1, Col=EXTRACTION_QUANT_TUBE_START_COL+i, EmptyOffsetOfZ=11, TipTouchTimes=1)
+		if i == col_num - 1 and sample_num % 8 != 0:
+			p8_unload_tips({"Position":dye_tip[0],"Col":dye_tip[1],"Row":last_row,"Tips":8})
+			p8_load_tips({"Position":dye_tip[0],"Col":dye_tip[1],"Row":1,"Tips":8})
+	p8_unload_tips({"Position":"M2_Trash","Col":None,"Row":None})
+
+	for i in range(col_num):
+		p8_load_modified(sample_tips[i])
+		p8_aspirate_modified(EXTRACTION_SOURCE_PLATE, 1, EXTRACTION_SOURCE_START_COL+i, 2.2, AspirateSpeed=2, AspirateOffsetOfZ=2, IfTrack=True)
+		p8_empty_modified("M2_POS13", Row=1, Col=EXTRACTION_QUANT_TUBE_START_COL+i, EmptyOffsetOfZ=10)
+		p8_mix({"Position":"M2_POS13","Col":EXTRACTION_QUANT_TUBE_START_COL+i,"Row":1,"PreAirVolume":0,"MixTimes":5,"MixAspirateSpeed":100,"MixAspirateOffsetOfZ":0.5,"MixVolume":40,"MixDispenseOffsetOfZ":15,"MixDispenseSpeed":100,"DelayAfterMixLoop":0.5,"MixEmptyOffsetOfZ":20,"MixEmptySpeed":50,"PreAirSpeed":50,"DelayAfterMixAspirate":0.5,"DelayAfterMixDispense":0.5,"DelayAfterMixEmpty":2,"PostAirSpeed":50,"PostAirVolume":5,"FirstSegmentSpeed":100,"SpeedChangeOffsetOfZ":0,"SecondSegmentSpeed":80,"TipTouchTimes":0,"TipTouchOffsetOfZ":5,"TipTouchRangeOfX":1.2,"TipTouchSpeed":100})
+		p8_empty_modified("M2_POS13", Row=1, Col=EXTRACTION_QUANT_TUBE_START_COL+i, EmptyOffsetOfZ=5, EmptySpeed=80)
+		p8_unload_tips({"Position":"M2_Trash","Col":None,"Row":None})
+
+	concentrations = []
+	for i in range(col_num):
+		quant_col = EXTRACTION_QUANT_TUBE_START_COL + i
+		p8_load_quantification_tube({"Position":"M2_POS13","Row":1,"Col":quant_col,"Tips":8})
+		quantity_run_sample({"Name":"","SampleType":"dsDNA_HS","ProductType":"Extract","StandardToSampleRatio":5,"DilutionRatio":1,"Label":"","DilutionAssessment":60})
+		concentrations.extend([get_extraction_concentration(("M2_POS13", quant_col, row)) for row in range(1, 9)])
+		p8_unload_quantification_tube({"Position":"M2_POS13","Row":1,"Col":quant_col,"Tips":8})
+	output_quantitative_data({"ProductType":"Extract","FilePath":r"D:\data\PTseq_Extraction.xlsx"})
+	transfer({"StartPosition":"M2_POS13","EndPosition":"M2_POS14","LoosenOffsetOfZ":0})
+	restore_pos13_after_transit(moved_purification_plate)
+	return concentrations[:sample_num]
+
+def build_normalization_plan(concentrations):
+	plans = []
+	for index, concentration in enumerate(concentrations):
+		if concentration <= 0:
+			sample_volume = 0.0
+			water_volume = 0.0
+			expected_concentration = 0.0
+			status = "INVALID_CONCENTRATION"
+		elif concentration < EXTRACTION_TARGET_CONCENTRATION:
+			sample_volume = EXTRACTION_NORMALIZED_VOLUME
+			water_volume = 0.0
+			expected_concentration = concentration
+			status = "BELOW_TARGET_UNDILUTED"
+		elif concentration <= EXTRACTION_MAX_DIRECT_CONCENTRATION:
+			sample_volume = round(EXTRACTION_TARGET_CONCENTRATION * EXTRACTION_NORMALIZED_VOLUME / concentration, 2)
+			water_volume = round(EXTRACTION_NORMALIZED_VOLUME - sample_volume, 2)
+			expected_concentration = EXTRACTION_TARGET_CONCENTRATION
+			status = "NORMALIZED"
+		else:
+			sample_volume = 0.0
+			water_volume = 0.0
+			expected_concentration = 0.0
+			status = "ABOVE_200_NG_PER_UL"
+		plans.append({
+			"sample_number": sample_number_for_output(index),
+			"source_well": plate_well(index, EXTRACTION_SOURCE_START_COL),
+			"target_well": plate_well(index, EXTRACTION_NORMALIZED_START_COL),
+			"concentration": round(concentration, 4),
+			"sample_volume": sample_volume,
+			"water_volume": water_volume,
+			"expected_concentration": round(expected_concentration, 4),
+			"status": status,
+		})
+	return plans
+
+def normalize_extraction_products(plans):
+	invalid = [plan for plan in plans if plan["status"] in ("INVALID_CONCENTRATION", "ABOVE_200_NG_PER_UL")]
+	write_normalization_plan(plans)
+	if invalid:
+		message = "; ".join([f'{plan["sample_number"]}:{plan["status"]}' for plan in invalid])
+		sys.exit(f"Extraction normalization stopped before pipetting: {message}")
+
+	lang = get_lang()
+	if lang == 1:
+		report({"Phase":"提取产物均一化","Step":"20 ng/uL，POS8 Col7-12，目标体积 30 uL","TaskType":"library","RemainingTime":None})
+	elif lang == 2:
+		report({"Phase":"Extraction normalization","Step":"20 ng/uL in POS8 Col7-12; 30 uL target","TaskType":"library","RemainingTime":None})
+
+	if any(plan["water_volume"] > 0 for plan in plans):
+		# 均一化补水量为 0-27 uL；专用一支 50 uL 枪头在空目标孔之间复用。
+		water_tip = tip_50.load(1, 1)[0]
+		p1_load_modified(water_tip)
+		for index, plan in enumerate(plans):
+			if plan["water_volume"] <= 0:
+				continue
+			row = index % 8 + 1
+			col = EXTRACTION_NORMALIZED_START_COL + index // 8
+			p1_aspirate_modified(EXTRACTION_WATER_LOC[0], Row=EXTRACTION_WATER_LOC[2], Col=EXTRACTION_WATER_LOC[1], AspirateOffsetOfZ=0.8, AspirateVolume=plan["water_volume"], AspirateSpeed=10)
+			p1_empty_modified(EXTRACTION_SOURCE_PLATE, Row=row, Col=col, EmptyOffsetOfZ=0.5, EmptySpeed=10)
+		p1_unload_tips2({"Position":"M2_Trash","Col":None,"Row":None})
+
+	sample_tips = tip_50.load(sample_num, 1)
+	for index, plan in enumerate(plans):
+		row = index % 8 + 1
+		source_col = EXTRACTION_SOURCE_START_COL + index // 8
+		target_col = EXTRACTION_NORMALIZED_START_COL + index // 8
+		p1_load_modified(sample_tips[index])
+		p1_aspirate_modified(EXTRACTION_SOURCE_PLATE, Row=row, Col=source_col, AspirateVolume=plan["sample_volume"], AspirateOffsetOfZ=0.5, AspirateSpeed=10)
+		p1_empty_modified(EXTRACTION_SOURCE_PLATE, Row=row, Col=target_col, EmptyOffsetOfZ=0.5, EmptySpeed=10)
+		p1_mix({"Position":EXTRACTION_SOURCE_PLATE,"Col":target_col,"Row":row,"PreAirVolume":5,"MixTimes":5,"MixAspirateSpeed":30,"MixAspirateOffsetOfZ":0.5,"MixVolume":25,"MixDispenseOffsetOfZ":5,"MixDispenseSpeed":30,"DelayAfterMixLoop":0.5,"MixEmptyOffsetOfZ":3,"MixEmptySpeed":30,"PreAirSpeed":50,"DelayAfterMixAspirate":0.5,"DelayAfterMixDispense":0.5,"DelayAfterMixEmpty":0.5,"PostAirSpeed":50,"PostAirVolume":0,"FirstSegmentSpeed":100,"SpeedChangeOffsetOfZ":0,"SecondSegmentSpeed":80,"TipTouchTimes":0})
+		p1_unload_tips2({"Position":"M2_Trash","Col":None,"Row":None})
+
+extraction_concentration_list = quantify_extraction_products()
+extraction_normalization_plan = build_normalization_plan(extraction_concentration_list)
+normalize_extraction_products(extraction_normalization_plan)
 b = parallel_block(blockB)
-
-
-
-'''=====================================中转位=============================================================='''
-transposition = "M2_POS30"
 
 '''===================================================cDNA合成==============================================================='''
 #取8的商和余数,计算行列数
@@ -470,8 +657,8 @@ col_num = (sample_num+7)//8
 column_num = col_num
 for i in range(col_num):
 	p8_load_modified(tip_300.load(target_tip_num_list[i])[0])
-	p8_mix({"Position":"M2_POS8","Col":i+1,"Row":1,"PreAirVolume":15,"MixTimes":8,"MixAspirateSpeed":20,"MixAspirateOffsetOfZ":0.5,"MixVolume":20,"MixDispenseOffsetOfZ":8,"MixDispenseSpeed":50,"DelayAfterMixLoop":2,"MixEmptyOffsetOfZ":5,"MixEmptySpeed":30,"PreAirSpeed":50,"DelayAfterMixAspirate":0.5,"DelayAfterMixDispense":0.5,"DelayAfterMixEmpty":0.5,"TipTouchTimes":0,"PostAirSpeed":50,"PostAirVolume":0,"FirstSegmentSpeed":100,"SpeedChangeOffsetOfZ":0,"SecondSegmentSpeed":80})
-	p8_aspirate({"Position":"M2_POS8","Col":i+1,"Row":1,"PreAirVolume":5,"AspirateOffsetOfZ":0.7,"AspirateSpeed":30,"AspirateVolume":14,"PreAirSpeed":50,"DelayAfterAspirate":1,"TipTouchTimes":0,"PostAirSpeed":50,"PostAirVolume":0,"IfTrack":True,"FirstSegmentSpeed":100,"SpeedChangeOffsetOfZ":0,"SecondSegmentSpeed":80})
+	p8_mix({"Position":"M2_POS8","Col":i+7,"Row":1,"PreAirVolume":15,"MixTimes":8,"MixAspirateSpeed":20,"MixAspirateOffsetOfZ":0.5,"MixVolume":20,"MixDispenseOffsetOfZ":8,"MixDispenseSpeed":50,"DelayAfterMixLoop":2,"MixEmptyOffsetOfZ":5,"MixEmptySpeed":30,"PreAirSpeed":50,"DelayAfterMixAspirate":0.5,"DelayAfterMixDispense":0.5,"DelayAfterMixEmpty":0.5,"TipTouchTimes":0,"PostAirSpeed":50,"PostAirVolume":0,"FirstSegmentSpeed":100,"SpeedChangeOffsetOfZ":0,"SecondSegmentSpeed":80})
+	p8_aspirate({"Position":"M2_POS8","Col":i+7,"Row":1,"PreAirVolume":5,"AspirateOffsetOfZ":0.7,"AspirateSpeed":30,"AspirateVolume":14,"PreAirSpeed":50,"DelayAfterAspirate":1,"TipTouchTimes":0,"PostAirSpeed":50,"PostAirVolume":0,"IfTrack":True,"FirstSegmentSpeed":100,"SpeedChangeOffsetOfZ":0,"SecondSegmentSpeed":80})
 	p8_empty({"Position":"M2_POS20","Col":i+1,"Row":1,"EmptyOffsetOfZ":0.8,"EmptySpeed":50,"DelayAfterEmpty":0.5,"TipTouchTimes":0,"PostAirSpeed":50,"PostAirVolume":0,"FirstSegmentSpeed":100,"SpeedChangeOffsetOfZ":0,"SecondSegmentSpeed":80})
 	p8_mix({"Position":"M2_POS20","Col":i+1,"Row":1,"PreAirVolume":11,"MixTimes":15,"MixAspirateSpeed":20,"MixAspirateOffsetOfZ":0.5,"MixVolume":13,"MixDispenseOffsetOfZ":5,"MixDispenseSpeed":50,"DelayAfterMixLoop":2,"MixEmptyOffsetOfZ":5,"MixEmptySpeed":30,"PreAirSpeed":50,"DelayAfterMixAspirate":0.5,"DelayAfterMixDispense":0.5,"DelayAfterMixEmpty":0.5,"TipTouchTimes":0,"PostAirSpeed":50,"PostAirVolume":0,"FirstSegmentSpeed":100,"SpeedChangeOffsetOfZ":0,"SecondSegmentSpeed":80})
 	p8_unload_tips({"Position":"M2_Trash","Col":None,"Row":None})
@@ -912,7 +1099,7 @@ def predispense_TA_ethanol_to_POS7():
 
 
 ###48μL磁珠1振荡位置转移到磁吸位置
-transfer({"StartPosition":"M2_POS16","EndPosition":"M2_POS23","LoosenOffsetOfZ":0})
+move_purification_plate("M2_POS23")
 TA_ethanol_predispense_wait = parallel_block(predispense_TA_ethanol_to_POS7)
 delay({"Duration": 180})
 TA_ethanol_predispense_wait.Wait()
@@ -1074,9 +1261,7 @@ transfer({"StartPosition":"M2_POS27","EndPosition":"M2_POS17","LoosenOffsetOfZ":
 # 新板的 Col1-6 用于 LA，Col7-12 预留给 DNB 相关反应。
 pcr_open_door()
 transfer({"StartPosition":"M2_POS20","EndPosition":"M2_POS26","LoosenOffsetOfZ":0})#开PCR盖板
-transfer({"StartPosition":"M2_POS20","EndPosition":transposition,"LoosenOffsetOfZ":0})#POS20 (used) → POS30 (temp)
-transfer({"StartPosition":"M2_POS9","EndPosition":"M2_POS20","LoosenOffsetOfZ":0})#POS9 (fresh) → POS20
-transfer({"StartPosition":transposition,"EndPosition":"M2_POS9","LoosenOffsetOfZ":0})# POS30 → POS9，存放已经用过的 PCR 板。
+swap_pos20_and_pos9_pcr_plates()
 # ============ END SWAP ============
 # State: door OPEN (line 1003), lid at POS26 (line 1004), fresh plate at POS20
 
@@ -1128,7 +1313,7 @@ else:
 		p8_unload_modified(LA_dispense_tips[i])
 
 # 第二步：把 POS23 磁架上的板转到 POS16 振荡位进行回溶。
-transfer({"StartPosition":"M2_POS23","EndPosition":"M2_POS16","LoosenOffsetOfZ":0})
+move_purification_plate("M2_POS16")
 # 用双向振荡回溶干燥磁珠产物；总时长 2 min，改善靠后列干团未完全重悬的问题。
 temp_shaker_set({"TempParameters":{"IsEnable":False,"Duration":-1},"ShakerParameters":{"IsEnable":True,"Direction":0,"Speed":1200,"Duration":60}})
 temp_shaker_set({"TempParameters":{"IsEnable":False,"Duration":-1},"ShakerParameters":{"IsEnable":True,"Direction":1,"Speed":1200,"Duration":60}})
@@ -1226,7 +1411,7 @@ Plate 3: M2_POS13 - 库存和测量板(Stock & Measurement Plate) [固定位置]
 - Columns 1-6 (Quantification Mix): 用于等分和混合文库样品与HS dsDNA染料
 - Columns 7-12 (Concentrated Library): 最终洗脱的目的地。这些孔包含您的48个高浓度文库产物。
 - 震荡器交换: 当需要定量染料混合均质化时，机器人执行临时"震荡器交换"：
-  1. 将M2_POS16当前占用者移至M2_POS30中转点
+  1. 将M2_POS16当前占用的纯化板移至M2_POS23
   2. 将Plate 3带入震荡器进行高速服务循环
   3. 混合完成后，将板返回到M2_POS13指定的主位置
   4. 恢复原始占用者到M2_POS16
@@ -1243,8 +1428,8 @@ Quantification tubes home: M2_POS14 [固定位置]
 定量阶段临时释放POS13访问位：POS13 product/dye mix整板到空闲POS23，
 POS14定量管到POS13执行加液/混匀/读数；定量后POS13定量管回POS14，POS23整板回POS13。
 
-M2_POS30 - 中转点(Transit Spot)
-临时存储位置，用于在震荡器交换操作期间保持当前M2_POS16占用者
+M2_POS30 - 第5盒50 uL备用枪头
+PCR板和枪头盒需要交换时，先腾空POS13，再以POS13作为临时中转位。
 
 ================================================================================================
 '''
@@ -1347,7 +1532,7 @@ pcr_close_door()
 
 
 ###30μL磁珠1振荡位置转移到磁吸位置
-transfer({"StartPosition":"M2_POS16","EndPosition":"M2_POS23","LoosenOffsetOfZ":0})
+move_purification_plate("M2_POS23")
 delay({"Duration": 120})
 
 # 更新 LA 纯化板位追踪：LA 使用 dispense_pos1，不使用 TA 的 dispense_pos2。
@@ -1423,7 +1608,7 @@ for x in range(col_num):
 	p8_unload_modified(Product[x])
 
 ###磁吸位置转移到振荡位置
-transfer({"StartPosition":"M2_POS23","EndPosition":"M2_POS16","LoosenOffsetOfZ":0})
+move_purification_plate("M2_POS16")
 temp_shaker_set({"TempParameters": {"IsEnable": False, "Temp": 25.00, "Duration": -1}, "ShakerParameters": {"IsEnable": True, "Direction": 1, "Speed": 1200, "Duration": 150}})
 
 #delay({"Duration": 30})
@@ -1431,7 +1616,7 @@ temp_shaker_set({"TempParameters": {"IsEnable": False, "Temp": 25.00, "Duration"
 delay({"Duration": 300})
 
 ###振荡位置转移到磁吸位置
-transfer({"StartPosition":"M2_POS16","EndPosition":"M2_POS23","LoosenOffsetOfZ":0})
+move_purification_plate("M2_POS23")
 delay({"Duration": 300})
 
 ###回收建库产物
@@ -1447,7 +1632,7 @@ for x in range(col_num):
 	p8_unload_tips({"Position":"M2_Trash","Col":None,"Row":None})
 
 # 将纯化板从磁力架位移回震荡位，便于后续取板或保存。
-transfer({"StartPosition":"M2_POS23","EndPosition":"M2_POS16","LoosenOffsetOfZ":0})
+move_purification_plate("M2_POS16")
 
 # 已移除旧转板动作：最终文库已经直接分装到 POS13，无需再把整板转到 POS13。
 
@@ -1556,19 +1741,19 @@ for i in range(col_num):
 
 # 第三步：执行定量混合板震荡换位；先腾空 POS16，再把 POS13 混合板移入 POS16 震荡，震荡后恢复。
 # 先把当前 POS16 上的板移到 POS23 暂存，腾出震荡位。
-transfer({"StartPosition":"M2_POS16","EndPosition":"M2_POS23","LoosenOffsetOfZ":0})
+move_purification_plate("M2_POS23")
 # 把染液混合板从 POS13 移到 POS16 震荡位。
-transfer({"StartPosition":"M2_POS13","EndPosition":"M2_POS16","LoosenOffsetOfZ":0})
+move_dye_deepwell("M2_POS16")
 # 双方向震荡，提高染液和样本混匀均一性。
 temp_shaker_set({"TempParameters": {"IsEnable": False, "Temp": 25.00, "Duration": 60}, "ShakerParameters": {"IsEnable": True,"Direction": 0,"Speed": 1200,"Duration": 60}})
 temp_shaker_set({"TempParameters": {"IsEnable": False, "Temp": 25.00, "Duration": 60}, "ShakerParameters": {"IsEnable": True,"Direction": 1,"Speed": 1200,"Duration": 60}})
 # 震荡完成后，把染液混合板移回 POS13。
-transfer({"StartPosition":"M2_POS16","EndPosition":"M2_POS13","LoosenOffsetOfZ":0})
+move_dye_deepwell("M2_POS13")
 # 将原先暂存在 POS23 的板恢复到 POS16。
-transfer({"StartPosition":"M2_POS23","EndPosition":"M2_POS16","LoosenOffsetOfZ":0})
+move_purification_plate("M2_POS16")
 
 # 第四步：把 POS13 的样本/染液混合板临时停放到空闲 POS23，再把 POS14 定量管换到 POS13。
-transfer({"StartPosition":"M2_POS13","EndPosition":"M2_POS23","LoosenOffsetOfZ":0})
+move_dye_deepwell("M2_POS23")
 dye_mix_plate[0] = "M2_POS23"
 transfer({"StartPosition":quantification_tube_home_pos,"EndPosition":quantification_tube_operating_pos,"LoosenOffsetOfZ":0})
 
@@ -1595,7 +1780,7 @@ output_quantitative_data({"ProductType":sample_stage,"FilePath":file_path})
 
 # 定量结束后，定量管从 POS13 回 POS14；样本/染液混合板从 POS23 回 POS13，恢复 deck 状态。
 transfer({"StartPosition":quantification_tube_operating_pos,"EndPosition":quantification_tube_home_pos,"LoosenOffsetOfZ":0})
-transfer({"StartPosition":"M2_POS23","EndPosition":"M2_POS13","LoosenOffsetOfZ":0})
+move_dye_deepwell("M2_POS13")
 dye_mix_plate[0] = "M2_POS13"
 
 #============================输出浓度列表=========================
@@ -1888,10 +2073,11 @@ print(f"样本的 pooling 组、取样体积、稀释倍数和放大倍数已输
 
 
 # [v7] ===== Normalization + Pooling 重写 =====
-# 流程: POS14→POS23 → 原位稀释(POS13) → pooling(POS13→POS23) → 转移到POS20 → POS23→POS14
+# 流程: POS11→POS23 → 原位稀释(POS13) → pooling(POS13→POS23) → 转移到POS20 → POS23→POS11
 
-# Step 1: 移动POS14 (pooling板) 到POS23 (空闲, p1/p8均可达)
-transfer({"StartPosition":"M2_POS14","EndPosition":"M2_POS23","LoosenOffsetOfZ":0})  # POS14 → POS23
+# Step 1: 移动 POS11 深孔板到 POS23；Col7 用于 pooling，POS14 保留定量管适配器。
+transfer({"StartPosition":"M2_POS11","EndPosition":"M2_POS23","LoosenOffsetOfZ":0})  # POS11 → POS23
+set_purification_parking_pos("M2_POS11")
 
 # 操作时pooling管在POS23 Col 7
 pooling_tube_pos = 'M2_POS23'
@@ -1909,7 +2095,8 @@ if water_loc_list:
 # Step 3: p8 吹吸混匀已稀释的孔 (POS13 Col 7-12 原位)
 if water_loc_list:
 	for i in range(len(water_loc_list)):
-		p8_load_modified(tip_50.load(1)[0])
+		# 100 uL 稀释体系使用 300 uL 枪头；释放 50 uL 枪头容量，液体参数保持不变。
+		p8_load_modified(tip_300.load(1)[0])
 		p8_mix({"Position":water_loc_list[i][0],"Col":water_loc_list[i][2],"Row":water_loc_list[i][1],"PreAirVolume":10,"MixTimes":10,"MixAspirateSpeed":100,"MixAspirateOffsetOfZ":0.5,"MixVolume":100,"MixDispenseOffsetOfZ":10,"MixDispenseSpeed":100,"DelayAfterMixLoop":0.5,"MixEmptyOffsetOfZ":10,"MixEmptySpeed":100,"PreAirSpeed":50,"DelayAfterMixAspirate":0.5,"DelayAfterMixDispense":0.5,"DelayAfterMixEmpty":0.5,"PostAirSpeed":50,"PostAirVolume":0,"FirstSegmentSpeed":100,"SpeedChangeOffsetOfZ":0,"SecondSegmentSpeed":80, "TipTouchTimes": 0, "TipTouchOffsetOfZ": 5, "TipTouchRangeOfX": 1.2, "TipTouchSpeed": 100})
 		p8_unload_tips({"Position":"M2_Trash","Col":None,"Row":None})
 
@@ -1959,8 +2146,9 @@ for i in range(target_dnb_num):
 	p8_empty_modified(target_dnb_loc_list[i][0],target_dnb_loc_list[i][2],target_dnb_loc_list[i][1])
 	p8_unload_tips({"Position":"M2_Trash","Col":None,"Row":None})
 
-# Step 7: 移回POS23 → POS14，关PCR盖板
-transfer({"StartPosition":"M2_POS23","EndPosition":"M2_POS14","LoosenOffsetOfZ":0})  # POS23 → POS14 (恢复)
+# Step 7: 移回 POS23 → POS11，关 PCR 盖板
+transfer({"StartPosition":"M2_POS23","EndPosition":"M2_POS11","LoosenOffsetOfZ":0})  # POS23 → POS11（恢复）
+set_purification_parking_pos("M2_POS23")
 transfer({"StartPosition":"M2_POS26","EndPosition":"M2_POS20","LoosenOffsetOfZ":0})  #关PCR盖板
 pcr_close_door()
 

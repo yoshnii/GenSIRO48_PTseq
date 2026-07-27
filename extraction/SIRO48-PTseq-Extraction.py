@@ -590,7 +590,17 @@ for i in range(total_col_num):
 	p8_mix({"Position": 'M1_T1', "Col": i+1, "Row": 1, "PreAirVolume": 0, "MixTimes": 2, "MixAspirateSpeed": 50, "MixAspirateOffsetOfZ": 0.5, "MixVolume": 45, "MixDispenseOffsetOfZ": 5, "MixDispenseSpeed": 100, "DelayAfterMixLoop": 0.5, "MixEmptyOffsetOfZ": 5, "MixEmptySpeed": 100, "PreAirSpeed": 50, "DelayAfterMixAspirate": 0.5, "DelayAfterMixDispense": 0.5, "DelayAfterMixEmpty": 0.5, "PostAirSpeed": 50, "PostAirVolume": 0})
 	p8_empty_modified('M1_T1',1,i+1)
 	p8_unload_tips({"Position": "M1_Trash", "Col": 1, "Row": 1})
-	
+
+# 输出提取产物交接清单。提取模块只记录 45 uL 回收体积和孔位；浓度由后续建库模块在 POS14 Col7-12 实测。
+import csv
+with open(r"D:\data\PTseq_Extraction_Product.csv", "w", newline="") as file:
+	writer = csv.writer(file)
+	writer.writerow(["SampleNumber", "ExtractionPlate", "ExtractionWell", "RecoveredVolume", "Status"])
+	for index in range(SampleCount):
+		sample_number = filtered_samples[index].sample_id if index < len(filtered_samples) else f"Sample{index + 1}"
+		extraction_well = f"{chr(ord('A') + index % 8)}{index // 8 + 1}"
+		writer.writerow([sample_number, "M1_T1", extraction_well, 45, "EXTRACTED"])
+
 transport_go({"Position": "M1_T3"})
 #磁棒浸没
 magnetic_rod_slide_in()
