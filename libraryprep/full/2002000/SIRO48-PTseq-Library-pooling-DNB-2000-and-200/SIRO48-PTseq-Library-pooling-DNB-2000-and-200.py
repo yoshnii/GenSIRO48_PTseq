@@ -407,6 +407,12 @@ def get_sample_info(sample_info_file_path, is_filter, filtered_sample_qc_type):
 
 
 filtered_samples=get_sample_info(sample_info_file_path, False, filtered_sample_qc_type)
+# 中台在启动任务前生成 D:/Pathogens/PTseq.csv；脚本开局读取后立即检查 barcode。
+missing_barcode_sample_ids = [sample.sample_id for sample in filtered_samples if not sample.barcode.strip()]
+if missing_barcode_sample_ids:
+	missing_barcode_message = "以下样本缺少barcode，将忽略这些样本的barcode唯一性检查并继续运行：" + "、".join(missing_barcode_sample_ids)
+	print(f"[WARNING] {missing_barcode_message}")
+	report({"Phase":"样本信息检查","Step":missing_barcode_message,"TaskType":"library","RemainingTime":None})
 SampleCount = len(filtered_samples)
 if not filtered_samples:
 	a = dialog_textbox({"Title": "请输入样本数量", "Timeout": "02:00:00","Parameters":[{"Name": "样本数量", "Value": "48", "Notes": "未检测到样本信息文件，请输入样本数量"}]})
@@ -1762,6 +1768,8 @@ class Sample:
 		self.DilutingBufferVolume = DilutingBufferVolume
 		self.NeedDilution = False
 		self.sample_id = sample_id
+		self.barcode = ""
+		self.group_idx = None
 		self.SampleType = ""  # Initialize SampleType attribute to prevent AttributeError
 		self.sample_initial_index = 0  # Initialize to prevent AttributeError
 
@@ -1788,6 +1796,7 @@ for i in range(sample_num):
 	# If filtered_samples exists, update sample_id from CSV
 	if filtered_samples and i < len(filtered_samples):
 		sample_concentration[i].sample_id = filtered_samples[i].sample_id
+		sample_concentration[i].barcode = filtered_samples[i].barcode
 	else:
 		# Generate default sample_id if no CSV file
 		sample_concentration[i].sample_id = f"Sample_{i+1}"
@@ -1806,24 +1815,45 @@ if not Is_blank_pooling:
 
 #按浓度计算pooling分组
 sample_num = len(sample_concentration)
-# 计算DNB数量
-target_dnb_num = (sample_num+single_dnb_sample_num-1)//single_dnb_sample_num
+if sample_num == 0:
+	raise Exception("过滤低浓度或空白样本后没有可 pooling 的有效样本，请检查定量结果和样本类型")
+
+def get_barcode_key(sample):
+	raw_barcode = sample.barcode.strip()
+	if not raw_barcode:
+		return ("MISSING_BARCODE", getattr(sample, "sample_initial_index", sample.sample_id))
+	try:
+		barcode_value = 0
+		for part in raw_barcode.split('-'):
+			barcode_value += 1 << int(part)
+		return barcode_value
+	except ValueError:
+		raise Exception(f"样本 {sample.sample_id} 的 barcode '{sample.barcode}' 格式不合法，应为数字或数字-数字组合")
+
+def validate_barcode_uniqueness(groups):
+	for i, group in enumerate(groups):
+		seen = {}
+		for sample in group:
+			barcode_key = get_barcode_key(sample)
+			if barcode_key in seen:
+				raise Exception(f"DNB组 {i+1} 内 barcode 重复: {sample.barcode}; 样本 {seen[barcode_key]} 和 {sample.sample_id}")
+			seen[barcode_key] = sample.sample_id
+
+def group_samples_single_pool(samples):
+	for sample in samples:
+		sample.group_idx = 1
+	if len(target_dnb_loc_list) < 1:
+		raise Exception("2000&200全流程没有配置DNB反应位")
+	if len(target_tube_loc) < 1:
+		raise Exception("Pooling暂存位不足：当前未配置pooling暂存位")
+	groups = [samples]
+	validate_barcode_uniqueness(groups)
+	return groups
+
+dnb_list = group_samples_single_pool(sample_concentration)
+target_dnb_num = len(dnb_list)
 # Update Hybridization_num to match calculated DNB count
 Hybridization_num = target_dnb_num
-
-x,y = divmod(sample_num,target_dnb_num)
-# 把sorted_volume分成target_dnb_num组，分组后每组的样本数为x+1或x，以下位代码实现分组
-dnb_list = []
-start_index = 0
-for i in range(target_dnb_num):
-	if i < y:
-		group_size = x + 1
-	else:
-		group_size = x
-	end_index = start_index + group_size
-	group = sample_concentration[start_index:end_index]
-	dnb_list.append(group)
-	start_index = end_index
 
 # 存储原本的dnblist - MUST be done AFTER dnb_list is populated
 initial_dnb_list = [group.copy() for group in dnb_list]  # Deep copy of groups
@@ -1892,7 +1922,7 @@ def output_hybrid_pooling_info(samples, temp, output_file_path):
 	"""
 	with open(output_file_path, 'w', encoding='utf-8') as f:
 		# 写入表头
-		f.write("样本编号,Pooling组,杂交浓度,取样体积(ul),稀释倍数,放大倍数\n")
+		f.write("样本编号,Pooling组,取样体积(ul),稀释倍数,放大倍数,杂交浓度\n")
 		# 获取当前日期时间
 		current_time = time.localtime()
 		formatted_time = time.strftime("%yP%m%d%H%M%S", current_time)
@@ -1908,12 +1938,12 @@ def output_hybrid_pooling_info(samples, temp, output_file_path):
 				formated_vol = "%.2f" % sample.DilutingSampleVolume
 				idx = sample.sample_initial_index
 				conc = concentration_list[idx] if idx < len(concentration_list) else 0
-				f.write(f"{sample.sample_id},{cur_pooling_id},{conc},{formated_vol},{dilution_type},{concentrate_times}\n")
+				f.write(f"{sample.sample_id},{cur_pooling_id},{formated_vol},{dilution_type},{concentrate_times},{conc}\n")
 		# 输出被过滤掉的样本（不在任何pool中），标记为'-'
 		for idx in range(len(concentration_list)):
 			if idx not in pooled_indices:
 				sid = filtered_samples[idx].sample_id if (filtered_samples and idx < len(filtered_samples)) else f"Sample_{idx+1}"
-				f.write(f"{sid},'-',{concentration_list[idx]},,,\n")
+				f.write(f"{sid},'-',,,,{concentration_list[idx]}\n")
 # 调用函数输出信息
 output_hybrid_pooling_info(dnb_list, temp, output_file_path)
 print(f"样本的 pooling 组、取样体积、稀释倍数和放大倍数已输出到文件：{output_file_path}")

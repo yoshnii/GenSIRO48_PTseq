@@ -362,6 +362,30 @@ def assign_dilution_positions(samples):
 		s.DilutingWellRow = within_plate_idx % sample_dilution_row_count + 1
 		s.DilutingWell = format_well(s.DilutingWellRow, s.DilutingWellColumn)
 
+def get_barcode_key(sample):
+	raw_barcode = sample.barcode.strip()
+	if not raw_barcode:
+		if not getattr(sample, "_missing_barcode_warned", False):
+			print(f"[WARNING] 样本 {sample.sample_id} 缺少 barcode；已忽略barcode唯一性检查并继续运行")
+			sample._missing_barcode_warned = True
+		return ("MISSING_BARCODE", getattr(sample, "sample_initial_index", sample.sample_id))
+	try:
+		barcode_value = 0
+		for part in raw_barcode.split('-'):
+			barcode_value += 1 << int(part)
+		return barcode_value
+	except ValueError:
+		raise Exception(f"样本 {sample.sample_id} 的 barcode '{sample.barcode}' 格式不合法，应为数字或数字-数字组合")
+
+def validate_barcode_uniqueness(groups):
+	for i, group in enumerate(groups):
+		seen = {}
+		for sample in group:
+			barcode_key = get_barcode_key(sample)
+			if barcode_key in seen:
+				raise Exception(f"DNB组 {i+1} 内 barcode 重复: {sample.barcode}; 样本 {seen[barcode_key]} 和 {sample.sample_id}")
+			seen[barcode_key] = sample.sample_id
+
 def group_samples_single_pool(samples):
 	group_idx = 1
 	for sample in samples:
@@ -370,7 +394,9 @@ def group_samples_single_pool(samples):
 		raise Exception("2000&200 sequencing prep没有配置DNB反应位")
 	if len(target_tube_loc) < 1:
 		raise Exception("Pooling暂存位不足：当前未配置POS13暂存位")
-	return [samples]
+	groups = [samples]
+	validate_barcode_uniqueness(groups)
+	return groups
 
 assign_source_positions(samples_from_csv)
 
