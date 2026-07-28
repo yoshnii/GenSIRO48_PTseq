@@ -36,7 +36,8 @@ import time
 
 '''=====================================样本信息读取（CSV）====================================='''
 # 样本信息CSV文件位置
-# CSV格式: sample_id, position, plate_index, concentration, product_type, barcode, sample_type
+# CSV格式: sample_id, position, plate_index, concentration, analysis_type, barcode, qc_type
+# 第5列=分析参数(中台AnalysisType,不参与计算); 第7列=质控类型(中台QcType: S样本/P阳性/N阴性/B空白)
 # 第一行为表头，从第二行开始为数据
 sample_info_file_path = r'D:/Pathogens/PTseq_concentration.csv'
 
@@ -45,16 +46,16 @@ sample_qc_concentration = 1
 
 class Sample:
 	"""样本信息类 - 兼容全流程pooling代码的属性名"""
-	def __init__(self, sample_id, position, plate_index, concentration, product_type, barcode, sample_type):
+	def __init__(self, sample_id, position, plate_index, concentration, analysis_type, barcode, qc_type):
 		self.sample_id = sample_id.strip()
 		self.position = position.strip()
 		self.plate_index = plate_index.strip() or "Plate1"
 		self.Concentration = float(concentration)  # 大写C，兼容全流程代码
 		self.original_concentration = self.Concentration
 		self.corrected_concentration = self.Concentration
-		self.product_type = product_type.strip()
+		self.analysis_type = analysis_type.strip()  # 分析参数(中台AnalysisType), 不参与计算
 		self.barcode = barcode.strip()
-		self.SampleType = sample_type.strip()  # 兼容全流程代码的属性名
+		self.qc_type = qc_type.strip()  # 质控类型(中台QcType): S样本/P阳性/N阴性/B空白
 
 		# 从孔位计算行列号 (e.g., "A1" → row=1, col=1)
 		self.row = ord(self.position[0].upper()) - ord('A') + 1  # 行号（1-based）
@@ -86,8 +87,8 @@ def get_sample_info(file_path):
 			parts = row.split(',')
 			if len(parts) != 7:
 				raise Exception(f"CSV第 {line_no} 行不是7列，请检查输入表格")
-			sample_id, position, plate_index, concentration, product_type, barcode, sample_type = parts
-			sample = Sample(sample_id, position, plate_index, concentration, product_type, barcode, sample_type)
+			sample_id, position, plate_index, concentration, analysis_type, barcode, qc_type = parts
+			sample = Sample(sample_id, position, plate_index, concentration, analysis_type, barcode, qc_type)
 			samples.append(sample)
 	except Exception as e:
 		print(f"Error reading sample info: {e}")
@@ -308,8 +309,9 @@ target_dnb_loc_list = [('M2_POS20',7,1+i) for i in range(6)]
 dilution_mix_tip_loc = None
 dilution_transfer_tip_loc = None
 
-# 空白样本是否pooling
-Is_blank_pooling = False
+# 需从pool剔除的质控类型代号(中台QcType); 空集=全部进pool(空白/阴阳性对照均测序,监控污染,与PTseq Plus/TB一致)
+# 如需剔除某类: 例 {'B'} 剔空白, {'N','P'} 剔阴阳性对照
+exclude_pooling_qc_type = set()
 # 浓度不合格样本是否pooling
 Is_unqualified_pooling = True
 # pooling信息输出文件
@@ -406,12 +408,9 @@ sample_concentration = samples_from_csv.copy()
 if not Is_unqualified_pooling:
 	sample_concentration = [each for each in sample_concentration if each.Concentration >= sample_qc_concentration]
 
-# 过滤空白样本
-if not Is_blank_pooling:
-	try:
-		sample_concentration = [each for each in sample_concentration if each.SampleType != '空白对照']
-	except:
-		pass
+# 质控类型过滤: exclude_pooling_qc_type 空集=全部进pool(空白/对照均测序,监控污染,与PTseq Plus/TB一致)
+if exclude_pooling_qc_type:
+	sample_concentration = [each for each in sample_concentration if each.qc_type not in exclude_pooling_qc_type]
 
 # 按浓度计算pooling分组
 sample_num = len(sample_concentration)
