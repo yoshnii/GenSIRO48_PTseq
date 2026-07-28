@@ -18,6 +18,13 @@ mkdir -p "$DEST_RESOURCES"
 # 同步整个 PTseq-layout 目录(所有中台流程会 ShowPicture 引用的台面/试剂图)
 rsync -a --delete "$LIVE_RESOURCES/" "$DEST_RESOURCES/"
 
+# 任务导入模板(中英文): 客户下载填写的任务单
+LIVE_RES_ROOT="$(dirname "$LIVE_RESOURCES")"
+DEST_RES_ROOT="$(dirname "$DEST_RESOURCES")"
+for t in SIRO48_template.xlsx SIRO48_template_en.xlsx; do
+  [ -f "$LIVE_RES_ROOT/$t" ] && cp "$LIVE_RES_ROOT/$t" "$DEST_RES_ROOT/$t"
+done
+
 echo "已同步:"
 echo "  $DEST/SIRO16productV4.db"
 echo "  $DEST/SIRO16productV4.sql"

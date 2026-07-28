@@ -13,3 +13,5 @@ __pycache__/
 中台配置/**/*.log
 中台配置/**/*.dll
 中台配置/**/*.exe
+!中台配置/GenSIRO48-PTseq/Resources/SIRO48_template.xlsx
+!中台配置/GenSIRO48-PTseq/Resources/SIRO48_template_en.xlsx
