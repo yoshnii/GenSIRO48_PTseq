@@ -364,12 +364,12 @@ CREATE TABLE IF NOT EXISTS "siro48_script_table_mapping" (
   "order_index" INTEGER,
   PRIMARY KEY ("id")
 );
-INSERT INTO siro48_script_table_mapping VALUES('adb25255-a4a7-42b3-8f8a-2234e3cd7f4c','69e1bcd1-fe87-4b40-a9d4-93637cedfc39','376c5abf-c5f3-4781-a6a7-268659a482b9',4);
-INSERT INTO siro48_script_table_mapping VALUES('4944ec4b-2bf4-4c61-a2c5-cbf1822a4ce9','69e1bcd1-fe87-4b40-a9d4-93637cedfc39','13f49971-63b2-4b98-98af-9b452325c280',5);
-INSERT INTO siro48_script_table_mapping VALUES('90c16405-630f-40d2-ade1-29b6e9bc4bd2','aee82507-2a98-41de-a5be-823577f065ac','376c5abf-c5f3-4781-a6a7-268659a482b9',4);
-INSERT INTO siro48_script_table_mapping VALUES('db6214c4-7957-4fe7-be06-c17ffca41197','aee82507-2a98-41de-a5be-823577f065ac','13f49971-63b2-4b98-98af-9b452325c280',5);
-INSERT INTO siro48_script_table_mapping VALUES('35cf88a5-50a9-48e8-85dc-951892f545d3','a09f6afe-95f3-427c-8d7d-e644f2e4ce83','376c5abf-c5f3-4781-a6a7-268659a482b9',4);
-INSERT INTO siro48_script_table_mapping VALUES('7ad1f2bb-69d5-4e5d-bba9-e9fe5d4e13da','a09f6afe-95f3-427c-8d7d-e644f2e4ce83','13f49971-63b2-4b98-98af-9b452325c280',5);
+INSERT INTO siro48_script_table_mapping VALUES('adb25255-a4a7-42b3-8f8a-2234e3cd7f4c','69e1bcd1-fe87-4b40-a9d4-93637cedfc39','376c5abf-c5f3-4781-a6a7-268659a482b9',2);
+INSERT INTO siro48_script_table_mapping VALUES('4944ec4b-2bf4-4c61-a2c5-cbf1822a4ce9','69e1bcd1-fe87-4b40-a9d4-93637cedfc39','13f49971-63b2-4b98-98af-9b452325c280',3);
+INSERT INTO siro48_script_table_mapping VALUES('90c16405-630f-40d2-ade1-29b6e9bc4bd2','aee82507-2a98-41de-a5be-823577f065ac','376c5abf-c5f3-4781-a6a7-268659a482b9',2);
+INSERT INTO siro48_script_table_mapping VALUES('db6214c4-7957-4fe7-be06-c17ffca41197','aee82507-2a98-41de-a5be-823577f065ac','13f49971-63b2-4b98-98af-9b452325c280',3);
+INSERT INTO siro48_script_table_mapping VALUES('35cf88a5-50a9-48e8-85dc-951892f545d3','a09f6afe-95f3-427c-8d7d-e644f2e4ce83','376c5abf-c5f3-4781-a6a7-268659a482b9',2);
+INSERT INTO siro48_script_table_mapping VALUES('7ad1f2bb-69d5-4e5d-bba9-e9fe5d4e13da','a09f6afe-95f3-427c-8d7d-e644f2e4ce83','13f49971-63b2-4b98-98af-9b452325c280',3);
 INSERT INTO siro48_script_table_mapping VALUES('86442893-7b4d-47bd-94fa-15ebd8a8f5c8','27e2a5bb-3fc7-4565-b807-7ef90200d99b','257331d8-36cb-44a1-bd10-ed6e8d4be983',1);
 INSERT INTO siro48_script_table_mapping VALUES('14ca255f-ef5f-477d-9858-c9e868fa3087','27e2a5bb-3fc7-4565-b807-7ef90200d99b','c396b882-532d-4c28-ad43-90fb89b1a292',2);
 INSERT INTO siro48_script_table_mapping VALUES('46377d75-21ae-4728-a261-f930183b3747','8ec0aa83-2ef6-4706-94a6-3f0aec99dcf9','257331d8-36cb-44a1-bd10-ed6e8d4be983',1);
@@ -377,19 +377,11 @@ INSERT INTO siro48_script_table_mapping VALUES('ad674924-3361-4df0-8238-ff70cb3b
 INSERT INTO siro48_script_table_mapping VALUES('2f9bf995-83aa-4c1a-b601-fdf8ecd397b9','11547208-aef4-42e6-9061-1d2a9dea720a','257331d8-36cb-44a1-bd10-ed6e8d4be983',1);
 INSERT INTO siro48_script_table_mapping VALUES('1f84950d-8e12-4d61-9ea2-4c77f2db536a','11547208-aef4-42e6-9061-1d2a9dea720a','c396b882-532d-4c28-ad43-90fb89b1a292',4);
 INSERT INTO siro48_script_table_mapping VALUES('c0740377-1037-49c6-8638-931c10543112','47f2bf6c-a6d3-405e-a3a9-65ab8ae84f2d','26d160f5-8e4f-440c-80f1-6d1248962c80',1);
-INSERT INTO siro48_script_table_mapping VALUES('b3e367b2-410e-492e-b51c-3cd08a8fa1ef','47f2bf6c-a6d3-405e-a3a9-65ab8ae84f2d','376c5abf-c5f3-4781-a6a7-268659a482b9',4);
+INSERT INTO siro48_script_table_mapping VALUES('b3e367b2-410e-492e-b51c-3cd08a8fa1ef','47f2bf6c-a6d3-405e-a3a9-65ab8ae84f2d','376c5abf-c5f3-4781-a6a7-268659a482b9',2);
 INSERT INTO siro48_script_table_mapping VALUES('151127a4-d51b-41c7-a09b-5f1fa4bdce98','2025ec6a-8bac-4349-97bb-a93a6fc7d528','42ead651-83df-4c1d-b0d5-74156a7cb3c5',1);
-INSERT INTO siro48_script_table_mapping VALUES('064a4bf8-a150-48bd-8ae7-3b3a0225112e','47f2bf6c-a6d3-405e-a3a9-65ab8ae84f2d','ae8471ca-40cb-46ba-af9d-574f801add72',2);
-INSERT INTO siro48_script_table_mapping VALUES('0d83707a-8601-4a81-bc1e-c73b85f8a808','47f2bf6c-a6d3-405e-a3a9-65ab8ae84f2d','4a42636c-d895-48e2-93e5-40b3415e5ba4',3);
 INSERT INTO siro48_script_table_mapping VALUES('71f7729d-5471-4618-ad44-9bcbb5243502','69e1bcd1-fe87-4b40-a9d4-93637cedfc39','26d160f5-8e4f-440c-80f1-6d1248962c80',1);
 INSERT INTO siro48_script_table_mapping VALUES('f9806fca-58c1-46e4-86ed-ff0cedde1151','a09f6afe-95f3-427c-8d7d-e644f2e4ce83','26d160f5-8e4f-440c-80f1-6d1248962c80',1);
 INSERT INTO siro48_script_table_mapping VALUES('f66bcdb8-f402-432e-948d-edcd55b46a59','aee82507-2a98-41de-a5be-823577f065ac','26d160f5-8e4f-440c-80f1-6d1248962c80',1);
-INSERT INTO siro48_script_table_mapping VALUES('e7cf8ede-57c0-4e16-8e1e-0bf18712daa5','69e1bcd1-fe87-4b40-a9d4-93637cedfc39','ae8471ca-40cb-46ba-af9d-574f801add72',2);
-INSERT INTO siro48_script_table_mapping VALUES('bab14999-1912-4008-a721-bd444e9e3db3','a09f6afe-95f3-427c-8d7d-e644f2e4ce83','ae8471ca-40cb-46ba-af9d-574f801add72',2);
-INSERT INTO siro48_script_table_mapping VALUES('5b3acf6d-f79a-4c08-9e00-e4fff4881e08','aee82507-2a98-41de-a5be-823577f065ac','ae8471ca-40cb-46ba-af9d-574f801add72',2);
-INSERT INTO siro48_script_table_mapping VALUES('3592f744-5073-4893-a37f-e3807a914514','69e1bcd1-fe87-4b40-a9d4-93637cedfc39','4a42636c-d895-48e2-93e5-40b3415e5ba4',3);
-INSERT INTO siro48_script_table_mapping VALUES('19a0ae77-555d-4238-b83e-e097df266b08','a09f6afe-95f3-427c-8d7d-e644f2e4ce83','4a42636c-d895-48e2-93e5-40b3415e5ba4',3);
-INSERT INTO siro48_script_table_mapping VALUES('b3b04173-152a-4c4a-88c0-89ddd270642c','aee82507-2a98-41de-a5be-823577f065ac','4a42636c-d895-48e2-93e5-40b3415e5ba4',3);
 CREATE TABLE IF NOT EXISTS "siro48_table_config" (
   "id" TEXT,
   "table_name" TEXT NOT NULL,
@@ -407,8 +399,6 @@ INSERT INTO siro48_table_config VALUES('376c5abf-c5f3-4781-a6a7-268659a482b9','G
 INSERT INTO siro48_table_config VALUES('13f49971-63b2-4b98-98af-9b452325c280','GenSIRO48-PTseq-LibraryBuilding-Pooling-output-form','Output','D:\data\PTseq_pooling_info.csv','[{"SampleInfoProperty":"PoolingId","ColumnIndex":2},{"SampleInfoProperty":"LibraryVolume","ColumnIndex":3}]',NULL,'2026-03-11 10:53:10','2026-07-12 00:00:00');
 INSERT INTO siro48_table_config VALUES('c396b882-532d-4c28-ad43-90fb89b1a292','GenSIRO48-PTseq-SequencingPrep-Pooling-output-form','Output','D:\data\PTseq_pooling_info.csv','[{"SampleInfoProperty":"PoolingId","ColumnIndex":2},{"SampleInfoProperty":"LibraryVolume","ColumnIndex":3}]',NULL,'2026-03-11 11:02:34','2026-03-11 11:05:25');
 INSERT INTO siro48_table_config VALUES('26d160f5-8e4f-440c-80f1-6d1248962c80','GenSIRO48-PTseq-LibraryBuilding-input-form','Input','D:\Pathogens\PTseq.csv','[{"SampleInfoProperty": "SampleNumber", "ColumnIndex": 1}, {"SampleInfoProperty": "PreptreatmentWell", "ColumnIndex": 2}, {"SampleInfoProperty": "PreptreatmentPlate", "ColumnIndex": 3}, {"SampleInfoProperty": "QcType", "ColumnIndex": 4}, {"SampleInfoProperty": "ProductName", "ColumnIndex": 5}, {"SampleInfoProperty": "BarcodeId", "ColumnIndex": 6}, {"SampleInfoProperty": "SampleType", "ColumnIndex": 7}]',NULL,'2026-03-26 16:17:18','2026-03-26 16:30:00');
-INSERT INTO siro48_table_config VALUES('ae8471ca-40cb-46ba-af9d-574f801add72','GenSIRO48-PTseq-提取产物定量输出表格','Output','D:\data\PTseq_Extraction.xlsx','[{"SampleInfoProperty":"ExtractionQC","ColumnIndex":5}]','建库开始前在POS14 Col7-12完成的提取产物定量结果','2026-07-20 00:00:00','2026-07-20 00:00:00');
-INSERT INTO siro48_table_config VALUES('4a42636c-d895-48e2-93e5-40b3415e5ba4','GenSIRO48-PTseq-提取产物均一化输出表格','Output','D:\data\PTseq_normalization_info.csv','[{"SampleInfoProperty":"SampleNumber","ColumnIndex":1},{"SampleInfoProperty":"DnaVolume","ColumnIndex":8},{"SampleInfoProperty":"DnaReplenishmentVolume","ColumnIndex":9}]','20 ng/uL、30 uL目标体系的样本取样量和补水量','2026-07-20 00:00:00','2026-07-20 00:00:00');
 CREATE TABLE product (id text, file_ID TEXT, product_class text, show_product_class TEXT, test_name TEXT, technical_route text, show_technical_route text, experimental_stage text, show_experimental_stage TEXT, sequencer TEXT, chip_type TEXT, is_permit text, process_id_list TEXT, max_count TEXT, start_property TEXT, is_pooling TEXT, remark text, min_count TEXT);
 INSERT INTO product VALUES('7f732593-0569-46ec-8589-3f658de2c54e','PTseq001','PTseq','PTseq','PTseq','PTseq','PTseq','Full-process','Full-process','DNBSEQ-E25','FCL','Yes','fa5f7e77-4005-434b-bafb-2e7f9896ab26;ae66a0e8-32f6-4a3c-98bd-6862d1db80dc;da0bbb53-c5d7-4268-8939-69b8f743c921;003f01ca-bd44-4142-9a2f-e4ee87cba24b','48','SampleNumber','0',NULL,'5');
 INSERT INTO product VALUES('2e61c7a3-bfcc-4640-8e9c-ba60e2bda834','PTseq002','PTseq','PTseq','PTseq','PTseq','PTseq','Full-process','Full-process','DNBSEQ-G99','FCL','Yes','f33df7a7-e3b5-4830-bf74-3db4a911145a;3168b048-41af-4c36-991d-a93838750c0b;da0bbb53-c5d7-4268-8939-69b8f743c921;003f01ca-bd44-4142-9a2f-e4ee87cba24b','48','SampleNumber','0',NULL,'5');
