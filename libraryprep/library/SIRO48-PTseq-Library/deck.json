@@ -648,7 +648,25 @@
           }
         },
         {
-          "Wells": "B3,C3,D3,F1,F2,F3,F4,F5,F6,G1,G2,G3,G4,G5,G6,H1,H2,H3,H4,H5,H6,A5,A6,B5,B6,C5,C6,D5,D6,E6",
+          "Wells": "F1",
+          "ConsumableInfo": {
+            "ConsumableType": "CryovialTube",
+            "ConsumableName": "0.5mL SC micro tube, PCR-PT",
+            "WellInfo": [
+              {
+                "Wells": "*",
+                "ContentInfo": {
+                  "Type": "Reagent",
+                  "Name": "T12空白对照 (Library Blank Control)",
+                  "Volume": 84
+                }
+              }
+            ],
+            "LidInfo": null
+          }
+        },
+        {
+          "Wells": "B3,C3,D3,F2,F3,F4,F5,F6,G1,G2,G3,G4,G5,G6,H1,H2,H3,H4,H5,H6,A5,A6,B5,B6,C5,C6,D5,D6,E6",
           "ConsumableInfo": {
             "ConsumableType": "CryovialTube",
             "ConsumableName": "0.5mL SC micro tube, PCR-PT",

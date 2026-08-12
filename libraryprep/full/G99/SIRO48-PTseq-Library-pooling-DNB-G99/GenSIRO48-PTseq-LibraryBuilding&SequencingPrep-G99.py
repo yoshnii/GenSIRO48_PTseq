@@ -321,6 +321,8 @@ sample_info_file_path = r'D:/Pathogens/PTseq.csv'
 is_filter = False
 # 提取过滤的样本质控类型（仅在 is_filter 为 True 时生效）
 filtered_sample_qc_type = {'N','P'}
+BLANK_QC_TYPE = 'B'
+T12_BLANK_VOLUME = 14
 
 sample_type_list = []
 volume_dict = {key:5 for key in sample_type_list}
@@ -413,6 +415,15 @@ if missing_barcode_sample_ids:
 	missing_barcode_message = "以下样本缺少barcode，将忽略这些样本的barcode唯一性检查并继续运行：" + "、".join(missing_barcode_sample_ids)
 	print(f"[WARNING] {missing_barcode_message}")
 	report({"Phase":"样本信息检查","Step":missing_barcode_message,"TaskType":"library","RemainingTime":None})
+blank_samples = [sample for sample in filtered_samples if sample.sample_qc_type.upper() == BLANK_QC_TYPE]
+blank_positions = set()
+for blank_sample in blank_samples:
+	blank_position = blank_sample.position.upper()
+	if blank_sample.target_position.strip().upper() != blank_position:
+		raise Exception(f"空白对照 {blank_sample.sample_id} 的输入孔位 {blank_sample.target_position} 与流程孔位 {blank_position} 不一致，请按 A1-H1、A2-H2 顺序排列 PTseq.csv")
+	if blank_position in blank_positions:
+		raise Exception(f"空白对照孔位重复：{blank_position}")
+	blank_positions.add(blank_position)
 SampleCount = len(filtered_samples)
 if not filtered_samples:
 	a = dialog_textbox({"Title": "请输入样本数量", "Timeout": "02:00:00","Parameters":[{"Name": "样本数量", "Value": "48", "Notes": "未检测到样本信息文件，请输入样本数量"}]})
@@ -470,6 +481,15 @@ p1_unload_tips2({"Position":"M2_Trash","Col":None,"Row":None})
 col_num = (sample_num+7)//8  # 样本占用的 PCR 板列数，每 8 个样本为 1 列
 
 transfer({"StartPosition":"M2_POS17","EndPosition":"M2_POS27","LoosenOffsetOfZ":0})  # 打开 POS17 试剂盖。
+
+# T12 空白对照放在 POS17 F1（0.5 mL 管；API 坐标 Col1 Row6）。
+# 根据 PTseq.csv 中所有 QcType=B 的动态孔位，逐孔向 POS8 提取产物板加入 14 uL T12。
+for blank_sample in blank_samples:
+	blank_tip = tip_50.load(1)[0]
+	p8_load_modified(blank_tip)
+	p8_aspirate({"Position":"M2_POS17","Col":1,"Row":6,"PreAirVolume":5,"AspirateOffsetOfZ":0.6,"AspirateSpeed":15,"AspirateVolume":T12_BLANK_VOLUME,"PreAirSpeed":30,"DelayAfterAspirate":5,"PostAirSpeed":50,"PostAirVolume":3,"IfTrack":False,"FirstSegmentSpeed":100,"SpeedChangeOffsetOfZ":0,"SecondSegmentSpeed":80,"TipTouchTimes":2,"TipTouchOffsetOfZ":3,"TipTouchRangeOfX":1.2,"TipTouchSpeed":100})
+	p8_empty({"Position":"M2_POS8","Col":blank_sample.column,"Row":blank_sample.row,"EmptyOffsetOfZ":1,"EmptySpeed":50,"DelayAfterEmpty":0.5,"TipTouchTimes":0,"PostAirSpeed":50,"PostAirVolume":3,"FirstSegmentSpeed":100,"SpeedChangeOffsetOfZ":0,"SecondSegmentSpeed":80})
+	p8_unload_tips({"Position":"M2_Trash","Col":None,"Row":None})
 
 # RT 第一步转移 2 uL T1 引物，使用 P1 逐样本加入 POS20；每最多 3 列更换一次 50 uL 枪头。
 for col_group_start in range(0, col_num, 3):
