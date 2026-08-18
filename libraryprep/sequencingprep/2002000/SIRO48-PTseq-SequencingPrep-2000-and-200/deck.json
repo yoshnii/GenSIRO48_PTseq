@@ -117,7 +117,7 @@
   },
   {
     "Position": "M2_POS7",
-    "Description": "Library product PCR plate 2",
+    "Description": "Library product PCR plate 3",
     "TubeCarrierInfo": null,
     "AdapterInfo": null,
     "ConsumableInfo": {
@@ -232,7 +232,7 @@
   },
   {
     "Position": "M2_POS11",
-    "Description": "Library product PCR plate 3",
+    "Description": "Library product PCR plate 2",
     "TubeCarrierInfo": null,
     "AdapterInfo": null,
     "ConsumableInfo": {

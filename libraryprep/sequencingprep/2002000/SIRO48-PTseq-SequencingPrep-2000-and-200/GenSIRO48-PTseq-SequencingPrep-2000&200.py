@@ -6,7 +6,7 @@
 # 模仿PTseq Plus SequencingPrep的结构模式，使用PTseq自己的实验参数
 #
 # 前置条件：
-#   1. 文库产物PCR plate按CSV plate_index顺序放置在POS6/POS7/POS11，CSV position需填写真实产物孔位A7-H12
+#   1. 文库产物PCR plate按CSV plate_index顺序放置在POS6/POS11/POS7，CSV position需填写真实产物孔位A7-H12
 #   2. 稀释PCR板放置在POS8/POS9；POS9仅在第三块文库产物板有需稀释样本时使用
 #   3. CSV文件已准备好（含浓度信息）
 #   4. DNB试剂已放置在POS17 Row 4-5
@@ -271,7 +271,7 @@ PostAirSpeed= 50.0, PostAirVolume= 5.0,liquid = 0):
 
 # 样本来源板位：CSV里的 plate_index 按首次出现顺序依次映射到这些POS。
 # CSV position 必须填写真实产物孔位 A7-H12，脚本不做隐式列偏移。
-source_plate_positions = ['M2_POS6','M2_POS7','M2_POS11']
+source_plate_positions = ['M2_POS6','M2_POS11','M2_POS7']
 source_plate_min_col = 7
 source_plate_max_col = 12
 source_plate_row_count = 8
