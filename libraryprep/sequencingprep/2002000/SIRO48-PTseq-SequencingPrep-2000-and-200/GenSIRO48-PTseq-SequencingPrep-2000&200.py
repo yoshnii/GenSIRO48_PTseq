@@ -11,7 +11,7 @@
 #   3. CSV文件已准备好（含浓度信息）
 #   4. DNB试剂已放置在POS17 Row 4-5
 #   5. T2 buffer在POS24 Col 1, Row 2
-#   6. Pooling管在POS13 Col 7
+#   6. Pooling管在POS16 Col 7
 #
 # Created: 2026-03-11
 #####################################################################
@@ -288,8 +288,8 @@ sample_dilution_row_count = 8
 min_sample_volume = 2
 max_sample_volume = 20
 
-# 单个DNB样本数 - 2000&200: 所有有效样本归入1个pool
-single_dnb_sample_num = sample_num
+# 单个DNB样本数 - 2000&200: 每个DNB最多48个有效样本
+single_dnb_sample_num = 48
 # 单个DNB投入量 (G99说明书: 1pmol ≈ 200ng for ~300bp fragments)
 target_dna_ng = 200
 # pooling总体积
@@ -302,7 +302,7 @@ dilution_buffer_loc = ('M2_POS24',1,2)
 # pooling产物位置 - M2_POS16 Column 7
 target_tube_loc = [('M2_POS16',7,i) for i in range(1,9)]
 # DNB反应位置 - Column布局: Col 7 Row 1-6 为环化, Col 8 Row 1-6 为DNB制备
-# 2000&200所有有效样本合并为1个DNB，保留6个反应位上限以兼容deck布局。
+# 2000&200每个DNB最多48个有效样本，分组时避让同组重复barcode。
 target_dnb_loc_list = [('M2_POS20',7,1+i) for i in range(6)]
 
 # 混匀DNB的枪头位置
@@ -388,15 +388,29 @@ def validate_barcode_uniqueness(groups):
 				raise Exception(f"DNB组 {i+1} 内 barcode 重复: {sample.barcode}; 样本 {seen[barcode_key]} 和 {sample.sample_id}")
 			seen[barcode_key] = sample.sample_id
 
-def group_samples_single_pool(samples):
-	group_idx = 1
-	for sample in samples:
-		sample.group_idx = group_idx
-	if len(target_dnb_loc_list) < 1:
-		raise Exception("2000&200 sequencing prep没有配置DNB反应位")
-	if len(target_tube_loc) < 1:
-		raise Exception("Pooling暂存位不足：当前未配置POS13暂存位")
-	groups = [samples]
+def group_samples_fixed_capacity_by_barcode(samples):
+	groups = []
+	pending_samples = samples[:]
+	while pending_samples:
+		group = []
+		used_barcodes = set()
+		deferred_samples = []
+		for sample in pending_samples:
+			barcode_key = get_barcode_key(sample)
+			if len(group) < single_dnb_sample_num and barcode_key not in used_barcodes:
+				group.append(sample)
+				used_barcodes.add(barcode_key)
+			else:
+				deferred_samples.append(sample)
+		group_idx = len(groups) + 1
+		for sample in group:
+			sample.group_idx = group_idx
+		groups.append(group)
+		if len(groups) > len(target_dnb_loc_list):
+			raise Exception(f"2000&200 sequencing prep当前最多支持 {len(target_dnb_loc_list)} 个DNB，当前有效样本需要超过 {len(target_dnb_loc_list)} 个DNB")
+		pending_samples = deferred_samples
+	if len(groups) > len(target_tube_loc):
+		raise Exception(f"Pooling暂存位不足：POS16当前最多 {len(target_tube_loc)} 个，当前需要 {len(groups)} 个")
 	validate_barcode_uniqueness(groups)
 	return groups
 
@@ -418,9 +432,15 @@ if sample_num == 0:
 	raise Exception("过滤低浓度或空白样本后没有可 pooling 的有效样本，请检查CSV浓度和样本类型")
 assign_dilution_positions(sample_concentration)
 
-dnb_list = group_samples_single_pool(sample_concentration)
+dnb_list = group_samples_fixed_capacity_by_barcode(sample_concentration)
 target_dnb_num = len(dnb_list)
 Hybridization_num = target_dnb_num
+
+# 本轮拆分为2个及以上DNB时提示操作员；仅告警，不中断运行。
+if target_dnb_num >= 2:
+	dnb_split_message = f"本轮 pooling 将拆分为 {target_dnb_num} 个 DNB；请确认下游杂交/上机按 {target_dnb_num} 个 DNB 准备。"
+	print(f"[WARNING] {dnb_split_message}")
+	report({"Phase":"pooling","Step":dnb_split_message,"TaskType":"library","RemainingTime":None})
 
 initial_dnb_list = [group.copy() for group in dnb_list]
 
@@ -590,7 +610,7 @@ dispense_dilution_buffer_to_active_plate(dilution_samples_by_plate[0])
 
 # Step 3 mix 并入 Step 5：sample 进入 POS8 稀释孔后再混匀。
 
-# Step 4: p1 加补水到pooling管 (POS13 Col 7) 和 DNB反应孔 (POS20)
+# Step 4: p1 加补水到pooling管 (POS16 Col 7) 和 DNB反应孔 (POS20)
 p1_load_tips({"Position":single_tip_loc[0],'Col':single_tip_loc[1],'Row':single_tip_loc[2]})
 for i in range(len(water_volume_list)):
 	if temp[i][0]>=8:
