@@ -55,6 +55,7 @@ class Sample:
 		self.corrected_concentration = self.Concentration
 		self.base_corrected_concentration = self.Concentration
 		self.analysis_type = analysis_type.strip()  # 分析参数(中台AnalysisType), 不参与计算
+		self.product_type = "PTseq"  # E25按PTseq单产品等权计算，不从中台分析参数推断产品类型。
 		self.barcode = barcode.strip()
 		self.qc_type = qc_type.strip()  # 质控类型(中台QcType): S样本/P阳性/N阴性/B空白
 
