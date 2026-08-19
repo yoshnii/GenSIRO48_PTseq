@@ -1765,8 +1765,8 @@ dilution_transfer_tip_loc = None
 Is_blank_pooling = False
 # 这里输入样本信息用于确认哪个孔是空白对照,不填无法过滤空白样本位置
 sample_info_file = 'D:\\data\\sample_info.txt'
-# 浓度不合格样本是否一起pooling，默认pooling，True为pooling，False为不pooling
-Is_unqualified_pooling = True
+# 浓度不合格样本是否一起 pooling；False 表示剔除浓度低于质控阈值的样本。
+Is_unqualified_pooling = False
 output_file_path = r"D:/data/PTseq_pooling_info.csv"
 
 

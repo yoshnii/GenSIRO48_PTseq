@@ -312,8 +312,8 @@ dilution_transfer_tip_loc = None
 # 需从pool剔除的质控类型代号(中台QcType); 空集=全部进pool(空白/阴阳性对照均测序,监控污染,与PTseq Plus/TB一致)
 # 如需剔除某类: 例 {'B'} 剔空白, {'N','P'} 剔阴阳性对照
 exclude_pooling_qc_type = set()
-# 浓度不合格样本是否pooling
-Is_unqualified_pooling = True
+# 浓度不合格样本是否一起 pooling；False 表示剔除浓度低于质控阈值的样本。
+Is_unqualified_pooling = False
 # pooling信息输出文件
 output_file_path = r"D:/data/PTseq_pooling_info.csv"
 
