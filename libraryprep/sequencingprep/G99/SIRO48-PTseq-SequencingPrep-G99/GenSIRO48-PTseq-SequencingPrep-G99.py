@@ -282,7 +282,7 @@ PostAirSpeed= 50.0, PostAirVolume= 5.0,liquid = 0):
 
 # 样本来源板位：CSV里的 plate_index 按首次出现顺序依次映射到这些POS。
 # CSV position 必须填写真实产物孔位 A7-H12，脚本不做隐式列偏移。
-source_plate_positions = ['M2_POS6','M2_POS11','M2_POS7']
+source_plate_positions = ['M2_POS6','M2_POS7','M2_POS11']
 source_plate_min_col = 7
 source_plate_max_col = 12
 source_plate_row_count = 8
