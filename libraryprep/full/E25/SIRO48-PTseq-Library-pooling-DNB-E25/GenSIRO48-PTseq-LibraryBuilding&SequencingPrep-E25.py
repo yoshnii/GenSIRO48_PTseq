@@ -442,9 +442,237 @@ target_tip_num_list = [8]*(sample_num//8) + [sample_num%8]
 def blockB():
 	pcr_run_method({"Methods": ["PTseq_START"]})
 	pcr_run_method({"Methods": ["25-4"]})
+
+
+'''=====================================提取产物定量与均一化=============================================================='''
+EXTRACTION_TARGET_CONCENTRATION = 20.0
+EXTRACTION_NORMALIZED_VOLUME = 30.0
+EXTRACTION_MIN_SAMPLE_VOLUME = 3.0
+EXTRACTION_MAX_DIRECT_CONCENTRATION = (
+	EXTRACTION_TARGET_CONCENTRATION * EXTRACTION_NORMALIZED_VOLUME / EXTRACTION_MIN_SAMPLE_VOLUME
+)
+EXTRACTION_SOURCE_PLATE = "M2_POS8"
+EXTRACTION_SOURCE_START_COL = 1
+EXTRACTION_NORMALIZED_START_COL = 7
+EXTRACTION_WATER_LOC = ("M2_POS24", 2, 1)
+EXTRACTION_QUANT_TUBE_START_COL = 7
+EXTRACTION_QUANT_MIX_START_COL = 9
+
+# 新增阶段开始和结束时四块流程板必须回到以下 home，不改变后续建库的板位契约。
+extraction_quant_plate_positions = {
+	"purification_plate": "M2_POS16",
+	"dye_deepwell": "M2_POS13",
+	"waste_oil_pooling_plate": "M2_POS11",
+	"quantification_tube_adapter": "M2_POS14",
+}
+
+def move_extraction_quant_plate(plate_name, target_pos):
+	current_pos = extraction_quant_plate_positions[plate_name]
+	if current_pos == target_pos:
+		return
+	for other_name, other_pos in extraction_quant_plate_positions.items():
+		if other_name != plate_name and other_pos == target_pos:
+			raise RuntimeError(f"Cannot move {plate_name} to occupied {target_pos}: {other_name} is present")
+	transfer({"StartPosition":current_pos,"EndPosition":target_pos,"LoosenOffsetOfZ":0})
+	extraction_quant_plate_positions[plate_name] = target_pos
+
+def assert_extraction_quant_deck_restored():
+	expected_positions = {
+		"purification_plate": "M2_POS16",
+		"dye_deepwell": "M2_POS13",
+		"waste_oil_pooling_plate": "M2_POS11",
+		"quantification_tube_adapter": "M2_POS14",
+	}
+	if extraction_quant_plate_positions != expected_positions:
+		raise RuntimeError(f"Extraction quantification deck was not restored: {extraction_quant_plate_positions}")
+
+def get_extraction_concentration(pos):
+	try:
+		result = find_sampling_concentration(pos[0], pos[2], pos[1])
+		if result is None:
+			return 0.0
+		return float(result.Consistence)
+	except Exception as e:
+		print(f"[WARNING] Extraction concentration read failed at {pos}: {e}")
+		return 0.0
+
+def sample_number_for_output(index):
+	if index < len(filtered_samples):
+		return filtered_samples[index].sample_id
+	return f"Sample{index + 1}"
+
+def plate_well(index, start_col):
+	return f"{chr(ord('A') + index % 8)}{start_col + index // 8}"
+
+def is_blank_sample(index):
+	return index < len(filtered_samples) and filtered_samples[index].sample_qc_type.upper() == BLANK_QC_TYPE
+
+def write_normalization_plan(plans):
+	import csv
+	file_path = r"D:\data\PTseq_normalization_info.csv"
+	with open(file_path, "w", newline="") as file:
+		writer = csv.writer(file)
+		writer.writerow([
+			"SampleNumber", "SourcePlate", "SourceWell", "TargetPlate", "TargetWell",
+			"MeasuredConcentration", "TargetConcentration", "SampleVolume", "WaterVolume",
+			"ExpectedConcentration", "Status"
+		])
+		for plan in plans:
+			writer.writerow([
+				plan["sample_number"], EXTRACTION_SOURCE_PLATE, plan["source_well"],
+				EXTRACTION_SOURCE_PLATE, plan["target_well"], plan["concentration"],
+				EXTRACTION_TARGET_CONCENTRATION, plan["sample_volume"], plan["water_volume"],
+				plan["expected_concentration"], plan["status"]
+			])
+
+def quantify_extraction_products():
+	lang = get_lang()
+	if lang == 1:
+		report({"Phase":"提取产物定量","Step":"POS11 Col9-12 配制，POS14 Col7-10 定量","TaskType":"library","RemainingTime":None})
+	elif lang == 2:
+		report({"Phase":"Extraction quantification","Step":"Prepare in POS11 Col9-12; quantify in POS14 Col7-10","TaskType":"library","RemainingTime":None})
+
+	if col_num > 4:
+		sys.exit("E25 extraction quantification supports at most 32 samples in POS11 Col9-12")
+
+	dye_loc = ("M2_POS4", 1, 1)
+	dye_tip = tip_300.load(8, 8, 1)[0]
+	sample_tips = tip_50.load(sample_num, 8, 1)
+	last_row = 1 if sample_num % 8 == 0 else 9 - sample_num % 8
+
+	for i in range(col_num - 1, -1, -1):
+		if i == col_num - 1:
+			p8_load_tips({"Position":dye_tip[0],"Col":dye_tip[1],"Row":last_row,"Tips":8})
+		p8_aspirate_modified(dye_loc[0], Row=dye_loc[2], Col=dye_loc[1], AspirateVolume=217.8, PreAirVolume=10, AspirateOffsetOfZ=1.0)
+		p8_empty_modified("M2_POS11", Row=1, Col=EXTRACTION_QUANT_MIX_START_COL+i, EmptyOffsetOfZ=3, TipTouchTimes=1)
+		if i == col_num - 1 and sample_num % 8 != 0:
+			p8_unload_tips({"Position":dye_tip[0],"Col":dye_tip[1],"Row":last_row,"Tips":8})
+			p8_load_tips({"Position":dye_tip[0],"Col":dye_tip[1],"Row":1,"Tips":8})
+	p8_unload_tips({"Position":"M2_Trash","Col":None,"Row":None})
+
+	for i in range(col_num):
+		p8_load_modified(sample_tips[i])
+		p8_aspirate_modified(EXTRACTION_SOURCE_PLATE, 1, EXTRACTION_SOURCE_START_COL+i, 2.2, AspirateSpeed=2, AspirateOffsetOfZ=2, IfTrack=True)
+		p8_empty_modified("M2_POS11", Row=1, Col=EXTRACTION_QUANT_MIX_START_COL+i, EmptyOffsetOfZ=12)
+		p8_mix({"Position":"M2_POS11","Col":EXTRACTION_QUANT_MIX_START_COL+i,"Row":1,"PreAirVolume":10,"MixTimes":2,"MixAspirateSpeed":100,"MixAspirateOffsetOfZ":1,"MixVolume":40,"MixDispenseOffsetOfZ":15,"MixDispenseSpeed":100,"DelayAfterMixLoop":0.5,"MixEmptyOffsetOfZ":5,"MixEmptySpeed":50,"PreAirSpeed":50,"DelayAfterMixAspirate":0.5,"DelayAfterMixDispense":0.5,"DelayAfterMixEmpty":0.5,"PostAirSpeed":50,"PostAirVolume":0,"FirstSegmentSpeed":100,"SpeedChangeOffsetOfZ":0,"SecondSegmentSpeed":80,"TipTouchTimes":0,"TipTouchOffsetOfZ":5,"TipTouchRangeOfX":1.2,"TipTouchSpeed":100})
+		p8_unload_modified(sample_tips[i])
+
+	# POS16 纯化板暂存 POS23，POS11 深孔板进入 POS16，执行与建库定量一致的双向震荡。
+	move_extraction_quant_plate("purification_plate", "M2_POS23")
+	move_extraction_quant_plate("waste_oil_pooling_plate", "M2_POS16")
+	temp_shaker_set({"TempParameters":{"IsEnable":False,"Temp":25.00,"Duration":60},"ShakerParameters":{"IsEnable":True,"Direction":0,"Speed":1200,"Duration":60}})
+	temp_shaker_set({"TempParameters":{"IsEnable":False,"Temp":25.00,"Duration":60},"ShakerParameters":{"IsEnable":True,"Direction":1,"Speed":1200,"Duration":60}})
+	move_extraction_quant_plate("waste_oil_pooling_plate", "M2_POS11")
+	move_extraction_quant_plate("purification_plate", "M2_POS16")
+
+	# 腾空 POS13，把 POS14 定量管移入操作位；从 POS11 每孔分 4 次转移 50 uL。
+	move_extraction_quant_plate("purification_plate", "M2_POS23")
+	move_extraction_quant_plate("dye_deepwell", "M2_POS16")
+	move_extraction_quant_plate("quantification_tube_adapter", "M2_POS13")
+	for i in range(col_num):
+		p8_load_modified(sample_tips[i])
+		for x in range(4):
+			p8_aspirate_modified("M2_POS11", Row=1, Col=EXTRACTION_QUANT_MIX_START_COL+i, PreAirVolume=5, AspirateVolume=50, AspirateOffsetOfZ=1, PostAirVolume=3, IfTrack=True)
+			p8_empty_modified("M2_POS13", Row=1, Col=EXTRACTION_QUANT_TUBE_START_COL+i, EmptyOffsetOfZ=5, EmptySpeed=80)
+		p8_mix({"Position":"M2_POS13","Col":EXTRACTION_QUANT_TUBE_START_COL+i,"Row":1,"PreAirVolume":0,"MixTimes":5,"MixAspirateSpeed":100,"MixAspirateOffsetOfZ":0.5,"MixVolume":40,"MixDispenseOffsetOfZ":15,"MixDispenseSpeed":100,"DelayAfterMixLoop":0.5,"MixEmptyOffsetOfZ":20,"MixEmptySpeed":50,"PreAirSpeed":50,"DelayAfterMixAspirate":0.5,"DelayAfterMixDispense":0.5,"DelayAfterMixEmpty":2,"PostAirSpeed":50,"PostAirVolume":5,"FirstSegmentSpeed":100,"SpeedChangeOffsetOfZ":0,"SecondSegmentSpeed":80,"TipTouchTimes":0,"TipTouchOffsetOfZ":5,"TipTouchRangeOfX":1.2,"TipTouchSpeed":100})
+		p8_empty_modified("M2_POS13", Row=1, Col=EXTRACTION_QUANT_TUBE_START_COL+i, EmptyOffsetOfZ=5, EmptySpeed=80)
+		p8_unload_tips({"Position":"M2_Trash","Col":None,"Row":None})
+
+	concentrations = []
+	for i in range(col_num):
+		quant_col = EXTRACTION_QUANT_TUBE_START_COL + i
+		p8_load_quantification_tube({"Position":"M2_POS13","Row":1,"Col":quant_col,"Tips":8})
+		quantity_run_sample({"Name":"","SampleType":"dsDNA_HS","ProductType":"Extract","StandardToSampleRatio":5,"DilutionRatio":1,"Label":"","DilutionAssessment":60})
+		concentrations.extend([get_extraction_concentration(("M2_POS13", quant_col, row)) for row in range(1, 9)])
+		p8_unload_quantification_tube({"Position":"M2_POS13","Row":1,"Col":quant_col,"Tips":8})
+	output_quantitative_data({"ProductType":"Extract","FilePath":r"D:\data\PTseq_Extraction.xlsx"})
+	move_extraction_quant_plate("quantification_tube_adapter", "M2_POS14")
+	move_extraction_quant_plate("dye_deepwell", "M2_POS13")
+	move_extraction_quant_plate("purification_plate", "M2_POS16")
+	assert_extraction_quant_deck_restored()
+	return concentrations[:sample_num]
+
+def build_normalization_plan(concentrations):
+	plans = []
+	for index, concentration in enumerate(concentrations):
+		if is_blank_sample(index):
+			sample_volume = 0.0
+			water_volume = 0.0
+			expected_concentration = 0.0
+			status = "BLANK_CONTROL"
+		elif concentration <= 0:
+			sample_volume = 0.0
+			water_volume = 0.0
+			expected_concentration = 0.0
+			status = "INVALID_CONCENTRATION"
+		elif concentration < EXTRACTION_TARGET_CONCENTRATION:
+			sample_volume = EXTRACTION_NORMALIZED_VOLUME
+			water_volume = 0.0
+			expected_concentration = concentration
+			status = "BELOW_TARGET_UNDILUTED"
+		elif concentration <= EXTRACTION_MAX_DIRECT_CONCENTRATION:
+			sample_volume = round(EXTRACTION_TARGET_CONCENTRATION * EXTRACTION_NORMALIZED_VOLUME / concentration, 2)
+			water_volume = round(EXTRACTION_NORMALIZED_VOLUME - sample_volume, 2)
+			expected_concentration = EXTRACTION_TARGET_CONCENTRATION
+			status = "NORMALIZED"
+		else:
+			sample_volume = 0.0
+			water_volume = 0.0
+			expected_concentration = 0.0
+			status = "ABOVE_200_NG_PER_UL"
+		plans.append({
+			"sample_number": sample_number_for_output(index),
+			"source_well": plate_well(index, EXTRACTION_SOURCE_START_COL),
+			"target_well": plate_well(index, EXTRACTION_NORMALIZED_START_COL),
+			"concentration": round(concentration, 4),
+			"sample_volume": sample_volume,
+			"water_volume": water_volume,
+			"expected_concentration": round(expected_concentration, 4),
+			"status": status,
+		})
+	return plans
+
+def normalize_extraction_products(plans):
+	invalid = [plan for plan in plans if plan["status"] in ("INVALID_CONCENTRATION", "ABOVE_200_NG_PER_UL")]
+	write_normalization_plan(plans)
+	if invalid:
+		message = "; ".join([f'{plan["sample_number"]}:{plan["status"]}' for plan in invalid])
+		sys.exit(f"Extraction normalization stopped before pipetting: {message}")
+
+	lang = get_lang()
+	if lang == 1:
+		report({"Phase":"提取产物均一化","Step":"20 ng/uL，POS8 Col7-10，目标体积 30 uL","TaskType":"library","RemainingTime":None})
+	elif lang == 2:
+		report({"Phase":"Extraction normalization","Step":"20 ng/uL in POS8 Col7-10; 30 uL target","TaskType":"library","RemainingTime":None})
+
+	if any(plan["water_volume"] > 0 for plan in plans):
+		water_tip = tip_50.load(1, 1)[0]
+		p1_load_modified(water_tip)
+		for index, plan in enumerate(plans):
+			if plan["water_volume"] <= 0:
+				continue
+			row = index % 8 + 1
+			col = EXTRACTION_NORMALIZED_START_COL + index // 8
+			p1_aspirate_modified(EXTRACTION_WATER_LOC[0], Row=EXTRACTION_WATER_LOC[2], Col=EXTRACTION_WATER_LOC[1], AspirateOffsetOfZ=0.8, AspirateVolume=plan["water_volume"], AspirateSpeed=10)
+			p1_empty_modified(EXTRACTION_SOURCE_PLATE, Row=row, Col=col, EmptyOffsetOfZ=0.5, EmptySpeed=10)
+		p1_unload_tips2({"Position":"M2_Trash","Col":None,"Row":None})
+
+	nonblank_plans = [(index, plan) for index, plan in enumerate(plans) if plan["status"] != "BLANK_CONTROL"]
+	sample_tips = tip_50.load(len(nonblank_plans), 1)
+	for tip_index, (index, plan) in enumerate(nonblank_plans):
+		row = index % 8 + 1
+		source_col = EXTRACTION_SOURCE_START_COL + index // 8
+		target_col = EXTRACTION_NORMALIZED_START_COL + index // 8
+		p1_load_modified(sample_tips[tip_index])
+		p1_aspirate_modified(EXTRACTION_SOURCE_PLATE, Row=row, Col=source_col, AspirateVolume=plan["sample_volume"], AspirateOffsetOfZ=0.5, AspirateSpeed=10)
+		p1_empty_modified(EXTRACTION_SOURCE_PLATE, Row=row, Col=target_col, EmptyOffsetOfZ=0.5, EmptySpeed=10)
+		p1_mix({"Position":EXTRACTION_SOURCE_PLATE,"Col":target_col,"Row":row,"PreAirVolume":5,"MixTimes":5,"MixAspirateSpeed":30,"MixAspirateOffsetOfZ":0.5,"MixVolume":25,"MixDispenseOffsetOfZ":5,"MixDispenseSpeed":30,"DelayAfterMixLoop":0.5,"MixEmptyOffsetOfZ":3,"MixEmptySpeed":30,"PreAirSpeed":50,"DelayAfterMixAspirate":0.5,"DelayAfterMixDispense":0.5,"DelayAfterMixEmpty":0.5,"PostAirSpeed":50,"PostAirVolume":0,"FirstSegmentSpeed":100,"SpeedChangeOffsetOfZ":0,"SecondSegmentSpeed":80,"TipTouchTimes":0})
+		p1_unload_tips2({"Position":"M2_Trash","Col":None,"Row":None})
+
+extraction_concentration_list = quantify_extraction_products()
+extraction_normalization_plan = build_normalization_plan(extraction_concentration_list)
+normalize_extraction_products(extraction_normalization_plan)
 b = parallel_block(blockB)
-
-
 
 '''=====================================中转位=============================================================='''
 transposition = "M2_POS30"
@@ -487,12 +715,12 @@ col_num = (sample_num+7)//8  # 样本占用的 PCR 板列数，每 8 个样本�
 transfer({"StartPosition":"M2_POS17","EndPosition":"M2_POS27","LoosenOffsetOfZ":0})  # 打开 POS17 试剂盖。
 
 # T12 空白对照放在 POS17 F1（0.5 mL 管；API 坐标 Col1 Row6）。
-# 根据 PTseq.csv 中所有 QcType=B 的动态孔位，逐孔向 POS8 提取产物板加入 14 uL T12。
+# 根据 PTseq.csv 中所有 QcType=B 的动态孔位，向对应的均一化目标孔加入 14 uL T12。
 for blank_sample in blank_samples:
 	blank_tip = tip_50.load(1)[0]
 	p8_load_modified(blank_tip)
 	p8_aspirate({"Position":"M2_POS17","Col":1,"Row":6,"PreAirVolume":5,"AspirateOffsetOfZ":0.6,"AspirateSpeed":15,"AspirateVolume":T12_BLANK_VOLUME,"PreAirSpeed":30,"DelayAfterAspirate":5,"PostAirSpeed":50,"PostAirVolume":3,"IfTrack":False,"FirstSegmentSpeed":100,"SpeedChangeOffsetOfZ":0,"SecondSegmentSpeed":80,"TipTouchTimes":2,"TipTouchOffsetOfZ":3,"TipTouchRangeOfX":1.2,"TipTouchSpeed":100})
-	p8_empty({"Position":"M2_POS8","Col":blank_sample.column,"Row":blank_sample.row,"EmptyOffsetOfZ":1,"EmptySpeed":50,"DelayAfterEmpty":0.5,"TipTouchTimes":0,"PostAirSpeed":50,"PostAirVolume":3,"FirstSegmentSpeed":100,"SpeedChangeOffsetOfZ":0,"SecondSegmentSpeed":80})
+	p8_empty({"Position":"M2_POS8","Col":blank_sample.column+6,"Row":blank_sample.row,"EmptyOffsetOfZ":1,"EmptySpeed":50,"DelayAfterEmpty":0.5,"TipTouchTimes":0,"PostAirSpeed":50,"PostAirVolume":3,"FirstSegmentSpeed":100,"SpeedChangeOffsetOfZ":0,"SecondSegmentSpeed":80})
 	p8_unload_tips({"Position":"M2_Trash","Col":None,"Row":None})
 
 # RT 第一步转移 2 uL T1 引物，使用 P1 逐样本加入 POS20；每最多 3 列更换一次 50 uL 枪头。
@@ -511,8 +739,8 @@ col_num = (sample_num+7)//8
 column_num = col_num
 for i in range(col_num):
 	p8_load_modified(tip_300.load(target_tip_num_list[i])[0])
-	p8_mix({"Position":"M2_POS8","Col":i+1,"Row":1,"PreAirVolume":15,"MixTimes":8,"MixAspirateSpeed":20,"MixAspirateOffsetOfZ":0.5,"MixVolume":20,"MixDispenseOffsetOfZ":8,"MixDispenseSpeed":50,"DelayAfterMixLoop":2,"MixEmptyOffsetOfZ":5,"MixEmptySpeed":30,"PreAirSpeed":50,"DelayAfterMixAspirate":0.5,"DelayAfterMixDispense":0.5,"DelayAfterMixEmpty":0.5,"TipTouchTimes":0,"PostAirSpeed":50,"PostAirVolume":0,"FirstSegmentSpeed":100,"SpeedChangeOffsetOfZ":0,"SecondSegmentSpeed":80})
-	p8_aspirate({"Position":"M2_POS8","Col":i+1,"Row":1,"PreAirVolume":5,"AspirateOffsetOfZ":0.7,"AspirateSpeed":30,"AspirateVolume":14,"PreAirSpeed":50,"DelayAfterAspirate":1,"TipTouchTimes":0,"PostAirSpeed":50,"PostAirVolume":0,"IfTrack":True,"FirstSegmentSpeed":100,"SpeedChangeOffsetOfZ":0,"SecondSegmentSpeed":80})
+	p8_mix({"Position":"M2_POS8","Col":i+7,"Row":1,"PreAirVolume":15,"MixTimes":8,"MixAspirateSpeed":20,"MixAspirateOffsetOfZ":0.5,"MixVolume":20,"MixDispenseOffsetOfZ":8,"MixDispenseSpeed":50,"DelayAfterMixLoop":2,"MixEmptyOffsetOfZ":5,"MixEmptySpeed":30,"PreAirSpeed":50,"DelayAfterMixAspirate":0.5,"DelayAfterMixDispense":0.5,"DelayAfterMixEmpty":0.5,"TipTouchTimes":0,"PostAirSpeed":50,"PostAirVolume":0,"FirstSegmentSpeed":100,"SpeedChangeOffsetOfZ":0,"SecondSegmentSpeed":80})
+	p8_aspirate({"Position":"M2_POS8","Col":i+7,"Row":1,"PreAirVolume":5,"AspirateOffsetOfZ":0.7,"AspirateSpeed":30,"AspirateVolume":14,"PreAirSpeed":50,"DelayAfterAspirate":1,"TipTouchTimes":0,"PostAirSpeed":50,"PostAirVolume":0,"IfTrack":True,"FirstSegmentSpeed":100,"SpeedChangeOffsetOfZ":0,"SecondSegmentSpeed":80})
 	p8_empty({"Position":"M2_POS20","Col":i+1,"Row":1,"EmptyOffsetOfZ":0.8,"EmptySpeed":50,"DelayAfterEmpty":0.5,"TipTouchTimes":0,"PostAirSpeed":50,"PostAirVolume":0,"FirstSegmentSpeed":100,"SpeedChangeOffsetOfZ":0,"SecondSegmentSpeed":80})
 	p8_mix({"Position":"M2_POS20","Col":i+1,"Row":1,"PreAirVolume":11,"MixTimes":15,"MixAspirateSpeed":20,"MixAspirateOffsetOfZ":0.5,"MixVolume":13,"MixDispenseOffsetOfZ":5,"MixDispenseSpeed":50,"DelayAfterMixLoop":2,"MixEmptyOffsetOfZ":5,"MixEmptySpeed":30,"PreAirSpeed":50,"DelayAfterMixAspirate":0.5,"DelayAfterMixDispense":0.5,"DelayAfterMixEmpty":0.5,"TipTouchTimes":0,"PostAirSpeed":50,"PostAirVolume":0,"FirstSegmentSpeed":100,"SpeedChangeOffsetOfZ":0,"SecondSegmentSpeed":80})
 	p8_unload_tips({"Position":"M2_Trash","Col":None,"Row":None})
