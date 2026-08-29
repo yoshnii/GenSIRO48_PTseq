@@ -1744,8 +1744,8 @@ sample_qc_concentration = 1
 single_tip_loc = tip_1000.load(1)[0]
 #pooling稀释buffer位置，板-列-行 - M2_POS24 B1 (Col 1, Row 2) contains T2 buffer
 dilution_buffer_loc = ('M2_POS24',1,2)
-#pooling产物位置，板位，列，行 - Pooling Product at M2_POS14 Column 7
-target_tube_loc = [('M2_POS14',7,i) for i in range(1,9)]
+#pooling产物位置，板位，列，行 - Pooling Product at M2_POS11 Column 7
+target_tube_loc = [('M2_POS11',7,i) for i in range(1,9)]
 # [v7] DNB反应位置 - Column布局: Col 7 Row 1-6 为环化, Col 8 Row 1-6 为DNB制备
 # SIRO48最多48样本, 每8个一组, 最多6个pool
 target_dnb_loc_list = [('M2_POS20',7,1+i) for i in range(6)]
@@ -1970,10 +1970,10 @@ print(f"样本的 pooling 组、取样体积、稀释倍数和放大倍数已输
 
 
 # [v7] ===== Normalization + Pooling 重写 =====
-# 流程: POS14→POS23 → 原位稀释(POS13) → pooling(POS13→POS23) → 转移到POS20 → POS23→POS14
+# 流程: POS11→POS23 → 原位稀释(POS13) → pooling(POS13→POS23) → 转移到POS20 → POS23→POS11
 
-# Step 1: 移动POS14 (pooling板) 到POS23 (空闲, p1/p8均可达)
-transfer({"StartPosition":"M2_POS14","EndPosition":"M2_POS23","LoosenOffsetOfZ":0})  # POS14 → POS23
+# Step 1: 移动POS11 (pooling深孔板) 到POS23 (空闲, p1/p8均可达)
+transfer({"StartPosition":"M2_POS11","EndPosition":"M2_POS23","LoosenOffsetOfZ":0})  # POS11 → POS23
 
 # 操作时pooling管在POS23 Col 7
 pooling_tube_pos = 'M2_POS23'
@@ -1987,6 +1987,9 @@ if water_loc_list:
 		# 加入147µL T2 buffer实现8倍原位稀释 (21µL library + 147µL buffer = 168µL, 8x dilution)
 		p1_aspirate({"Position": dilution_buffer_loc[0], "Row": dilution_buffer_loc[2], "Col": dilution_buffer_loc[1], "FirstSegmentSpeed": 150, "SpeedChangeOffsetOfZ": 0, "PreAirSpeed": 100, "PreAirVolume": 10, "SecondSegmentSpeed": 100, "AspirateOffsetOfZ": 1.0, "AspirateSpeed": 20, "AspirateVolume": 147, "DelayAfterAspirate": 0.5, "TipTouchTimes": 0, "TipTouchOffsetOfZ": 10, "TipTouchRangeOfX": 2, "TipTouchSpeed": 100, "PostAirSpeed": 100, "PostAirVolume": 10})
 		p1_empty({"Position": water_loc_list[i][0], "Row": water_loc_list[i][1], "Col": water_loc_list[i][2], "FirstSegmentSpeed": 150, "SpeedChangeOffsetOfZ": 0, "SecondSegmentSpeed": 100, "EmptyOffsetOfZ": 1, "EmptySpeed": 190, "DelayAfterEmpty": 0.5, "TipTouchTimes": 0, "TipTouchOffsetOfZ": 10, "TipTouchRangeOfX": 2, "TipTouchSpeed": 100})
+
+# HIGH RISK：下方 P8 将首次访问 POS13 深孔板。先把 POS14 定量管架移到 POS30，避免机械干涉。
+transfer({"StartPosition":"M2_POS14","EndPosition":"M2_POS30","LoosenOffsetOfZ":0})
 
 # Step 3: p8 吹吸混匀已稀释的孔 (POS13 Col 7-12 原位)
 if water_loc_list:
@@ -2007,7 +2010,7 @@ for i in range(len(water_volume_list)):
 p1_unload_tips2({"Position":"M2_Trash","Col":None,"Row":None})
 
 # Step 5: p8 从POS13 Col 7-12取样 → POS23 Col 7 pooling管 (所有样本统一流程，不再区分稀释/非稀释)
-# HIGH RISK：P8 将访问 POS13 深孔板；POS14 上的 pooling 板已在 Step 1 移至 POS23，当前 POS14 为空，不会产生相邻干涉。
+# POS14 定量管架已在首次 P8 访问 POS13 前移到 POS30，此处保持 POS14 为空。
 for i,poolings in enumerate(temp):
 	samples = dnb_list[i]
 	for sample in samples:
@@ -2019,6 +2022,10 @@ for i,poolings in enumerate(temp):
 		p8_aspirate_modified(source_plate[0],sample_row,sample_col,sample_volume,PreAirVolume=10,AspirateSpeed=80,AspirateOffsetOfZ=0.5,DelayAfterAspirate=0.5,PostAirVolume=0)
 		p8_empty_modified(pooling_tube_pos,i+1,pooling_tube_col)
 		p8_unload_tips({"Position":"M2_Trash","Col":None,"Row":None})
+
+# POS13 pooling 取样完成后立即恢复 POS14，释放 POS30，避免后续板位交换发生碰撞。
+transfer({"StartPosition":"M2_POS30","EndPosition":"M2_POS14","LoosenOffsetOfZ":0})
+
 # Step 6: 混匀pooling管并转移到POS20 Col 7 Row 1-6 (DNB环化反应位)
 for i in range(target_dnb_num):
 	target_tip_loc = tip_300.load(1)
@@ -2042,8 +2049,8 @@ for i in range(target_dnb_num):
 	p8_empty_modified(target_dnb_loc_list[i][0],target_dnb_loc_list[i][2],target_dnb_loc_list[i][1])
 	p8_unload_tips({"Position":"M2_Trash","Col":None,"Row":None})
 
-# Step 7: 移回POS23 → POS14，关PCR盖板
-transfer({"StartPosition":"M2_POS23","EndPosition":"M2_POS14","LoosenOffsetOfZ":0})  # POS23 → POS14 (恢复)
+# Step 7: 移回POS23 → POS11，关PCR盖板
+transfer({"StartPosition":"M2_POS23","EndPosition":"M2_POS11","LoosenOffsetOfZ":0})  # POS23 → POS11 (恢复)
 transfer({"StartPosition":"M2_POS26","EndPosition":"M2_POS20","LoosenOffsetOfZ":0})  #关PCR盖板
 pcr_close_door()
 
