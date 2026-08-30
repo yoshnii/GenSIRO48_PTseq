@@ -567,7 +567,7 @@
                 "Wells": "*",
                 "ContentInfo": {
                   "Type": "Reagent",
-                  "Name": "DNB制备缓冲液 (DNB Prep Buffer)",
+                  "Name": "DNB制备缓冲液（SB） (DNB Prep Buffer)",
                   "Volume": 500
                 }
               }
@@ -585,7 +585,7 @@
                 "Wells": "*",
                 "ContentInfo": {
                   "Type": "Reagent",
-                  "Name": "DNB聚合酶混合液I (DNB Polymerase Mix I)",
+                  "Name": "DNB聚合酶混合液I（OS） (DNB Polymerase Mix I OS)",
                   "Volume": 500
                 }
               }
@@ -603,7 +603,7 @@
                 "Wells": "*",
                 "ContentInfo": {
                   "Type": "Reagent",
-                  "Name": "DNB聚合酶混合液II LC (DNB Polymerase Mix II LC - automated)",
+                  "Name": "DNB聚合酶混合液II（OS） (DNB Polymerase Mix II OS)",
                   "Volume": 500
                 }
               }
