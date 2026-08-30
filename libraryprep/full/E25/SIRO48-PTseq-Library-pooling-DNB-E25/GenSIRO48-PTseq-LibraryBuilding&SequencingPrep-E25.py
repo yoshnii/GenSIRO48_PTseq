@@ -453,7 +453,8 @@ EXTRACTION_MAX_DIRECT_CONCENTRATION = (
 )
 EXTRACTION_SOURCE_PLATE = "M2_POS8"
 EXTRACTION_SOURCE_START_COL = 1
-EXTRACTION_NORMALIZED_START_COL = 7
+EXTRACTION_NORMALIZED_START_COL = 5
+POOLING_DILUTION_START_COL = 9
 EXTRACTION_WATER_LOC = ("M2_POS24", 2, 1)
 EXTRACTION_QUANT_TUBE_START_COL = 7
 EXTRACTION_QUANT_MIX_START_COL = 9
@@ -641,9 +642,9 @@ def normalize_extraction_products(plans):
 
 	lang = get_lang()
 	if lang == 1:
-		report({"Phase":"提取产物均一化","Step":"20 ng/uL，POS8 Col7-10，目标体积 30 uL","TaskType":"library","RemainingTime":None})
+		report({"Phase":"提取产物均一化","Step":"20 ng/uL，POS8 Col5-8，目标体积 30 uL","TaskType":"library","RemainingTime":None})
 	elif lang == 2:
-		report({"Phase":"Extraction normalization","Step":"20 ng/uL in POS8 Col7-10; 30 uL target","TaskType":"library","RemainingTime":None})
+		report({"Phase":"Extraction normalization","Step":"20 ng/uL in POS8 Col5-8; 30 uL target","TaskType":"library","RemainingTime":None})
 
 	if any(plan["water_volume"] > 0 for plan in plans):
 		water_tip = tip_50.load(1, 1)[0]
@@ -715,12 +716,12 @@ col_num = (sample_num+7)//8  # 样本占用的 PCR 板列数，每 8 个样本�
 transfer({"StartPosition":"M2_POS17","EndPosition":"M2_POS27","LoosenOffsetOfZ":0})  # 打开 POS17 试剂盖。
 
 # T12 空白对照放在 POS17 F1（0.5 mL 管；API 坐标 Col1 Row6）。
-# 根据 PTseq.csv 中所有 QcType=B 的动态孔位，向对应的均一化目标孔加入 14 uL T12。
+# 根据 PTseq.csv 中所有 QcType=B 的动态孔位，向 POS8 Col5-8 对应的均一化目标孔加入 14 uL T12。
 for blank_sample in blank_samples:
 	blank_tip = tip_50.load(1)[0]
 	p8_load_modified(blank_tip)
 	p8_aspirate({"Position":"M2_POS17","Col":1,"Row":6,"PreAirVolume":5,"AspirateOffsetOfZ":0.6,"AspirateSpeed":15,"AspirateVolume":T12_BLANK_VOLUME,"PreAirSpeed":30,"DelayAfterAspirate":5,"PostAirSpeed":50,"PostAirVolume":3,"IfTrack":False,"FirstSegmentSpeed":100,"SpeedChangeOffsetOfZ":0,"SecondSegmentSpeed":80,"TipTouchTimes":2,"TipTouchOffsetOfZ":3,"TipTouchRangeOfX":1.2,"TipTouchSpeed":100})
-	p8_empty({"Position":"M2_POS8","Col":blank_sample.column+6,"Row":blank_sample.row,"EmptyOffsetOfZ":1,"EmptySpeed":50,"DelayAfterEmpty":0.5,"TipTouchTimes":0,"PostAirSpeed":50,"PostAirVolume":3,"FirstSegmentSpeed":100,"SpeedChangeOffsetOfZ":0,"SecondSegmentSpeed":80})
+	p8_empty({"Position":"M2_POS8","Col":EXTRACTION_NORMALIZED_START_COL+blank_sample.column-EXTRACTION_SOURCE_START_COL,"Row":blank_sample.row,"EmptyOffsetOfZ":1,"EmptySpeed":50,"DelayAfterEmpty":0.5,"TipTouchTimes":0,"PostAirSpeed":50,"PostAirVolume":3,"FirstSegmentSpeed":100,"SpeedChangeOffsetOfZ":0,"SecondSegmentSpeed":80})
 	p8_unload_tips({"Position":"M2_Trash","Col":None,"Row":None})
 
 # RT 第一步转移 2 uL T1 引物，使用 P1 逐样本加入 POS20；每最多 3 列更换一次 50 uL 枪头。
@@ -739,8 +740,8 @@ col_num = (sample_num+7)//8
 column_num = col_num
 for i in range(col_num):
 	p8_load_modified(tip_300.load(target_tip_num_list[i])[0])
-	p8_mix({"Position":"M2_POS8","Col":i+7,"Row":1,"PreAirVolume":15,"MixTimes":8,"MixAspirateSpeed":20,"MixAspirateOffsetOfZ":0.5,"MixVolume":20,"MixDispenseOffsetOfZ":8,"MixDispenseSpeed":50,"DelayAfterMixLoop":2,"MixEmptyOffsetOfZ":5,"MixEmptySpeed":30,"PreAirSpeed":50,"DelayAfterMixAspirate":0.5,"DelayAfterMixDispense":0.5,"DelayAfterMixEmpty":0.5,"TipTouchTimes":0,"PostAirSpeed":50,"PostAirVolume":0,"FirstSegmentSpeed":100,"SpeedChangeOffsetOfZ":0,"SecondSegmentSpeed":80})
-	p8_aspirate({"Position":"M2_POS8","Col":i+7,"Row":1,"PreAirVolume":5,"AspirateOffsetOfZ":0.7,"AspirateSpeed":30,"AspirateVolume":14,"PreAirSpeed":50,"DelayAfterAspirate":1,"TipTouchTimes":0,"PostAirSpeed":50,"PostAirVolume":0,"IfTrack":True,"FirstSegmentSpeed":100,"SpeedChangeOffsetOfZ":0,"SecondSegmentSpeed":80})
+	p8_mix({"Position":"M2_POS8","Col":EXTRACTION_NORMALIZED_START_COL+i,"Row":1,"PreAirVolume":15,"MixTimes":8,"MixAspirateSpeed":20,"MixAspirateOffsetOfZ":0.5,"MixVolume":20,"MixDispenseOffsetOfZ":8,"MixDispenseSpeed":50,"DelayAfterMixLoop":2,"MixEmptyOffsetOfZ":5,"MixEmptySpeed":30,"PreAirSpeed":50,"DelayAfterMixAspirate":0.5,"DelayAfterMixDispense":0.5,"DelayAfterMixEmpty":0.5,"TipTouchTimes":0,"PostAirSpeed":50,"PostAirVolume":0,"FirstSegmentSpeed":100,"SpeedChangeOffsetOfZ":0,"SecondSegmentSpeed":80})
+	p8_aspirate({"Position":"M2_POS8","Col":EXTRACTION_NORMALIZED_START_COL+i,"Row":1,"PreAirVolume":5,"AspirateOffsetOfZ":0.7,"AspirateSpeed":30,"AspirateVolume":14,"PreAirSpeed":50,"DelayAfterAspirate":1,"TipTouchTimes":0,"PostAirSpeed":50,"PostAirVolume":0,"IfTrack":True,"FirstSegmentSpeed":100,"SpeedChangeOffsetOfZ":0,"SecondSegmentSpeed":80})
 	p8_empty({"Position":"M2_POS20","Col":i+1,"Row":1,"EmptyOffsetOfZ":0.8,"EmptySpeed":50,"DelayAfterEmpty":0.5,"TipTouchTimes":0,"PostAirSpeed":50,"PostAirVolume":0,"FirstSegmentSpeed":100,"SpeedChangeOffsetOfZ":0,"SecondSegmentSpeed":80})
 	p8_mix({"Position":"M2_POS20","Col":i+1,"Row":1,"PreAirVolume":11,"MixTimes":15,"MixAspirateSpeed":20,"MixAspirateOffsetOfZ":0.5,"MixVolume":13,"MixDispenseOffsetOfZ":5,"MixDispenseSpeed":50,"DelayAfterMixLoop":2,"MixEmptyOffsetOfZ":5,"MixEmptySpeed":30,"PreAirSpeed":50,"DelayAfterMixAspirate":0.5,"DelayAfterMixDispense":0.5,"DelayAfterMixEmpty":0.5,"TipTouchTimes":0,"PostAirSpeed":50,"PostAirVolume":0,"FirstSegmentSpeed":100,"SpeedChangeOffsetOfZ":0,"SecondSegmentSpeed":80})
 	p8_unload_tips({"Position":"M2_Trash","Col":None,"Row":None})
@@ -1918,8 +1919,8 @@ transfer({"StartPosition":"M2_POS20","EndPosition":"M2_POS26","LoosenOffsetOfZ":
 #样本来源板,板位，起始列
 source_plate = ('M2_POS13',7)
 
-# pooling 预稀释：从 POS13 Col7-12 每个文库取 5 uL 到 POS8 Col7-12 的独立稀释孔；稀释孔不与原文库孔共用。
-sample_dilution_place = ('M2_POS8',7)   # 稀释位置 = POS8 PCR板 col 7-12（独立稀释孔）
+# pooling 预稀释：从 POS13 Col7-10 每个文库取样到 POS8 Col9-12 的独立稀释孔。
+sample_dilution_place = ('M2_POS8', POOLING_DILUTION_START_COL)
 
 # 样本取样体积临界值
 min_sample_volume = 2
@@ -2000,6 +2001,13 @@ col_num = (sample_num+7)//8
 #根据板位计算孔位，板-列-行
 sample_list = [(source_plate[0],source_plate[1]+i//8,1+i%8) for i in range(sample_num)]
 dilute_hole = [(sample_dilution_place[0],sample_dilution_place[1]+i//8,1+i%8) for i in range(sample_num)]
+
+# E25 全流程在同一块 POS8 PCR 板上分区使用：Col1-4 提取产物、Col5-8 均一化产物、Col9-12 pooling 预稀释。
+extraction_source_holes = {(EXTRACTION_SOURCE_PLATE, EXTRACTION_SOURCE_START_COL+i//8, 1+i%8) for i in range(sample_num)}
+normalization_holes = {(EXTRACTION_SOURCE_PLATE, EXTRACTION_NORMALIZED_START_COL+i//8, 1+i%8) for i in range(sample_num)}
+pooling_dilution_holes = set(dilute_hole)
+if extraction_source_holes & normalization_holes or extraction_source_holes & pooling_dilution_holes or normalization_holes & pooling_dilution_holes:
+	raise RuntimeError("E25 POS8 extraction, normalization and pooling dilution wells must not overlap")
 
 # [v7] 使用第一次定量的实际测量浓度值（concentration_list来自第一次定量段落）
 # 删除了原本硬编码的48个浓度值

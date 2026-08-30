@@ -2010,7 +2010,7 @@ for i in range(len(water_volume_list)):
 p1_unload_tips2({"Position":"M2_Trash","Col":None,"Row":None})
 
 # Step 5: p8 从POS13 Col 7-12取样 → POS23 Col 7 pooling管 (所有样本统一流程，不再区分稀释/非稀释)
-# POS14 定量管架已在首次 P8 访问 POS13 前移到 POS30，此处保持 POS14 为空。
+# POS14 定量管架已在首次 P8 访问 POS13 前移到 POS11，此处保持 POS14 为空。
 for i,poolings in enumerate(temp):
 	samples = dnb_list[i]
 	for sample in samples:
