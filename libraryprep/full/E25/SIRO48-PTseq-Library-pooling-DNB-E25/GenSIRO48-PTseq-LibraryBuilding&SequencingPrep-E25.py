@@ -2281,8 +2281,8 @@ for i in range(len(water_volume_list)):
 p1_unload_tips2({"Position":"M2_Trash","Col":None,"Row":None})
 
 # 第五步：执行 pooling 转移；非稀释样本从POS13直转POS23，需稀释样本先在POS8完成8x或64x稀释。
-# HIGH RISK：P8 将访问 POS13 深孔板。先把 POS14 定量管架移到 POS30，避免机械干涉。
-transfer({"StartPosition":"M2_POS14","EndPosition":"M2_POS30","LoosenOffsetOfZ":0})
+# P8 即将访问 POS13。POS11 深孔板已移至 POS23，将 POS14 定量管架临时停放至 POS11，并保持 POS30 供动态枪头换盒使用。
+transfer({"StartPosition":"M2_POS14","EndPosition":"M2_POS11","LoosenOffsetOfZ":0})
 for i,poolings in enumerate(temp):
 	samples = dnb_list[i]
 	for sample in samples:
@@ -2308,8 +2308,8 @@ for i,poolings in enumerate(temp):
 			p8_empty_modified(pooling_tube_pos, i+1, pooling_tube_col)
 			p8_unload_tips({"Position":"M2_Trash","Col":None,"Row":None})
 
-# POS13 pooling 取样完成后立即恢复 POS14，释放 POS30，避免后续板位交换发生碰撞。
-transfer({"StartPosition":"M2_POS30","EndPosition":"M2_POS14","LoosenOffsetOfZ":0})
+# POS13 pooling 取样完成后，将定量管架从 POS11 恢复至 POS14。
+transfer({"StartPosition":"M2_POS11","EndPosition":"M2_POS14","LoosenOffsetOfZ":0})
 
 # 第六步：混匀pooling汇集管，并直接转移到POS20 Col8 Row1-6的E25 DNB反应位。
 for i in range(target_dnb_num):
