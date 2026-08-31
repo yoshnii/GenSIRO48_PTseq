@@ -508,23 +508,33 @@ def plate_well(index, start_col):
 def is_blank_sample(index):
 	return index < len(filtered_samples) and filtered_samples[index].sample_qc_type.upper() == BLANK_QC_TYPE
 
+def csv_field(value):
+	text = "" if value is None else str(value)
+	if "," in text or '"' in text or "\r" in text or "\n" in text:
+		return '"{}"'.format(text.replace('"', '""'))
+	return text
+
+def write_csv_row(file, values):
+	file.write(",".join(csv_field(value) for value in values) + "\r\n")
+
 def write_normalization_plan(plans):
-	import csv
 	file_path = r"D:\data\PTseq_normalization_info.csv"
-	with open(file_path, "w", newline="") as file:
-		writer = csv.writer(file)
-		writer.writerow([
+	file = open(file_path, "w", newline="")
+	try:
+		write_csv_row(file, [
 			"SampleNumber", "SourcePlate", "SourceWell", "TargetPlate", "TargetWell",
 			"MeasuredConcentration", "TargetConcentration", "SampleVolume", "WaterVolume",
 			"ExpectedConcentration", "Status"
 		])
 		for plan in plans:
-			writer.writerow([
+			write_csv_row(file, [
 				plan["sample_number"], EXTRACTION_SOURCE_PLATE, plan["source_well"],
 				EXTRACTION_SOURCE_PLATE, plan["target_well"], plan["concentration"],
 				EXTRACTION_TARGET_CONCENTRATION, plan["sample_volume"], plan["water_volume"],
 				plan["expected_concentration"], plan["status"]
 			])
+	finally:
+		file.close()
 
 def quantify_extraction_products():
 	lang = get_lang()
