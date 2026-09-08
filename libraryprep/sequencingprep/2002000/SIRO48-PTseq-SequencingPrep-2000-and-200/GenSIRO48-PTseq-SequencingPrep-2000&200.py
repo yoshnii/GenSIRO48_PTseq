@@ -785,7 +785,7 @@ d1 = parallel_block(blockD1)
 ##################################################################################### DNB制备体系2 ############################################################################
 #配置DNB制备体系2——E1 Mix I打入E2 Mix II源管混合（big-into-small）
 p8_load_modified(tip_300.load(1)[0])
-# Step 1: 吸取E1 DNB聚合酶混合液I——手工配置DNB聚合酶混合液II(LC) = 2*(DNB_Num+0.5) µL 在E2 Mix II管中
+# Step 1: 吸取E1 DNB聚合酶混合液I——手工配置DNB聚合酶混合液II(LC) = 4*(DNB_Num+0.5) µL 在E2 Mix II管中
 p8_aspirate({"Position":"M2_POS17", "Col":1, "Row":5,"PreAirVolume":5,"AspirateOffsetOfZ":0.6,"AspirateSpeed":15,"AspirateVolume":40 * (DNB_Num + 0.5),"PreAirSpeed":30,"DelayAfterAspirate":5,"PostAirSpeed":50,"PostAirVolume":5,"IfTrack":False,"FirstSegmentSpeed":100,"SpeedChangeOffsetOfZ":0,"SecondSegmentSpeed":80,"TipTouchTimes":2, "TipTouchOffsetOfZ": 3, "TipTouchRangeOfX": 1.2, "TipTouchSpeed": 100})
 # Step 2: 打入E2 Mix II源管 (big into small)
 p8_empty({"Position":"M2_POS17","Col":2,"Row":5,"EmptyOffsetOfZ":0.5,"EmptySpeed":10,"DelayAfterEmpty":0.5,"PostAirSpeed":50,"PostAirVolume":0,"FirstSegmentSpeed":100,"SpeedChangeOffsetOfZ":0,"SecondSegmentSpeed":80,"TipTouchTimes":2, "TipTouchOffsetOfZ": 5, "TipTouchRangeOfX": 0, "TipTouchSpeed": 100})
