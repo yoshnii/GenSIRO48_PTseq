@@ -48,7 +48,6 @@ a = parallel_block(blockA)
 
 
 import sys
-import os
 import time
 class Tips:
 	def __init__(self,tip_pos,backup_tip_pos=[]):
@@ -520,15 +519,35 @@ def write_csv_row(file, values):
 	file.write(",".join(csv_field(value) for value in values) + "\r\n")
 
 def backup_existing_output(file_path):
-	# 中台 output_quantitative_data 在目标文件已存在时会直接报错，CSV 写入也可能被占用。
-	# 统一把旧文件改名为 <原名>_backup_<时间戳>，避免重跑因残留文件中断。
-	if os.path.exists(file_path):
-		root, ext = os.path.splitext(file_path)
-		os.rename(file_path, f"{root}_backup_{time.strftime('%Y%m%d_%H%M%S')}{ext}")
+	# 将同名历史输出文件归档为带时间戳的备份文件。
+	try:
+		existing_file = open(file_path, "rb")
+		existing_file.close()
+	except:
+		return
+	os_module = sys.modules.get("os")
+	if os_module is None:
+		raise Exception(f"输出文件归档功能不可用：{file_path}")
+	dot_index = file_path.rfind(".")
+	if dot_index > 0:
+		root = file_path[:dot_index]
+		ext = file_path[dot_index:]
+	else:
+		root = file_path
+		ext = ""
+	backup_path = f"{root}_backup_{time.strftime('%Y%m%d_%H%M%S')}{ext}"
+	os_module.rename(file_path, backup_path)
+
+NORMALIZATION_OUTPUT_FILE = r"D:\data\PTseq_normalization_info.csv"
+EXTRACTION_OUTPUT_FILE = r"D:\data\PTseq_Extraction.xlsx"
+LIBRARY_OUTPUT_FILE = r"D:\data\PTseq_Library.xlsx"
+
+# 流程开始前统一归档已有输出文件。
+for output_file in (NORMALIZATION_OUTPUT_FILE, EXTRACTION_OUTPUT_FILE, LIBRARY_OUTPUT_FILE):
+	backup_existing_output(output_file)
 
 def write_normalization_plan(plans):
-	file_path = r"D:\data\PTseq_normalization_info.csv"
-	backup_existing_output(file_path)
+	file_path = NORMALIZATION_OUTPUT_FILE
 	file = open(file_path, "w", newline="")
 	try:
 		write_csv_row(file, [
@@ -606,8 +625,7 @@ def quantify_extraction_products():
 		quantity_run_sample({"Name":"","SampleType":"dsDNA_HS","ProductType":"Extract","StandardToSampleRatio":5,"DilutionRatio":1,"Label":"","DilutionAssessment":60})
 		concentrations.extend([get_extraction_concentration(("M2_POS13", quant_col, row)) for row in range(1, 9)])
 		p8_unload_quantification_tube({"Position":"M2_POS13","Row":1,"Col":quant_col,"Tips":8})
-	extraction_quant_file = r"D:\data\PTseq_Extraction.xlsx"
-	backup_existing_output(extraction_quant_file)
+	extraction_quant_file = EXTRACTION_OUTPUT_FILE
 	output_quantitative_data({"ProductType":"Extract","FilePath":extraction_quant_file})
 	move_extraction_quant_plate("quantification_tube_adapter", "M2_POS14")
 	move_extraction_quant_plate("dye_deepwell", "M2_POS13")
@@ -1808,7 +1826,7 @@ quantification_tube_loc = [quantification_tube_operating_pos,1]
 # 获取当前日期和时间
 current_datetime = time.strftime("%Y%m%d_%H%M%S")
 # 生成文件路径
-file_path = f"D:\\data\\PTseq_Library.xlsx"
+file_path = LIBRARY_OUTPUT_FILE
 quantification_fila_path = f"D:\\data\\quantification{current_datetime}.txt"
 
 
@@ -1906,7 +1924,6 @@ for i in range(col_num):
 	cur_concentration_list = [get_concentration_modified((quantification_tube_loc[0],quantification_tube_loc[1]+i,j)) for j in range(1,9)]
 	concentration_list += cur_concentration_list
 	p8_unload_quantification_tube({"Position": quantification_tube_loc[0], "Row": 1, "Col": quantification_tube_loc[1]+i, "Tips":8})
-backup_existing_output(file_path)
 output_quantitative_data({"ProductType":sample_stage,"FilePath":file_path})
 # 丢弃最后一列未使用孔位的占位浓度，pooling 只按真实样本数计算。
 concentration_list = concentration_list[:SampleCount]
