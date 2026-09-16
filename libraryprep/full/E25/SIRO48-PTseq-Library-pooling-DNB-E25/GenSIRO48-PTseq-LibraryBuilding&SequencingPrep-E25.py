@@ -612,10 +612,12 @@ def build_normalization_plan(concentrations):
 			expected_concentration = 0.0
 			status = "BLANK_CONTROL"
 		elif concentration <= 0:
-			sample_volume = 0.0
+			# 定量无读数（Qubit 失败/气泡/低于 HS 下限）。均一化只负责"过浓则稀释"，
+			# 不在此处筛样本：原液放行，交由下游定量与 pooling 过滤决定。
+			sample_volume = EXTRACTION_NORMALIZED_VOLUME
 			water_volume = 0.0
 			expected_concentration = 0.0
-			status = "INVALID_CONCENTRATION"
+			status = "NO_READING_PASSTHROUGH"
 		elif concentration < EXTRACTION_TARGET_CONCENTRATION:
 			sample_volume = EXTRACTION_NORMALIZED_VOLUME
 			water_volume = 0.0
@@ -627,10 +629,12 @@ def build_normalization_plan(concentrations):
 			expected_concentration = EXTRACTION_TARGET_CONCENTRATION
 			status = "NORMALIZED"
 		else:
-			sample_volume = 0.0
-			water_volume = 0.0
-			expected_concentration = 0.0
-			status = "ABOVE_200_NG_PER_UL"
+			# 超过 200 ng/uL：30 uL 体系下最多稀释 10 倍（3 uL 为移液下限）。
+			# 按最大可达倍数封顶稀释后放行，不停机；实测浓度写入 CSV 供追溯。
+			sample_volume = EXTRACTION_MIN_SAMPLE_VOLUME
+			water_volume = round(EXTRACTION_NORMALIZED_VOLUME - EXTRACTION_MIN_SAMPLE_VOLUME, 2)
+			expected_concentration = round(concentration * EXTRACTION_MIN_SAMPLE_VOLUME / EXTRACTION_NORMALIZED_VOLUME, 4)
+			status = "ABOVE_RANGE_CAPPED"
 		plans.append({
 			"sample_number": sample_number_for_output(index),
 			"source_well": plate_well(index, EXTRACTION_SOURCE_START_COL),
@@ -644,11 +648,14 @@ def build_normalization_plan(concentrations):
 	return plans
 
 def normalize_extraction_products(plans):
-	invalid = [plan for plan in plans if plan["status"] in ("INVALID_CONCENTRATION", "ABOVE_200_NG_PER_UL")]
 	write_normalization_plan(plans)
-	if invalid:
-		message = "; ".join([f'{plan["sample_number"]}:{plan["status"]}' for plan in invalid])
-		sys.exit(f"Extraction normalization stopped before pipetting: {message}")
+	# 均一化阶段不再因个别样本浓度异常整批停机：异常样本按 build_normalization_plan 的分档放行，
+	# 是否剔除交由下游文库定量 + pooling 段的 sample_qc_concentration 闸门决定。
+	flagged = [plan for plan in plans if plan["status"] in ("NO_READING_PASSTHROUGH", "ABOVE_RANGE_CAPPED")]
+	if flagged:
+		message = "; ".join([f'{plan["sample_number"]}:{plan["status"]}' for plan in flagged])
+		print(f"[WARNING] Extraction normalization passthrough: {message}")
+		report({"Phase":"提取产物均一化","Step":f"{len(flagged)} 个样本浓度异常已放行，详见 PTseq_normalization_info.csv","TaskType":"library","RemainingTime":None})
 
 	lang = get_lang()
 	if lang == 1:
