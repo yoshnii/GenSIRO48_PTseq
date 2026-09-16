@@ -747,17 +747,8 @@ col_num = (sample_num+7)//8  # 样本占用的 PCR 板列数，每 8 个样本�
 
 transfer({"StartPosition":"M2_POS17","EndPosition":"M2_POS27","LoosenOffsetOfZ":0})  # 打开 POS17 试剂盖。
 
-# T12 空白对照放在 POS17 F1（0.5 mL 管；API 坐标 Col1 Row6）。
-# 根据 PTseq.csv 中所有 QcType=B 的动态孔位，直接向 POS20 对应孔加入 14 uL T12。
-# 空白不经过 POS8 均一化孔：其 POS8 孔不再被读取，省一次转移。
-for blank_sample in blank_samples:
-	blank_tip = tip_50.load(1)[0]
-	p8_load_modified(blank_tip)
-	p8_aspirate({"Position":"M2_POS17","Col":1,"Row":6,"PreAirVolume":5,"AspirateOffsetOfZ":0.6,"AspirateSpeed":15,"AspirateVolume":T12_BLANK_VOLUME,"PreAirSpeed":30,"DelayAfterAspirate":5,"PostAirSpeed":50,"PostAirVolume":3,"IfTrack":False,"FirstSegmentSpeed":100,"SpeedChangeOffsetOfZ":0,"SecondSegmentSpeed":80,"TipTouchTimes":2,"TipTouchOffsetOfZ":3,"TipTouchRangeOfX":1.2,"TipTouchSpeed":100})
-	p8_empty({"Position":"M2_POS20","Col":blank_sample.column,"Row":blank_sample.row,"EmptyOffsetOfZ":1,"EmptySpeed":50,"DelayAfterEmpty":0.5,"TipTouchTimes":0,"PostAirSpeed":50,"PostAirVolume":3,"FirstSegmentSpeed":100,"SpeedChangeOffsetOfZ":0,"SecondSegmentSpeed":80})
-	p8_unload_tips({"Position":"M2_Trash","Col":None,"Row":None})
-
-# RT 第一步转移 2 uL T1 引物，使用 P1 逐样本加入 POS20；每最多 3 列更换一次 50 uL 枪头。
+# RT 第一步转移 2 uL T1 引物，使用 P1 逐样本加入尚未加样的 POS20；
+# 每最多 3 列更换一次 50 uL 枪头。T1 先于 T12/样本加入，避免复用枪头接触样本后返回 T1 源管。
 for col_group_start in range(0, col_num, 3):
 	p1_load_modified(tip_50.load(1)[0])
 	for i in range(col_group_start, min(col_group_start + 3, col_num)):
@@ -766,6 +757,17 @@ for col_group_start in range(0, col_num, 3):
 			p1_aspirate_modified("M2_POS17", 1, 1, 2, AspirateSpeed=10)
 			p1_empty_modified("M2_POS20", j+1, i+1, EmptyOffsetOfZ=0.5)
 	p1_unload_tips2({"Position":"M2_Trash","Col":None,"Row":None})
+
+# T12 空白对照放在 POS17 F1（0.5 mL 管；API 坐标 Col1 Row6）。
+# T1 全部分装完成后，再根据 PTseq.csv 中所有 QcType=B 的动态孔位，
+# 使用独立新枪头直接向 POS20 对应孔加入 14 uL T12，加完即丢弃。
+# 空白不经过 POS8 均一化孔：其 POS8 孔不再被读取，省一次转移。
+for blank_sample in blank_samples:
+	blank_tip = tip_50.load(1)[0]
+	p8_load_modified(blank_tip)
+	p8_aspirate({"Position":"M2_POS17","Col":1,"Row":6,"PreAirVolume":5,"AspirateOffsetOfZ":0.6,"AspirateSpeed":15,"AspirateVolume":T12_BLANK_VOLUME,"PreAirSpeed":30,"DelayAfterAspirate":5,"PostAirSpeed":50,"PostAirVolume":3,"IfTrack":False,"FirstSegmentSpeed":100,"SpeedChangeOffsetOfZ":0,"SecondSegmentSpeed":80,"TipTouchTimes":2,"TipTouchOffsetOfZ":3,"TipTouchRangeOfX":1.2,"TipTouchSpeed":100})
+	p8_empty({"Position":"M2_POS20","Col":blank_sample.column,"Row":blank_sample.row,"EmptyOffsetOfZ":1,"EmptySpeed":50,"DelayAfterEmpty":0.5,"TipTouchTimes":0,"PostAirSpeed":50,"PostAirVolume":3,"FirstSegmentSpeed":100,"SpeedChangeOffsetOfZ":0,"SecondSegmentSpeed":80})
+	p8_unload_tips({"Position":"M2_Trash","Col":None,"Row":None})
 transfer({"StartPosition":"M2_POS27","EndPosition":"M2_POS17","LoosenOffsetOfZ":0}) #盖试剂盖
 
 # 将样本从 POS8 转移到 POS20：需稀释样本取自 Col5-8，未稀释样本直接取自 Col1-4。
