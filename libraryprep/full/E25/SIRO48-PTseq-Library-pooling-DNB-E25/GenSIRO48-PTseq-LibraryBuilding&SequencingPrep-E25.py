@@ -48,6 +48,8 @@ a = parallel_block(blockA)
 
 
 import sys
+import os
+import time
 class Tips:
 	def __init__(self,tip_pos,backup_tip_pos=[]):
 		self.transposition =  "M2_POS30" # 交换枪头的中转板位
@@ -517,8 +519,16 @@ def csv_field(value):
 def write_csv_row(file, values):
 	file.write(",".join(csv_field(value) for value in values) + "\r\n")
 
+def backup_existing_output(file_path):
+	# 中台 output_quantitative_data 在目标文件已存在时会直接报错，CSV 写入也可能被占用。
+	# 统一把旧文件改名为 <原名>_backup_<时间戳>，避免重跑因残留文件中断。
+	if os.path.exists(file_path):
+		root, ext = os.path.splitext(file_path)
+		os.rename(file_path, f"{root}_backup_{time.strftime('%Y%m%d_%H%M%S')}{ext}")
+
 def write_normalization_plan(plans):
 	file_path = r"D:\data\PTseq_normalization_info.csv"
+	backup_existing_output(file_path)
 	file = open(file_path, "w", newline="")
 	try:
 		write_csv_row(file, [
@@ -596,7 +606,9 @@ def quantify_extraction_products():
 		quantity_run_sample({"Name":"","SampleType":"dsDNA_HS","ProductType":"Extract","StandardToSampleRatio":5,"DilutionRatio":1,"Label":"","DilutionAssessment":60})
 		concentrations.extend([get_extraction_concentration(("M2_POS13", quant_col, row)) for row in range(1, 9)])
 		p8_unload_quantification_tube({"Position":"M2_POS13","Row":1,"Col":quant_col,"Tips":8})
-	output_quantitative_data({"ProductType":"Extract","FilePath":r"D:\data\PTseq_Extraction.xlsx"})
+	extraction_quant_file = r"D:\data\PTseq_Extraction.xlsx"
+	backup_existing_output(extraction_quant_file)
+	output_quantitative_data({"ProductType":"Extract","FilePath":extraction_quant_file})
 	move_extraction_quant_plate("quantification_tube_adapter", "M2_POS14")
 	move_extraction_quant_plate("dye_deepwell", "M2_POS13")
 	move_extraction_quant_plate("purification_plate", "M2_POS16")
@@ -1780,7 +1792,6 @@ quantification_tube_operating_pos = 'M2_POS13'
 quantification_tube_loc = [quantification_tube_operating_pos,1]
 
 #=====================定量浓度输出文件位置======================================
-import time
 # 获取当前日期和时间
 current_datetime = time.strftime("%Y%m%d_%H%M%S")
 # 生成文件路径
@@ -1882,6 +1893,7 @@ for i in range(col_num):
 	cur_concentration_list = [get_concentration_modified((quantification_tube_loc[0],quantification_tube_loc[1]+i,j)) for j in range(1,9)]
 	concentration_list += cur_concentration_list
 	p8_unload_quantification_tube({"Position": quantification_tube_loc[0], "Row": 1, "Col": quantification_tube_loc[1]+i, "Tips":8})
+backup_existing_output(file_path)
 output_quantitative_data({"ProductType":sample_stage,"FilePath":file_path})
 # 丢弃最后一列未使用孔位的占位浓度，pooling 只按真实样本数计算。
 concentration_list = concentration_list[:SampleCount]
