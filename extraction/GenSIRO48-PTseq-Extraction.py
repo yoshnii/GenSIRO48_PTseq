@@ -197,7 +197,6 @@ is_filter = False
 # 提取过滤的样本质控类型（仅在 is_filter 为 True 时生效）
 filtered_sample_qc_type = {'N','P'}
 BLANK_QC_TYPE = 'B'
-BLANK_ELUTION_CLEAR_VOLUME = 200
 
 sample_type_list = "产前绒毛，流产物绒毛，胎儿组织，脐带血，外周血".split("，")
 volume_dict = {key:5 for key in sample_type_list}
@@ -584,27 +583,6 @@ for x in range(3):
 ##将磁珠从第6列转移至第3列,高度调整
 magnetic_rod_beads_release({"Col": 3,"FirstSpeedOfZ": 58.00, "SpeedChangeOffsetOfZ": 38.0, "SecondSpeedOfZ": 10.00,"LiftingSpeed":50, "ReleaseOffsetOfZ": 8.0, "ReleaseDuration": 0.50, "DelayAtSpeedChange": 0.50, "IsMix": True, "MixParams":{"MixStartOffsetOfZ": 8.0, "MixFrequency": 6, "MixDuration": 10, "MixEndOffsetOfZ":1, "DelayAfterMixLoopOffsetOfZ": 40.0, "DelayAfterMixLoop": 2.00}, "TipTouchTimes": 0, "TipTouchOffsetOfZ": 45.5, "TipTouchOffsetOfX": 1.5, "TipTouchSpeed": 10.0})
 magnetic_rod_slide_out()
-# T12 空白对照不参与提取。洗脱完成、磁珠移走后，先用 P8 单枪头清空空白孔，
-# 再保留原有 P8 整列回收动作，使最终提取产物板的对应孔保持空置。
-for blank_sample in blank_samples:
-	blank_column_index = blank_sample.column - 1
-	blank_pos_index, blank_col_index = divmod(blank_column_index, 2)
-	blank_elution_pos = magnet_pos_list[blank_pos_index]
-	blank_elution_col = [6, 12][blank_col_index]
-	blank_tip = tip_300.load(1)[0]
-	p8_load_modified(blank_tip)
-	p8_aspirate_modified(
-		blank_elution_pos,
-		blank_sample.row,
-		blank_elution_col,
-		BLANK_ELUTION_CLEAR_VOLUME,
-		PreAirVolume=10,
-		AspirateOffsetOfZ=0.5,
-		AspirateSpeed=80,
-		DelayAfterAspirate=0.5,
-		PostAirVolume=0
-	)
-	p8_unload_tips({"Position": "M1_Trash", "Col": 1, "Row": 1})
 #==========================================转移产物===============================================
 lang=get_lang()
 if lang==1: #

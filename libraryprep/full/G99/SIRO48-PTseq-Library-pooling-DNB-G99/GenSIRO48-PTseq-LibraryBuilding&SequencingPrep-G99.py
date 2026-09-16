@@ -323,6 +323,7 @@ is_filter = False
 filtered_sample_qc_type = {'N','P'}
 BLANK_QC_TYPE = 'B'
 T12_BLANK_VOLUME = 14
+BLANK_ELUTION_CLEAR_VOLUME = 200  # 远大于提取回收到 POS8 的 45 uL 回溶液，确保空白孔残留被吸净
 
 sample_type_list = []
 volume_dict = {key:5 for key in sample_type_list}
@@ -479,6 +480,14 @@ p1_unload_tips2({"Position":"M2_Trash","Col":None,"Row":None})
 
 # ===== 步骤：向 POS20 PCR 板分装 T1 cDNA 引物 =====
 col_num = (sample_num+7)//8  # 样本占用的 PCR 板列数，每 8 个样本为 1 列
+
+# 提取仓（M1 无 P1，磁力架位单枪头动作有干涉风险）不再清空空白孔回溶液，
+# 改由 M2 的 P1 在加 T12 前清空 POS8 对应孔：POS8 为台面 PCR 板，P1 本就在此读写。
+for blank_sample in blank_samples:
+	p1_load_modified(tip_300.load(1)[0])
+	p1_aspirate_modified("M2_POS8", Row=blank_sample.row, Col=blank_sample.column, AspirateVolume=BLANK_ELUTION_CLEAR_VOLUME, AspirateOffsetOfZ=0.3, AspirateSpeed=80, PreAirVolume=10, PostAirVolume=0)
+	p1_empty_modified("M2_POS11", Row=blank_sample.row, Col=1, EmptyOffsetOfZ=10, EmptySpeed=100)
+	p1_unload_tips2({"Position":"M2_Trash","Col":None,"Row":None})
 
 transfer({"StartPosition":"M2_POS17","EndPosition":"M2_POS27","LoosenOffsetOfZ":0})  # 打开 POS17 试剂盖。
 
