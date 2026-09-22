@@ -1,10 +1,7 @@
 # -*- coding: utf-8 -*-
 #####################################################################
-# SIRO48-PTseq SequencingPrep (上机前准备) for E25
-#####################################################################
-# 独立的Pooling + DNB脚本，通过CSV读取样本浓度信息
-# 模仿PTseq Plus SequencingPrep的结构模式，使用PTseq自己的实验参数
-#
+# 脚本定位：GenSIRO48 E25 平台 PTseq 上机前准备脚本。
+# 覆盖范围：读取文库浓度和条码 CSV，完成 pooling 和 DNB 制备。
 # 前置条件：
 #   1. 文库产物PCR plate按CSV plate_index顺序放置在POS6/POS11/POS7，CSV position需填写真实产物孔位A7-H12
 #   2. CSV文件已准备好（含浓度、孔位、板号、barcode信息）
@@ -13,10 +10,8 @@
 #   5. Pooling管在POS13 Col 7
 #   6. 矿物油在POS24 Col 3, Row 1
 #
-# Created: 2026-03-11
 #####################################################################
-#Timestamp:2024/11/18 9:46:21
-#Head - 共用头部，包含所有功能。
+# 共用头部：包含平台初始化、枪头管理、移液封装和通用辅助函数。
 from library import *
 spxsiro = globals().get("library")
 set_siro(spxsiro)
@@ -248,7 +243,7 @@ def p1_aspirate_modified(Position,Row,Col,AspirateVolume,FirstSegmentSpeed=100,S
 	else:
 		p1_aspirate({"Position": Position, "Row": Row, "Col": Col,'AspirateVolume':AspirateVolume}.update(liquid.aspirate()))
 
-#===========================================================================优化排空逻辑=======================================================================
+#===========================================================================排空封装=======================================================================
 def p8_empty_modified(Position,Row,Col,FirstSegmentSpeed= 100, SpeedChangeOffsetOfZ= 0, SecondSegmentSpeed=100,\
 EmptyOffsetOfZ=2, EmptySpeed= 100, DelayAfterEmpty= 0.5,
 TipTouchTimes= 0, TipTouchOffsetOfZ= 10, TipTouchRangeOfX= 1.2, TipTouchSpeed= 100,
@@ -311,9 +306,9 @@ max_intermediate_concentrate_times = target_pooling_volume * 8 / min_sample_volu
 product_data_dict = {'PTseq': 1}
 default_product_data_amount = 1
 
-# pooling取buffer使用1ml枪头
+# pooling 取缓冲液使用 1000 uL 枪头。
 single_tip_loc = tip_1000.load(1)[0]
-# pooling稀释buffer位置 - M2_POS24 B1 (Col 1, Row 2) contains T2 buffer
+# pooling 稀释缓冲液位置：M2_POS24 Col1 Row2，即 T2 缓冲液。
 dilution_buffer_loc = ('M2_POS24',1,2)
 # pooling产物位置 - M2_POS16 Column 7
 target_tube_loc = [('M2_POS16',7,i) for i in range(1,9)]
@@ -463,7 +458,7 @@ if not Is_unqualified_pooling:
 if exclude_pooling_qc_type:
 	sample_concentration = [each for each in sample_concentration if each.qc_type not in exclude_pooling_qc_type]
 
-# 按浓度计算pooling分组
+# 按浓度计算 pooling 分组。
 sample_num = len(sample_concentration)
 if sample_num == 0:
 	raise Exception("过滤低浓度或空白样本后没有可 pooling 的有效样本，请检查CSV浓度和样本类型")

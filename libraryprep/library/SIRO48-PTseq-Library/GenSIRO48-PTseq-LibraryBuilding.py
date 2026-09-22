@@ -1,13 +1,13 @@
 
 # -*- coding: utf-8 -*-
 #####################################################################
-# GenSIRO48 G99 PTseq 建库流程脚本。
-# 流程从 POS8 提取产物板开始，依次执行 cDNA 合成、靶向扩增、文库扩增、
-# TA/LA 两轮磁珠纯化和 Qubit dsDNA HS 定量。
-# 本脚本不执行 pooling 和 make DNB；流程状态通过 report(...) 输出到中台软件。
-# 最终文库产物保存在 POS20 Col7-12；定量取样后 PCR 模块运行 Keep4_8h。
+# 脚本定位：GenSIRO48 PTseq 仅建库脚本。
+# 覆盖范围：从 POS8 提取产物板开始，完成 cDNA 合成、靶向扩增、文库扩增、
+#           TA/LA 两轮磁珠纯化和 Qubit dsDNA HS 定量；不执行 pooling 或 make DNB。
+# 关键设计：POS7 用于试剂中转；最终文库保存在 POS20 Col7-12，定量取样后运行 Keep4_8h。
+# 流程状态通过 report(...) 输出到中台软件。
 #####################################################################
-# 共用头部包含平台初始化、枪头管理、移液封装和通用辅助函数。
+# 共用头部：包含平台初始化、枪头管理、移液封装和通用辅助函数。
 
 from library import *
 spxsiro = globals().get("library")
@@ -342,7 +342,7 @@ def get_sample_info(sample_info_file_path, is_filter, filtered_sample_qc_type):
 	cur_index = 0
 
 	try:
-		# 机器端运行时以二进制读取，再逐行按 UTF-8 解码，兼容 Windows 路径下的 CSV。
+		# 以二进制读取 CSV，再逐行按 UTF-8 解码。
 		with open(sample_info_file_path, 'rb') as file:
 			lines = file.readlines()
 	except IOError as e:
@@ -367,7 +367,7 @@ def get_sample_info(sample_info_file_path, is_filter, filtered_sample_qc_type):
 
 			continue
 
-		# 可选过滤：过滤掉 N/P 等 QC 样本。
+		# 仅在 is_filter 为 True 时过滤指定的 QC 类型。
 		sample_qc_type = columns[3].strip()
 		if is_filter and sample_qc_type in filtered_sample_qc_type:
 			continue
@@ -846,7 +846,7 @@ delay({"Duration": 4800})
 # TA 产物磁珠纯化。
 
 p1_load_modified(tip_1000.load(1)[0])
-# 混匀 T1 磁珠后预分装到 POS7 Col12。
+# T1 磁珠源管混匀后预分装。
 p1_mix({"Position":"M2_POS24", "Col": 1, "Row": 1,"PreAirVolume":10,"MixTimes":20,"MixAspirateSpeed":300,"MixAspirateOffsetOfZ":0.8,"MixVolume":900,"MixDispenseOffsetOfZ":0.8,"MixDispenseSpeed":400,"DelayAfterMixLoop":1,"MixEmptyOffsetOfZ":10,"MixEmptySpeed":50,"PreAirSpeed":100,"DelayAfterMixAspirate":0,"DelayAfterMixDispense":0,"DelayAfterMixEmpty":2,"TipTouchTimes":0,"PostAirSpeed":100,"PostAirVolume":0,"FirstSegmentSpeed":190,"SpeedChangeOffsetOfZ":0,"SecondSegmentSpeed":100})
 p1_mix({"Position":"M2_POS24", "Col": 1, "Row": 1,"PreAirVolume":10,"MixTimes":20,"MixAspirateSpeed":300,"MixAspirateOffsetOfZ":1,"MixVolume":900,"MixDispenseOffsetOfZ":30,"MixDispenseSpeed":400,"DelayAfterMixLoop":1,"MixEmptyOffsetOfZ":30,"MixEmptySpeed":50,"PreAirSpeed":100,"DelayAfterMixAspirate":0,"DelayAfterMixDispense":0,"DelayAfterMixEmpty":15,"TipTouchTimes":3,"PostAirSpeed":100,"PostAirVolume":0,"FirstSegmentSpeed":190,"SpeedChangeOffsetOfZ":0,"SecondSegmentSpeed":100,"TipTouchOffsetOfZ": 30, "TipTouchRangeOfX": 1.2, "TipTouchSpeed": 100})
 
@@ -1166,7 +1166,7 @@ else:
 
 # 第二步：把 POS23 磁架上的板转到 POS16 振荡位进行回溶。
 transfer({"StartPosition":"M2_POS23","EndPosition":"M2_POS16","LoosenOffsetOfZ":0})
-# 用交替双向振荡回溶干燥磁珠产物；总时长 6 min。
+# 用交替双向振荡回溶干燥磁珠产物；初始震荡 6 min。
 temp_shaker_set({"TempParameters":{"IsEnable":False,"Duration":-1},"ShakerParameters":{"IsEnable":True,"Direction":0,"Speed":1200,"Duration":90}})
 temp_shaker_set({"TempParameters":{"IsEnable":False,"Duration":-1},"ShakerParameters":{"IsEnable":True,"Direction":1,"Speed":1200,"Duration":90}})
 temp_shaker_set({"TempParameters":{"IsEnable":False,"Duration":-1},"ShakerParameters":{"IsEnable":True,"Direction":0,"Speed":1200,"Duration":90}})
@@ -1274,7 +1274,7 @@ product_pos = {"Position":"M2_POS20","Col":7,"Row":1}
 
 
 p1_load_modified(tip_1000.load(1)[0])
-# 分装 LA 磁珠前充分混匀源磁珠。
+# T1 磁珠源管混匀后预分装。
 p1_mix({"Position":magetic_beads_pos["Position"], "Col":magetic_beads_pos["Col"], "Row":magetic_beads_pos["Row"],"PreAirVolume":10,"MixTimes":20,"MixAspirateSpeed":300,"MixAspirateOffsetOfZ":0.8,"MixVolume":900,"MixDispenseOffsetOfZ":0.8,"MixDispenseSpeed":400,"DelayAfterMixLoop":1,"MixEmptyOffsetOfZ":10,"MixEmptySpeed":50,"PreAirSpeed":100,"DelayAfterMixAspirate":0,"DelayAfterMixDispense":0,"DelayAfterMixEmpty":2,"TipTouchTimes":0,"PostAirSpeed":100,"PostAirVolume":0,"FirstSegmentSpeed":190,"SpeedChangeOffsetOfZ":0,"SecondSegmentSpeed":100})
 p1_mix({"Position":magetic_beads_pos["Position"], "Col":magetic_beads_pos["Col"], "Row":magetic_beads_pos["Row"],"PreAirVolume":10,"MixTimes":30,"MixAspirateSpeed":300,"MixAspirateOffsetOfZ":0.8,"MixVolume":900,"MixDispenseOffsetOfZ":30,"MixDispenseSpeed":400,"DelayAfterMixLoop":1,"MixEmptyOffsetOfZ":30,"MixEmptySpeed":50,"PreAirSpeed":100,"DelayAfterMixAspirate":0,"DelayAfterMixDispense":0,"DelayAfterMixEmpty":15,"TipTouchTimes":3,"PostAirSpeed":100,"PostAirVolume":0,"FirstSegmentSpeed":190,"SpeedChangeOffsetOfZ":0,"SecondSegmentSpeed":100,"TipTouchOffsetOfZ": 30, "TipTouchRangeOfX": 1.2, "TipTouchSpeed": 100})
 
@@ -1465,7 +1465,7 @@ source_plate = ['M2_POS20',7]
 # 样本与染液的混合起始位置：POS13 Col1-6，按样本列映射。
 dye_mix_plate = ['M2_POS13',1]
 
-# POS14/POS11 对换后，定量管 home 在 POS14；实际读数/移液时临时换到 POS13 访问。
+# 定量管 home 在 POS14；实际读数/移液时临时换到 POS13 访问。
 quantification_tube_home_pos = 'M2_POS14'
 quantification_tube_operating_pos = 'M2_POS13'
 quantification_tube_loc = [quantification_tube_operating_pos,1]
