@@ -2224,6 +2224,7 @@ def is_pooling_plan_valid(cur_samples, plan):
 def most_limiting_sample(cur_samples):
 	return max(cur_samples, key=lambda sample: min_sample_volume * sample.corrected_concentration / sample.target_dna_ng)
 
+# 原方案：按组内“浓度/数据量”做 8 倍或 64 倍稀释；未通过体积校验时再尝试固定备用分档。
 def mark_dilution_samples(groups):
 	for group in groups:
 		for sample in group:
@@ -2263,9 +2264,9 @@ def pooling_plan_valid(group, plan):
 	if target_pooling_volume * min(1, 8 / k) < min_sample_volume:
 		return False
 	for sample in group:
-		if sample.dilution_type not in (1, 8, 64):
+		if sample.dilution_type not in (1, 2, 4, 8, 64):
 			return False
-		available = {1: max_sample_volume, 8: 40, 64: 128}[sample.dilution_type]
+		available = {1: max_sample_volume, 2: 10, 4: 20, 8: 40, 64: 128}[sample.dilution_type]
 		volume = sample.DilutingSampleVolume
 		if not math.isfinite(volume) or volume < min_sample_volume or volume > min(max_sample_volume, available):
 			return False
@@ -2279,6 +2280,17 @@ for index, group in enumerate(dnb_list, 1):
 		valid = pooling_plan_valid(group, plan)
 	except Exception:
 		valid = False
+	if not valid:
+		minimum = min(sample.base_corrected_concentration / sample.data_amount for sample in group)
+		for sample in group:
+			ratio = (sample.base_corrected_concentration / sample.data_amount) / minimum
+			sample.dilution_type = 1 if ratio < 8 else 2 if ratio < 16 else 4 if ratio < 32 else 8 if ratio < 64 else 64
+			apply_dilution_state(sample)
+		try:
+			plan = get_sample_volume(group)
+			valid = pooling_plan_valid(group, plan)
+		except Exception:
+			valid = False
 	if not valid:
 		while True:
 			try:
@@ -2336,7 +2348,7 @@ pooling_tube_col = 7
 p1_load_tips({"Position":single_tip_loc[0],'Col':single_tip_loc[1],'Row':single_tip_loc[2]})
 dilution_samples = [sample for group in dnb_list for sample in group if sample.NeedDilution]
 for sample in dilution_samples:
-	buffer_volume = 126 if sample.dilution_type == 64 else 35
+	buffer_volume = {2: 5, 4: 15, 8: 35, 64: 126}[sample.dilution_type]
 	p1_aspirate({"Position": dilution_buffer_loc[0], "Row": dilution_buffer_loc[2], "Col": dilution_buffer_loc[1], "FirstSegmentSpeed": 150, "SpeedChangeOffsetOfZ": 0, "PreAirSpeed": 100, "PreAirVolume": 10, "SecondSegmentSpeed": 100, "AspirateOffsetOfZ": 1.0, "AspirateSpeed": 20, "AspirateVolume": buffer_volume, "DelayAfterAspirate": 0.5, "TipTouchTimes": 0, "TipTouchOffsetOfZ": 10, "TipTouchRangeOfX": 2, "TipTouchSpeed": 100, "PostAirSpeed": 100, "PostAirVolume": 10})
 	p1_empty({"Position": sample.DilutingWellPosition, "Row": sample.DilutingWellRow, "Col": sample.DilutingWellColumn, "FirstSegmentSpeed": 150, "SpeedChangeOffsetOfZ": 0, "SecondSegmentSpeed": 100, "EmptyOffsetOfZ": 1, "EmptySpeed": 190, "DelayAfterEmpty": 0.5, "TipTouchTimes": 0, "TipTouchOffsetOfZ": 10, "TipTouchRangeOfX": 2, "TipTouchSpeed": 100})
 
@@ -2354,7 +2366,7 @@ for i in range(len(water_volume_list)):
 
 p1_unload_tips2({"Position":"M2_Trash","Col":None,"Row":None})
 
-# 第五步：执行 pooling 转移；非稀释样本从POS13直转POS23，需稀释样本先在POS8完成8x或64x稀释。
+# 第五步：执行 pooling 转移；非稀释样本从POS13直转POS23，需稀释样本先在POS8完成稀释。
 # P8 即将访问 POS13。POS11 深孔板已移至 POS23，将 POS14 定量管架临时停放至 POS11，并保持 POS30 供动态枪头换盒使用。
 transfer({"StartPosition":"M2_POS14","EndPosition":"M2_POS11","LoosenOffsetOfZ":0})
 for i,poolings in enumerate(temp):
@@ -2369,7 +2381,7 @@ for i,poolings in enumerate(temp):
 			p8_unload_tips({"Position":"M2_Trash","Col":None,"Row":None})
 		else:
 			source_sample_volume = 2 if sample.dilution_type == 64 else 5
-			mix_volume = 100 if sample.dilution_type == 64 else 30
+			mix_volume = {2: 5, 4: 10, 8: 30, 64: 100}[sample.dilution_type]
 			p8_load_modified(tip_50.load(1)[0])
 			# HIGH RISK：从POS13深孔板吸取文库到POS8；保留full已验证的P8深孔板吸液参数。
 			p8_aspirate_modified(sample.SampleWellPosition, sample.SampleWellRow, sample.SampleWellColumn, source_sample_volume, PreAirVolume=10, AspirateSpeed=80, AspirateOffsetOfZ=0.3, DelayAfterAspirate=0.5, PostAirVolume=0)

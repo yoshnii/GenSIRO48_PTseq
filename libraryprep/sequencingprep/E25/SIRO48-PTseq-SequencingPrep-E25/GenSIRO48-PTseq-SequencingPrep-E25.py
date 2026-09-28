@@ -527,7 +527,7 @@ def is_pooling_plan_valid(cur_samples, plan):
 def most_limiting_sample(cur_samples):
 	return max(cur_samples, key=lambda s: min_sample_volume * s.corrected_concentration / s.target_dna_ng)
 
-# 浓度均一化：先按组内“浓度/数据量”做8x/64x，再按体积可行性继续提高高浓度样本稀释倍数。
+# 原方案：按组内“浓度/数据量”做 8 倍或 64 倍稀释；未通过体积校验时再尝试固定备用分档。
 def mark_dilution_samples(groups):
 	for group in groups:
 		for sample in group:
@@ -568,9 +568,9 @@ def pooling_plan_valid(group, plan):
 	if target_pooling_volume * min(1, 8 / k) < min_sample_volume:
 		return False
 	for sample in group:
-		if sample.dilution_type not in (1, 8, 64):
+		if sample.dilution_type not in (1, 2, 4, 8, 64):
 			return False
-		available = {1: max_sample_volume, 8: 40, 64: 128}[sample.dilution_type]
+		available = {1: max_sample_volume, 2: 10, 4: 20, 8: 40, 64: 128}[sample.dilution_type]
 		volume = sample.DilutingSampleVolume
 		if not math.isfinite(volume) or volume < min_sample_volume or volume > min(max_sample_volume, available):
 			return False
@@ -584,6 +584,17 @@ for index, group in enumerate(dnb_list, 1):
 		valid = pooling_plan_valid(group, plan)
 	except Exception:
 		valid = False
+	if not valid:
+		minimum = min(sample.base_corrected_concentration / sample.data_amount for sample in group)
+		for sample in group:
+			ratio = (sample.base_corrected_concentration / sample.data_amount) / minimum
+			sample.dilution_type = 1 if ratio < 8 else 2 if ratio < 16 else 4 if ratio < 32 else 8 if ratio < 64 else 64
+			apply_dilution_state(sample)
+		try:
+			plan = get_sample_volume(group)
+			valid = pooling_plan_valid(group, plan)
+		except Exception:
+			valid = False
 	if not valid:
 		while True:
 			try:
@@ -651,10 +662,7 @@ for group in dnb_list:
 
 def dispense_dilution_buffer_to_active_plate(samples):
 	for sample in samples:
-		if sample.dilution_type == 64:
-			buffer_volume = 126
-		else:
-			buffer_volume = 35
+		buffer_volume = {2: 5, 4: 15, 8: 35, 64: 126}[sample.dilution_type]
 		p1_aspirate({"Position": dilution_buffer_loc[0], "Row": dilution_buffer_loc[2], "Col": dilution_buffer_loc[1], "FirstSegmentSpeed": 150, "SpeedChangeOffsetOfZ": 0, "PreAirSpeed": 100, "PreAirVolume": 10, "SecondSegmentSpeed": 100, "AspirateOffsetOfZ": 1.0, "AspirateSpeed": 20, "AspirateVolume": buffer_volume, "DelayAfterAspirate": 0.5, "TipTouchTimes": 0, "TipTouchOffsetOfZ": 10, "TipTouchRangeOfX": 2, "TipTouchSpeed": 100, "PostAirSpeed": 100, "PostAirVolume": 10})
 		p1_empty({"Position": dilution_access_position, "Row": sample.DilutingWellRow, "Col": sample.DilutingWellColumn, "FirstSegmentSpeed": 150, "SpeedChangeOffsetOfZ": 0, "SecondSegmentSpeed": 100, "EmptyOffsetOfZ": 1, "EmptySpeed": 190, "DelayAfterEmpty": 0.5, "TipTouchTimes": 0, "TipTouchOffsetOfZ": 10, "TipTouchRangeOfX": 2, "TipTouchSpeed": 100})
 
@@ -678,7 +686,7 @@ def transfer_sample_to_pooling(sample, pooling_index):
 		else:
 			dilution_tip = tip_50.load(1)[0]
 			source_sample_volume = 5
-			mix_volume = 30
+			mix_volume = {2: 5, 4: 10, 8: 30}[sample.dilution_type]
 		p1_load_modified(dilution_tip)
 		p1_aspirate_modified(sample.SampleWellPosition, sample.SampleWellRow, sample.SampleWellColumn, source_sample_volume, PreAirVolume=5, AspirateSpeed=10, AspirateOffsetOfZ=0.5, DelayAfterAspirate=1, PostAirVolume=0)
 		p1_empty_modified(dilution_access_position, sample.DilutingWellRow, sample.DilutingWellColumn, EmptyOffsetOfZ=0.5, EmptySpeed=10, PostAirVolume=0)

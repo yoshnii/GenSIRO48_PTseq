@@ -451,7 +451,7 @@ if target_dnb_num >= 2:
 
 initial_dnb_list = [group.copy() for group in dnb_list]
 
-# 浓度均一化: max/min > 8 时高浓度样本8x稀释
+# 原方案：组内浓度比超过 8 时，高浓度样本先做 8 倍稀释；未通过体积校验时再尝试固定备用分档。
 for i in range(target_dnb_num):
 	cur_samples = dnb_list[i]
 	cur_l = len(cur_samples)
@@ -498,11 +498,6 @@ def get_sample_volume(cur_samples):
 	return concentrate_times,water_volume
 
 
-try:
-	temp = [get_sample_volume(group) for group in dnb_list]
-except Exception:
-	temp = None
-
 def pooling_plan_valid(group, plan):
 	k, water = plan
 	if not math.isfinite(k) or k <= 0 or not math.isfinite(water) or water < 0:
@@ -510,20 +505,42 @@ def pooling_plan_valid(group, plan):
 	if target_pooling_volume * min(1, 8 / k) < min_sample_volume:
 		return False
 	for sample in group:
-		if sample.dilution_type not in (1, 8):
+		if sample.dilution_type not in (1, 2, 4, 8):
 			return False
-		available = max_sample_volume if sample.dilution_type == 1 else min(max_sample_volume, 16)
+		available = {1: max_sample_volume, 2: 10, 4: 20, 8: 16}[sample.dilution_type]
 		volume = sample.DilutingSampleVolume
 		if not math.isfinite(volume) or volume < min_sample_volume or volume > available:
 			return False
 	return True
 
-if temp is None or any(not pooling_plan_valid(group, temp[index]) for index, group in enumerate(dnb_list)):
-	while True:
+temp = []
+for group in dnb_list:
+	try:
+		plan = get_sample_volume(group)
+		valid = pooling_plan_valid(group, plan)
+	except Exception:
+		valid = False
+	if not valid:
+		minimum = max(min(sample.original_concentration for sample in group), sample_qc_concentration)
+		for sample in group:
+			source = max(sample.original_concentration, minimum)
+			ratio = source / minimum
+			sample.dilution_type = 1 if ratio < 8 else 2 if ratio < 16 else 4 if ratio < 32 else 8
+			sample.NeedDilution = sample.dilution_type != 1
+			sample.Concentration = source / sample.dilution_type
+			sample.corrected_concentration = sample.Concentration
 		try:
-			dialog_textbox({"Title":"Pooling体积校验未通过","Timeout":"02:00:00","Parameters":[{"Name":"状态","Value":"等待","Notes":"Pooling体积不满足移液要求，请检查样本浓度；当前不执行pooling或DNB。"}]})
+			plan = get_sample_volume(group)
+			valid = pooling_plan_valid(group, plan)
 		except Exception:
-			delay({"Duration":60})
+			valid = False
+	if not valid:
+		while True:
+			try:
+				dialog_textbox({"Title":"Pooling体积校验未通过","Timeout":"02:00:00","Parameters":[{"Name":"状态","Value":"等待","Notes":"Pooling体积不满足移液要求，请检查样本浓度；当前不执行pooling或DNB。"}]})
+			except Exception:
+				delay({"Duration":60})
+	temp.append(plan)
 water_volume_list = [entry[1] for entry in temp]
 
 def output_pooling_info(all_samples, groups, temp, output_file_path):
@@ -586,8 +603,9 @@ def dispense_dilution_buffer_to_active_plate(samples):
 		return
 	p1_load_modified(tip_50.load(1)[0])
 	for sample in samples:
-		# 加入14µL T2 buffer到当前位于POS8的稀释PCR板 (2µL sample + 14µL buffer = 16µL, 8x dilution)。
-		p1_aspirate({"Position": dilution_buffer_loc[0], "Row": dilution_buffer_loc[2], "Col": dilution_buffer_loc[1], "FirstSegmentSpeed": 150, "SpeedChangeOffsetOfZ": 0, "PreAirSpeed": 100, "PreAirVolume": 10, "SecondSegmentSpeed": 100, "AspirateOffsetOfZ": 1.0, "AspirateSpeed": 20, "AspirateVolume": 14, "DelayAfterAspirate": 0.5, "TipTouchTimes": 0, "TipTouchOffsetOfZ": 10, "TipTouchRangeOfX": 2, "TipTouchSpeed": 100, "PostAirSpeed": 100, "PostAirVolume": 10})
+		# 按所选稀释倍数向 POS8 PCR 板加入 T2 缓冲液。
+		buffer_volume = {2: 5, 4: 15, 8: 14}[sample.dilution_type]
+		p1_aspirate({"Position": dilution_buffer_loc[0], "Row": dilution_buffer_loc[2], "Col": dilution_buffer_loc[1], "FirstSegmentSpeed": 150, "SpeedChangeOffsetOfZ": 0, "PreAirSpeed": 100, "PreAirVolume": 10, "SecondSegmentSpeed": 100, "AspirateOffsetOfZ": 1.0, "AspirateSpeed": 20, "AspirateVolume": buffer_volume, "DelayAfterAspirate": 0.5, "TipTouchTimes": 0, "TipTouchOffsetOfZ": 10, "TipTouchRangeOfX": 2, "TipTouchSpeed": 100, "PostAirSpeed": 100, "PostAirVolume": 10})
 		p1_empty({"Position": dilution_access_position, "Row": sample.DilutingWellRow, "Col": sample.DilutingWellColumn, "FirstSegmentSpeed": 150, "SpeedChangeOffsetOfZ": 0, "SecondSegmentSpeed": 100, "EmptyOffsetOfZ": 1, "EmptySpeed": 190, "DelayAfterEmpty": 0.5, "TipTouchTimes": 0, "TipTouchOffsetOfZ": 10, "TipTouchRangeOfX": 2, "TipTouchSpeed": 100})
 	p1_unload_tips2({"Position":"M2_Trash","Col":None,"Row":None})
 
@@ -603,9 +621,9 @@ def transfer_sample_to_pooling(sample, pooling_index):
 		p8_aspirate_modified(sample.SampleWellPosition, sample.SampleWellRow, sample.SampleWellColumn, sample_volume, PreAirVolume=10)
 		p8_empty_modified(pooling_tube_pos, pooling_index+1, pooling_tube_col)
 	else:
-		p8_aspirate_modified(sample.SampleWellPosition, sample.SampleWellRow, sample.SampleWellColumn, 2, PreAirVolume=5, PostAirVolume=0)
+		p8_aspirate_modified(sample.SampleWellPosition, sample.SampleWellRow, sample.SampleWellColumn, 2 if sample.dilution_type == 8 else 5, PreAirVolume=5, PostAirVolume=0)
 		p8_empty_modified(dilution_access_position, sample.DilutingWellRow, sample.DilutingWellColumn, EmptyOffsetOfZ=0.5, EmptySpeed=10)
-		p8_mix({"Position":dilution_access_position,"Col":sample.DilutingWellColumn,"Row":sample.DilutingWellRow,"PreAirVolume":10,"MixTimes":5,"MixAspirateSpeed":100,"MixAspirateOffsetOfZ":0.5,"MixVolume":10,"MixDispenseOffsetOfZ":10,"MixDispenseSpeed":100,"DelayAfterMixLoop":0.5,"MixEmptyOffsetOfZ":10,"MixEmptySpeed":100,"PreAirSpeed":50,"DelayAfterMixAspirate":0.5,"DelayAfterMixDispense":0.5,"DelayAfterMixEmpty":0.5,"PostAirSpeed":50,"PostAirVolume":0,"FirstSegmentSpeed":100,"SpeedChangeOffsetOfZ":0,"SecondSegmentSpeed":80,"TipTouchTimes":1,"TipTouchOffsetOfZ":5,"TipTouchRangeOfX":1.2,"TipTouchSpeed":100})
+		p8_mix({"Position":dilution_access_position,"Col":sample.DilutingWellColumn,"Row":sample.DilutingWellRow,"PreAirVolume":10,"MixTimes":5,"MixAspirateSpeed":100,"MixAspirateOffsetOfZ":0.5,"MixVolume":5 if sample.dilution_type == 2 else 10,"MixDispenseOffsetOfZ":10,"MixDispenseSpeed":100,"DelayAfterMixLoop":0.5,"MixEmptyOffsetOfZ":10,"MixEmptySpeed":100,"PreAirSpeed":50,"DelayAfterMixAspirate":0.5,"DelayAfterMixDispense":0.5,"DelayAfterMixEmpty":0.5,"PostAirSpeed":50,"PostAirVolume":0,"FirstSegmentSpeed":100,"SpeedChangeOffsetOfZ":0,"SecondSegmentSpeed":80,"TipTouchTimes":1,"TipTouchOffsetOfZ":5,"TipTouchRangeOfX":1.2,"TipTouchSpeed":100})
 		p8_aspirate_modified(dilution_access_position, sample.DilutingWellRow, sample.DilutingWellColumn, sample_volume, PreAirVolume=0, PostAirVolume=0)
 		p8_empty_modified(pooling_tube_pos, pooling_index+1, pooling_tube_col)
 	p8_unload_tips({"Position":"M2_Trash","Col":None,"Row":None})
