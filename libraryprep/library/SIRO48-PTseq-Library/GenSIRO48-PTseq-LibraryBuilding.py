@@ -22,8 +22,8 @@ def blockA():
 a = parallel_block(blockA)
 # POS17/POS10 低温模块并行启动，后续液体处理立即继续执行。
 
-'''==================================================================自动计算取枪头位置逻辑======================================================'''
-# Tips 管理每种枪头的可用列、复用锁定列和备用枪头盒交换；reuse_index=1 表示该列枪头会放回原位等待后续复用。
+'''==================================================================枪头管理=================================================================='''
+# 管理可用枪头列、复用锁定列和备用枪头盒交换。
 
 
 
@@ -47,27 +47,26 @@ class Tips:
 			return (x,y)
 		except:
 		   pass
+	# 每列按 8 支枪头登记；列表元素为 [剩余枪头数, 枪头盒位置, 列号]。
 	def add_tips(self,target):
-		# 每列按 8 支枪头登记；列表元素为 [剩余枪头数, 枪头盒位置, 列号]。
 		for i in range(1,13):
 			self.tip_list.append([8,target,i])
 	def refresh_tip_list(self):
-		'''当前枪头盒耗尽时，切入一个备用枪头盒并刷新占用状态。'''
+		'''切换备用枪头盒并重建可用枪头列。'''
 		if not self.backup_tip_pos:
 			sys.exit('No backup tip')
 		new_tip_pos = self.backup_tip_pos.pop(0)
 		odd_tip_pos = self.tip_pos.pop(0)
 		self.tip_pos.append(odd_tip_pos)
 		self.tip_list = [tip for tip in self.tip_list if tip[1] != odd_tip_pos]
+		# 清除旧盒的复用锁定记录。
 		self.used_tip_set = {tip for tip in self.used_tip_set if tip[0] != odd_tip_pos}
 		self.blank_tip_list = [tip for tip in self.blank_tip_list if tip[1] != odd_tip_pos]
 		self.add_tips(odd_tip_pos)
 		return new_tip_pos,odd_tip_pos
-	'''取枪头逻辑：
-		依次遍历已有的枪头列，返回可用枪头,返回顺序为板，列，行
-		tip_num_per_time:单次取枪头个数，reuse_index：是否复用枪头，为0表示用枪头不复用，为1表示枪头会复用'''
+	# 按可用列分配枪头；reuse_index=1 时锁定该列，直至枪头归还。
 	def load(self, tip_num, tip_num_per_time=8, reuse_index=0):
-		result = []  # 用于存储结果的列表
+		result = []
 		while tip_num > 0:
 			found = 0
 			cur_tip_num = min(8, tip_num, tip_num_per_time)
@@ -886,8 +885,7 @@ elif lang==2: #
 '''===================================================文库扩增反应液==============================================================='''
 # LA/PCR Master Mix 配置。
 # [已弃用] _t8_vol 原用于机器从 0.5 mL T8 源管单独吸取时的小体积死体积补偿。
-# 现在 T8 改为手工预置在 POS17 C2R3 的 2.0 mL mixing tube 内，机器不再单独吸取 T8，
-# 因此 LA/PCR Master Mix 不再调用该补偿；保留函数仅为减少 diff，勿在 LA 段使用。
+# T8 手工预置在 POS17 C2R3 的 2.0 mL mixing tube 内；LA/PCR Master Mix 不调用此补偿函数。
 def _t8_vol(n):
 	return max(1 * 1.6 * n, 7) if n < 16 else 1 * 1.3 * n
 

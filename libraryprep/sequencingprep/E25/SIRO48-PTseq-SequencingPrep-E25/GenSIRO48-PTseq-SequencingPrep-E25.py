@@ -114,7 +114,8 @@ if missing_barcode_sample_ids:
 '''=====================================以上为样本信息读取====================================='''
 
 
-'''==================================================================自动计算取枪头位置逻辑v6======================================================'''
+'''==================================================================枪头管理=================================================================='''
+# 管理可用枪头列、复用锁定列和备用枪头盒交换。
 import sys
 class Tips:
 	def __init__(self,tip_pos,backup_tip_pos=[]):
@@ -135,27 +136,33 @@ class Tips:
 			return (x,y)
 		except:
 		   pass
+	# 每列按 8 支枪头登记；列表元素为 [剩余枪头数, 枪头盒位置, 列号]。
 	def add_tips(self,target):
 		for i in range(1,13):
 			self.tip_list.append([8,target,i])
 	def refresh_tip_list(self):
+		'''切换备用枪头盒并重建可用枪头列。'''
 		if not self.backup_tip_pos:
 			sys.exit('No backup tip')
 		new_tip_pos = self.backup_tip_pos.pop(0)
 		odd_tip_pos = self.tip_pos.pop(0)
 		self.tip_pos.append(odd_tip_pos)
 		self.tip_list = [tip for tip in self.tip_list if tip[1] != odd_tip_pos]
+		# 清除旧盒的复用锁定记录。
 		self.used_tip_set = {tip for tip in self.used_tip_set if tip[0] != odd_tip_pos}
 		self.blank_tip_list = [tip for tip in self.blank_tip_list if tip[1] != odd_tip_pos]
 		self.add_tips(odd_tip_pos)
 		return new_tip_pos,odd_tip_pos
+	# 按可用列分配枪头；reuse_index=1 时锁定该列，直至枪头归还。
 	def load(self, tip_num, tip_num_per_time=8, reuse_index=0):
 		result = []
 		while tip_num > 0:
 			found = 0
 			cur_tip_num = min(8, tip_num, tip_num_per_time)
 			for i, each in enumerate(self.tip_list):
+				# x 为当前列剩余枪头数，y 为枪头盒板位，z 为列号。
 				x, y, z = each
+				# 复用列在归还前不能再次分配。
 				if x >= cur_tip_num and (y,z) not in self.used_tip_set:
 					x -= cur_tip_num
 					self.tip_list[i][0] = x
@@ -201,7 +208,7 @@ def p8_load_modified_BubblePurge(loc):
 	p8_load_tips({"Position":loc[0],"Col":loc[1],"Row":loc[2],"Tips":8,"IsBubblePurge": True, "PreAirSpeed": 100, "PreAirVolume": 20, "BubblePurgeSpeed": 100})
 
 '''============================================================枪头位置=============================================================='''
-# SequencingPrep枪头从全新开始（无文库制备消耗）；POS6释放给多板文库产物输入。
+# 上机前准备从全新枪头开始，不计入文库制备的消耗。
 tip_300_loc = ['M2_POS5']
 backup_tip_300_loc = ['M2_POS28','M2_POS29']
 tip_300 = Tips(tip_300_loc,backup_tip_300_loc)
@@ -323,7 +330,7 @@ dilution_transfer_tip_loc = None
 # 需从pool剔除的质控类型代号(中台QcType); 空集=全部进pool(空白/阴阳性对照均测序,监控污染,与PTseq Plus/TB一致)
 # 如需剔除某类: 例 {'B'} 剔空白, {'N','P'} 剔阴阳性对照
 exclude_pooling_qc_type = set()
-# 浓度不合格样本是否pooling
+# 是否让低于质控阈值的样本参与 pooling；False 表示剔除。
 Is_unqualified_pooling = False
 # pooling信息输出文件
 output_file_path = r"D:/data/PTseq_pooling_info.csv"
@@ -450,7 +457,7 @@ calculate_sample_data(samples_from_csv)
 
 sample_concentration = samples_from_csv.copy()
 
-# 浓度不合格样本是否进入 pooling；过滤发生在孔位映射之后，因此保留剩余样本的原始吸液孔位。
+# False 时剔除低浓度样本；过滤后保留剩余样本的原始吸液孔位。
 if not Is_unqualified_pooling:
 	sample_concentration = [each for each in sample_concentration if each.Concentration >= sample_qc_concentration]
 
@@ -702,7 +709,7 @@ dispense_dilution_buffer_to_active_plate(dilution_samples_by_plate[0])
 
 # Step 3 mix 并入 Step 5：sample 进入 POS8 稀释孔后再混匀。
 
-# Step 4: p1 加补水到pooling管 (POS13 Col 7) 和 DNB反应孔 (POS20)
+# Step 4: P1 向 pooling 管 (POS16 Col7) 和 DNB 反应孔 (POS20) 补充 T2。
 for i in range(len(water_volume_list)):
 	if temp[i][0] > 8:
 		new_water_volume = target_pooling_volume-target_pooling_volume/(temp[i][0]/8)
@@ -884,5 +891,5 @@ d3 = parallel_block(blockD3)
 
 d3.Wait()
 
-# Home all axes at end of run to allow easy sample retrieval
+# 程序结束前执行 home，便于操作员取回样本和耗材。
 home()

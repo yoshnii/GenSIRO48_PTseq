@@ -33,10 +33,8 @@ def blockA():
 a = parallel_block(blockA)
 # 温控只在后台启动，用于保护 POS17/POS10 试剂；程序不等待温度到达，避免开局空等。
 
-'''==================================================================自动计算取枪头位置逻辑v6======================================================'''
-# 更新内容
-# 本版本新增reuse指令，可以生成n列没有被使用过的空枪头列，用来放回单根枪头返回值为板，列元组组成的列表
-# 本版本修复了自动取枪头枪头盒更换问题
+'''==================================================================枪头管理=================================================================='''
+# 管理可用枪头列、复用锁定列和备用枪头盒交换。
 
 
 
@@ -62,35 +60,31 @@ class Tips:
 			return (x,y)
 		except:
 		   pass
-	# 将列表中所有枪头依次存入tip_list,存储顺序为剩余枪头数、枪头所在板位、
+	# 每列按 8 支枪头登记；列表元素为 [剩余枪头数, 枪头盒位置, 列号]。
 	def add_tips(self,target):
 		for i in range(1,13):
 			self.tip_list.append([8,target,i])
 	def refresh_tip_list(self):
-		'''刷新枪头列表，主要用于清空已使用的枪头列'''
+		'''切换备用枪头盒并重建可用枪头列。'''
 		if not self.backup_tip_pos:
 			sys.exit('No backup tip')
 		new_tip_pos = self.backup_tip_pos.pop(0)
 		odd_tip_pos = self.tip_pos.pop(0)
 		self.tip_pos.append(odd_tip_pos)
 		self.tip_list = [tip for tip in self.tip_list if tip[1] != odd_tip_pos]
-		# while self.tip_list and self.tip_list[0][1] == odd_tip_pos:
-		# 	self.tip_list.pop(0)
-		# 删除used_tip_set中所有与odd_tip_pos相关的元素
+		# 清除旧盒的复用锁定记录。
 		self.used_tip_set = {tip for tip in self.used_tip_set if tip[0] != odd_tip_pos}
 		self.blank_tip_list = [tip for tip in self.blank_tip_list if tip[1] != odd_tip_pos]
 		self.add_tips(odd_tip_pos)
 		return new_tip_pos,odd_tip_pos
-	'''取枪头逻辑：
-		依次遍历已有的枪头列，返回可用枪头,返回顺序为板，列，行
-		tip_num_per_time:单次取枪头个数，reuse_index：是否复用枪头，为0表示用枪头不复用，为1表示枪头会复用'''
+	# 按可用列分配枪头；reuse_index=1 时锁定该列，直至枪头归还。
 	def load(self, tip_num, tip_num_per_time=8, reuse_index=0):
-		result = []  # 用于存储结果的列表
+		result = []
 		while tip_num > 0:
 			found = 0
 			cur_tip_num = min(8, tip_num, tip_num_per_time)
 			for i, each in enumerate(self.tip_list):
-				# x为当前剩余枪头数，y为当前所在板，z为当前所在列
+				# x 为当前列剩余枪头数，y 为枪头盒板位，z 为列号。
 				x, y, z = each
 				# 复用列在归还前不能再次分配。
 				if x >= cur_tip_num and (y,z) not in self.used_tip_set:
@@ -102,7 +96,6 @@ class Tips:
 						empty_tip = self.tip_list.pop(i)
 						self.blank_tip_list.append((empty_tip[1],empty_tip[2]))
 					found = 1
-					# 将结果添加到列表中，而不是yield
 					result.append((y, z, x + 1))
 					break
 			if not found:
@@ -661,8 +654,8 @@ def build_normalization_plan(concentrations):
 
 def normalize_extraction_products(plans):
 	write_normalization_plan(plans)
-	# 均一化阶段不再因个别样本浓度异常整批停机：异常样本按 build_normalization_plan 的分档放行，
-	# 是否剔除交由下游文库定量 + pooling 段的 sample_qc_concentration 闸门决定。
+	# 异常样本按 build_normalization_plan 的状态放行，
+	# 由下游文库定量及 pooling 的 sample_qc_concentration 阈值判断是否剔除。
 	flagged = [plan for plan in plans if plan["status"] in ("NO_READING_PASSTHROUGH", "ABOVE_RANGE_CAPPED")]
 	if flagged:
 		message = "; ".join([f'{plan["sample_number"]}:{plan["status"]}' for plan in flagged])
@@ -735,7 +728,7 @@ else:
 	a = 1.4
 target_volume_list = [80*a*(SampleCount//8+1)]*(SampleCount%8)+[50*a*(SampleCount//8)]*(8-SampleCount%8)
 
-# 矿物油/废液板固定放在 POS11。
+# 矿物油/废液/pooling 汇集板固定放在 POS11。
 for i in range(min(8, SampleCount)):
 	p1_aspirate({"Position":"M2_POS24","Col":3,"Row":1,"PreAirVolume":8,"AspirateOffsetOfZ":0.8,"AspirateSpeed":30,"AspirateVolume":target_volume_list[i],"PreAirSpeed":50,"DelayAfterAspirate":2,"PostAirSpeed":50,"PostAirVolume":0,"IfTrack":False,"FirstSegmentSpeed":100,"SpeedChangeOffsetOfZ":0,"SecondSegmentSpeed":80, "TipTouchTimes": 2, "TipTouchOffsetOfZ": 30, "TipTouchRangeOfX": 3, "TipTouchSpeed": 100})
 	p1_dispense({"Position":"M2_POS11","Col":8,"Row":i+1,"DispenseOffsetOfZ":8,"DispenseSpeed":20,"DispenseVolume":target_volume_list[i],"DelayAfterDispense":0.5,"TipTouchTimes":3,"PostAirSpeed":50,"PostAirVolume":0,"IsEmpty":True,"EmptyOffsetOfZ":2,"EmptySpeed":30,"DelayAfterEmpty":0.5,"FirstSegmentSpeed":100,"SpeedChangeOffsetOfZ":0,"SecondSegmentSpeed":80,"TipTouchOffsetOfZ": 10, "TipTouchRangeOfX": 2, "TipTouchSpeed": 100})
@@ -760,7 +753,7 @@ for col_group_start in range(0, col_num, 3):
 # T12 空白对照放在 POS17 F1（0.5 mL 管；API 坐标 Col1 Row6）。
 # T1 全部分装完成后，再根据 PTseq.csv 中所有 QcType=B 的动态孔位，
 # 使用独立新枪头直接向 POS20 对应孔加入 14 uL T12，加完即丢弃。
-# 空白不经过 POS8 均一化孔：其 POS8 孔不再被读取，省一次转移。
+# 空白对照由 POS17 加入 POS20，不读取 POS8 均一化孔。
 for blank_sample in blank_samples:
 	blank_tip = tip_50.load(1)[0]
 	p8_load_modified(blank_tip)
@@ -770,7 +763,7 @@ for blank_sample in blank_samples:
 transfer({"StartPosition":"M2_POS27","EndPosition":"M2_POS17","LoosenOffsetOfZ":0}) #盖试剂盖
 
 # 将样本从 POS8 转移到 POS20：需稀释样本取自 Col5-8，未稀释样本直接取自 Col1-4。
-# 改为 P1 逐孔，省去把全部样本整板搬到 Col5-8 的中间步骤（原 P8 整列读取要求该列填满）。
+# P1 逐孔从 POS8 取样并加入 POS20，可处理未填满的样本列。
 col_num = (sample_num+7)//8
 column_num = col_num
 for index in range(sample_num):
@@ -877,7 +870,7 @@ spx_p0_v_0.Wait()
 #Block begin:将cDNA合成反应液与样本混合
 pcr_open_door()
 transfer({"StartPosition":"M2_POS20","EndPosition":"M2_POS26","LoosenOffsetOfZ":0})#PCR盖板
-# POS7 无盖板，已移除旧逻辑中不必要的 POS10 盖板动作。
+# POS7 无盖板；此处直接访问中转孔。
 
 
 
@@ -923,7 +916,7 @@ spx_p2_v_0 = parallel_block(spx_p2_f_0)
 # PTseq_cDNA 后等待 30 min，再配置 TA Master Mix，避免 T4/T5/T2 混合液提前放置太久。
 delay({"Duration": 1800})
 
-# POS7 无盖板，已移除旧逻辑中不必要的 POS10 盖板动作。
+# POS7 无盖板；此处直接访问中转孔。
 
 '''===================================================靶向扩增反应试剂==============================================================='''
 lang=get_lang()
@@ -935,7 +928,7 @@ elif lang==2: #
 
 # 配置靶向扩增反应试剂
 transfer({"StartPosition":"M2_POS17","EndPosition":"M2_POS27","LoosenOffsetOfZ":0})
-c = 1.4  # T2 缓冲液预分装到 POS7 Col7 的历史安全系数；该位置不使用 10-30 uL 逐孔封顶死体积算法
+c = 1.4  # T2 缓冲液向 POS7 Col7 预分装的安全系数；独立于反应液的逐孔死体积算法。
 low_throughput_p1_direct_col10 = use_low_throughput_p1_direct(SampleCount)
 report_low_throughput_branch("第10列靶向扩增反应液", "Col10 targeted amplification mix", low_throughput_p1_direct_col10, SampleCount)
 # 低通量分支直接从 POS17 混合管分装到反应孔，只计算 POS17 混合管死体积。
@@ -1038,9 +1031,8 @@ transfer({"StartPosition":"M2_POS27","EndPosition":"M2_POS17","LoosenOffsetOfZ":
 # =============================================
 # 关键步骤：向 POS7 Col7 预分装 T2 缓冲液。
 # =============================================
-# TA 结合使用每样本 25 uL；LA 洗脱使用每样本 23 uL，分两次预置到同一列。
-
-# TA 和 LA 各在使用前分装 T2；每行按活跃列数和同一安全系数 c 计算。
+# TA 每样本使用 25 uL T2，LA 每样本使用 23 uL；各在使用前分装到 POS7 Col7。
+# 每行体积按活跃样本列数和安全系数 c 计算。
 def dispense_t2_to_pos7(volume_per_sample):
 	p1_load_modified(tip_1000.load(1)[0])
 	for i in range(8):
@@ -1329,7 +1321,7 @@ TA_ethanol_predispense_wait.Wait()
 
 # === 废液回收设置 ===
 # 深孔废液板固定放在 POS11。
-# POS11 deepwell 1.3mL 板 Col 1-6 用于回收废液（1:1 列映射）
+# POS11 1.3 mL 深孔板 Col1-6 用于回收废液（与样本列 1:1 映射）。
 # 累计废液量: 95 + 420 + 85 + 420 = 1020 µL/孔 (容量 1300 µL)
 waste_col_start = 1
 
@@ -1959,7 +1951,7 @@ except:
 
 
 
-# ===== Full E25 bridge: quantified library -> E25 pooling/DNB =====
+# pooling 前使用文库定量结果；DNB 制备在 pooling 之后进行。
 '''=====================================pooling（带混匀）=============================================================='''
 lang=get_lang()
 if lang==1: #
@@ -2015,7 +2007,7 @@ dilution_transfer_tip_loc = None
 Is_blank_pooling = False
 # 这里输入样本信息用于确认哪个孔是空白对照,不填无法过滤空白样本位置
 sample_info_file = 'D:\\data\\sample_info.txt'
-# 浓度不合格样本是否一起pooling，默认不pooling（与 NIFTY Pro、PTseq Plus DNB pre-pool 一致：DNB 制备前剔除低浓度样本）
+# 是否让低于质控阈值的样本参与 pooling；False 表示剔除。
 Is_unqualified_pooling = False
 output_file_path = r"D:/data/PTseq_pooling_info.csv"
 
@@ -2066,8 +2058,7 @@ pooling_dilution_holes = set(dilute_hole)
 if extraction_source_holes & normalization_holes or extraction_source_holes & pooling_dilution_holes or normalization_holes & pooling_dilution_holes:
 	raise RuntimeError("E25 POS8 extraction, normalization and pooling dilution wells must not overlap")
 
-# [v7] 使用第一次定量的实际测量浓度值（concentration_list来自第一次定量段落）
-# 删除了原本硬编码的48个浓度值
+# 使用文库定量的实际测量浓度值。
 
 
 
@@ -2165,14 +2156,13 @@ target_dnb_num = len(dnb_list)
 # 根据计算出的 DNB 数量更新 Hybridization_num。
 Hybridization_num = target_dnb_num
 
-# 本轮拆分为 2 个及以上 DNB 时提示操作员；仅告警，不中断运行。
+# 本轮拆分为 2 个及以上 DNB 时提示操作员（重复 barcode 会被避让到不同 DNB，或样本数超单 DNB 容量）；仅告警，不中断运行。
 if target_dnb_num >= 2:
 	dnb_split_message = f"本轮 pooling 将拆分为 {target_dnb_num} 个 DNB；请确认下游杂交/上机按 {target_dnb_num} 个 DNB 准备。"
 	print(f"[WARNING] {dnb_split_message}")
 	report({"Phase":"pooling","Step":dnb_split_message,"TaskType":"library","RemainingTime":None})
 
-# 保存初始 dnb_list；必须在 dnb_list 填充完成后执行。
-initial_dnb_list = [group.copy() for group in dnb_list]  # 复制各分组列表，保留原始 pooling 分组。
+initial_dnb_list = [group.copy() for group in dnb_list]  # 保留初始分组的列表结构。
 
 
 def apply_dilution_state(sample):
@@ -2334,17 +2324,16 @@ output_hybrid_pooling_info(dnb_list, temp, output_file_path)
 print(f"样本的 pooling 组、取样体积、稀释倍数和放大倍数已输出到文件：{output_file_path}")
 
 
-# [v7] ===== 标准化稀释 + pooling 流程重写 =====
-# 流程: POS11→POS23 → 原位稀释(POS13) → pooling(POS13→POS23) → 转移到POS20 → POS23→POS11
+# 标准化稀释与 pooling：POS11→POS23，样本在 POS8 稀释后汇集到 POS23，再转移到 POS20，最后恢复 POS11。
 
-# 第一步：将 POS11 pooling 汇集板移到 POS23，供 P1/P8 操作。
+# 将 POS11 pooling 汇集板移到 POS23，供 P1/P8 操作。
 transfer({"StartPosition":"M2_POS11","EndPosition":"M2_POS23","LoosenOffsetOfZ":0})  # POS11 → POS23
 
 # 操作时pooling管在POS23 Col 7
 pooling_tube_pos = 'M2_POS23'
 pooling_tube_col = 7
 
-# 第二步：高浓度样本标准化稀释；P1 向稀释孔加入 T2 缓冲液。
+# 高浓度样本预稀释：P1 向 POS8 对应稀释孔加入 T2 缓冲液。
 p1_load_tips({"Position":single_tip_loc[0],'Col':single_tip_loc[1],'Row':single_tip_loc[2]})
 dilution_samples = [sample for group in dnb_list for sample in group if sample.NeedDilution]
 for sample in dilution_samples:
@@ -2545,5 +2534,5 @@ d3 = parallel_block(blockD3)
 
 d3.Wait()
 
-# Home all axes at end of run to allow easy sample retrieval
+# 程序结束前执行 home，便于操作员取回样本和耗材。
 home()

@@ -32,10 +32,8 @@ def blockA():
 a = parallel_block(blockA)
 # 温控只在后台启动，用于保护 POS17/POS10 试剂；程序不等待温度到达，避免开局空等。
 
-'''==================================================================自动计算取枪头位置逻辑v6======================================================'''
-# 更新内容
-# 本版本新增reuse指令，可以生成n列没有被使用过的空枪头列，用来放回单根枪头返回值为板，列元组组成的列表
-# 本版本修复了自动取枪头枪头盒更换问题
+'''==================================================================枪头管理=================================================================='''
+# 管理可用枪头列、复用锁定列和备用枪头盒交换。
 
 
 
@@ -59,35 +57,31 @@ class Tips:
 			return (x,y)
 		except:
 		   pass
-	# 将列表中所有枪头依次存入tip_list,存储顺序为剩余枪头数、枪头所在板位、
+	# 每列按 8 支枪头登记；列表元素为 [剩余枪头数, 枪头盒位置, 列号]。
 	def add_tips(self,target):
 		for i in range(1,13):
 			self.tip_list.append([8,target,i])
 	def refresh_tip_list(self):
-		'''刷新枪头列表，主要用于清空已使用的枪头列'''
+		'''切换备用枪头盒并重建可用枪头列。'''
 		if not self.backup_tip_pos:
 			sys.exit('No backup tip')
 		new_tip_pos = self.backup_tip_pos.pop(0)
 		odd_tip_pos = self.tip_pos.pop(0)
 		self.tip_pos.append(odd_tip_pos)
 		self.tip_list = [tip for tip in self.tip_list if tip[1] != odd_tip_pos]
-		# while self.tip_list and self.tip_list[0][1] == odd_tip_pos:
-		# 	self.tip_list.pop(0)
-		# 删除used_tip_set中所有与odd_tip_pos相关的元素
+		# 清除旧盒的复用锁定记录。
 		self.used_tip_set = {tip for tip in self.used_tip_set if tip[0] != odd_tip_pos}
 		self.blank_tip_list = [tip for tip in self.blank_tip_list if tip[1] != odd_tip_pos]
 		self.add_tips(odd_tip_pos)
 		return new_tip_pos,odd_tip_pos
-	'''取枪头逻辑：
-		依次遍历已有的枪头列，返回可用枪头,返回顺序为板，列，行
-		tip_num_per_time:单次取枪头个数，reuse_index：是否复用枪头，为0表示用枪头不复用，为1表示枪头会复用'''
+	# 按可用列分配枪头；reuse_index=1 时锁定该列，直至枪头归还。
 	def load(self, tip_num, tip_num_per_time=8, reuse_index=0):
-		result = []  # 用于存储结果的列表
+		result = []
 		while tip_num > 0:
 			found = 0
 			cur_tip_num = min(8, tip_num, tip_num_per_time)
 			for i, each in enumerate(self.tip_list):
-				# x为当前剩余枪头数，y为当前所在板，z为当前所在列
+				# x 为当前列剩余枪头数，y 为枪头盒板位，z 为列号。
 				x, y, z = each
 				# 复用列在归还前不能再次分配。
 				if x >= cur_tip_num and (y,z) not in self.used_tip_set:
@@ -99,7 +93,6 @@ class Tips:
 						empty_tip = self.tip_list.pop(i)
 						self.blank_tip_list.append((empty_tip[1],empty_tip[2]))
 					found = 1
-					# 将结果添加到列表中，而不是yield
 					result.append((y, z, x + 1))
 					break
 			if not found:
@@ -608,7 +601,7 @@ spx_p0_v_0.Wait()
 #Block begin:将cDNA合成反应液与样本混合
 pcr_open_door()
 transfer({"StartPosition":"M2_POS20","EndPosition":"M2_POS26","LoosenOffsetOfZ":0})#PCR盖板
-# POS7 无盖板，已移除旧逻辑中不必要的 POS10 盖板动作。
+# POS7 无盖板；此处直接访问中转孔。
 
 
 
@@ -654,7 +647,7 @@ spx_p2_v_0 = parallel_block(spx_p2_f_0)
 # PTseq_cDNA 后等待 30 min，再配置 TA Master Mix，避免 T4/T5/T2 混合液提前放置太久。
 delay({"Duration": 1800})
 
-# POS7 无盖板，已移除旧逻辑中不必要的 POS10 盖板动作。
+# POS7 无盖板；此处直接访问中转孔。
 
 '''===================================================靶向扩增反应试剂==============================================================='''
 lang=get_lang()
@@ -666,7 +659,7 @@ elif lang==2: #
 
 # 配置靶向扩增反应试剂
 transfer({"StartPosition":"M2_POS17","EndPosition":"M2_POS27","LoosenOffsetOfZ":0})
-c = 1.4  # T2 缓冲液预分装到 POS7 Col7 的历史安全系数；该位置不使用 10-30 uL 逐孔封顶死体积算法。
+c = 1.4  # T2 缓冲液向 POS7 Col7 预分装的安全系数；独立于反应液的逐孔死体积算法。
 low_throughput_p1_direct_col10 = use_low_throughput_p1_direct(SampleCount)
 report_low_throughput_branch("第10列靶向扩增反应液", "Col10 targeted amplification mix", low_throughput_p1_direct_col10, SampleCount)
 # 低通量分支直接从 POS17 混合管分装到反应孔，只计算 POS17 混合管死体积。
@@ -755,7 +748,6 @@ p1_unload_tips2({"Position":"M2_Trash","Col":None,"Row":None})
 if not low_throughput_p1_direct_col10:
 	# POS7 Col10 每行预分装体积来自上方中转孔总冗余算法。
 	target_volume_list = pos7_col10_volumes
-	# if SampleCount <= 20:
 	# 优化点：8 行预分装共用 1 支 P1 枪头，减少枪头消耗。
 	# 使用 300 uL 枪头：该混合管最大需求体积超过 50 uL 枪头范围。
 	p1_load_modified(tip_300.load(1)[0])
@@ -770,9 +762,8 @@ transfer({"StartPosition":"M2_POS27","EndPosition":"M2_POS17","LoosenOffsetOfZ":
 # =============================================
 # 关键步骤：向 POS7 Col7 预分装 T2 缓冲液。
 # =============================================
-# TA 结合使用每样本 25 uL；LA 洗脱使用每样本 23 uL，分两次预置到同一列。
-
-# TA 和 LA 各在使用前分装 T2；每行按活跃列数和同一安全系数 c 计算。
+# TA 每样本使用 25 uL T2，LA 每样本使用 23 uL；各在使用前分装到 POS7 Col7。
+# 每行体积按活跃样本列数和安全系数 c 计算。
 def dispense_t2_to_pos7(volume_per_sample):
 	p1_load_modified(tip_1000.load(1)[0])
 	for i in range(8):
@@ -1136,8 +1127,7 @@ if lang==1: #
 elif lang==2: #
  report({"Phase": "Pre-PCR", "Step": "Adding PCR mix", "TaskType": "library", "RemainingTime": None})
 
-# 已移除旧的除油步骤：此处 POS20 已经换成新 PCR 板，不存在上一轮矿物油残留。
-# 旧代码曾从 Col7-12 除去 TA 矿物油；换新板后该动作不再需要。
+# POS20 已换入新 PCR 板，此处直接添加 PCR mix。
 
 if not low_throughput_p1_direct_col11:
 	# POS7 Col11 每行预分装体积来自上方中转孔总冗余算法。
@@ -1374,7 +1364,7 @@ for i in range(col_num-1,-1,-1):
 	p8_aspirate({"Position":magetic_beads_pre_dispense_pos["Position"], "Col":magetic_beads_pre_dispense_pos["Col"], "Row":1,"PreAirVolume":5,"AspirateOffsetOfZ":0.9,"AspirateSpeed":30,"AspirateVolume":magetic_beads_volume1,"PreAirSpeed":50,"DelayAfterAspirate":2,"PostAirSpeed":50,"PostAirVolume":10,"IfTrack":True,"FirstSegmentSpeed":100,"SpeedChangeOffsetOfZ":0,"SecondSegmentSpeed":80, "TipTouchTimes": 0, "TipTouchOffsetOfZ": 10, "TipTouchRangeOfX":1.2, "TipTouchSpeed": 100})
 	p8_dispense({"Position":magetic_beads_dispense_pos1["Position"], "Col":magetic_beads_dispense_pos1["Col"]+i, "Row":1,"FirstSegmentSpeed": 100, "SpeedChangeOffsetOfZ": 0, "SecondSegmentSpeed": 80, "DispenseOffsetOfZ": 0.8, "DispenseSpeed": 30, "DispenseVolume":magetic_beads_volume1,"DelayAfterDispense": 1, "IsEmpty": True, "EmptyOffsetOfZ": 0.8, "EmptySpeed": 50, "DelayAfterEmpty": 0.5, "TipTouchTimes": 2, "TipTouchOffsetOfZ": 10, "TipTouchRangeOfX": 1.2, "TipTouchSpeed": 100})
 
-	# 已移除无用途的 20 uL 磁珠转移到 dispense_pos2；TA 纯化磁珠已在前面完成。
+	# LA 产物磁珠仅转移到 dispense_pos1。
 
 	if i == col_num-1 and target_tip_num_list[i] != 8:
 		p8_unload_modified((temp[0],temp[1],temp[2]+8-sample_num%8))
@@ -1428,8 +1418,7 @@ LA_ethanol_predispense_wait.Wait()
 if magetic_beads_dispense_pos1["Position"] == "M2_POS16":
 	magetic_beads_dispense_pos1["Position"] = "M2_POS23"
 
-# 已移除多余的磁吸-振荡-磁吸循环（原 1385-1396 行）。
-# 正常流程：磁吸分离 → 弃上清，无需再回振荡位重新磁吸
+# 磁吸分离后直接弃上清。
 
 # 逐列去除废液到 POS11 废液板
 for i in range(col_num):
@@ -1528,7 +1517,7 @@ for x in range(col_num):
 # 将纯化板从磁力架位移回震荡位，便于后续取板或保存。
 transfer({"StartPosition":"M2_POS23","EndPosition":"M2_POS16","LoosenOffsetOfZ":0})
 
-# 已移除旧转板动作：最终文库已经直接分装到 POS13，无需再把整板转到 POS13。
+# 最终文库保留在 POS13。
 
 '''=====================================定量=============================================================='''
 
@@ -1707,8 +1696,7 @@ except:
 
 
 
-# [v7] 不再交换 POS13 和 POS14；library 产物保留在 POS13 Col7-12 原位。
-# 最终文库位置保持 M2_POS13 不变。
+# 文库产物保留在 POS13 Col7-12，定量后仍从原孔取样。
 
 
 
@@ -1723,11 +1711,7 @@ except:
 
 
 
-# [v7] 删除了原本在此处的错位"第二次定量(DNB)"段落（原v6第1595-1760行）
-# 该段在pooling和make DNB之前就尝试定量DNB产物，逻辑错误
-# 正确的DNB定量将在make DNB完成后执行（见脚本末尾）
-
-# Hybridization_num 会在 pooling 段根据 SampleCount 重新计算，此处不再需要沿用旧值。
+# pooling 前使用文库定量结果；DNB 制备在 pooling 之后进行。
 
 '''=====================================pooling（带混匀）=============================================================='''
 lang=get_lang()
@@ -1772,14 +1756,11 @@ target_tube_loc = [('M2_POS11',7,i) for i in range(1,9)]
 # SIRO48最多48样本, 每8个一组, 最多6个pool
 target_dnb_loc_list = [('M2_POS20',7,1+i) for i in range(6)]
 #pooing取样本枪头位置，要求位置数组，板位，列，行
-# sample_pooling_tip_loc = tip_50.load(sample_num,1) # sample_pooling_tip_loc = [('M2_POS15',i//8 + 1,8-i%8) for i in range(sample_num)]
 # 混匀DNB的枪头位置，要求位置数组，板位，列，行
 dilution_mix_tip_loc = None
-# dilution_mix_tip_loc = [('M2_POS15',i//8 + 1,8-i%8) for i in range(4)]
 
 # 转移DNB的枪头位置，要求位置数组，板位，列，行
 dilution_transfer_tip_loc = None
-# dilution_mix_tip_loc = [('M2_POS15',i//8 + 1,8-i%8) for i in range(4)]
 
 
 #===================以下部分为可选的补充参数，当需要筛选pooling文库时输入============================
@@ -1787,7 +1768,7 @@ dilution_transfer_tip_loc = None
 Is_blank_pooling = False
 # 这里输入样本信息用于确认哪个孔是空白对照,不填无法过滤空白样本位置
 sample_info_file = 'D:\\data\\sample_info.txt'
-# 浓度不合格样本是否一起 pooling；False 表示剔除浓度低于质控阈值的样本。
+# 是否让低于质控阈值的样本参与 pooling；False 表示剔除。
 Is_unqualified_pooling = False
 output_file_path = r"D:/data/PTseq_pooling_info.csv"
 
@@ -1826,15 +1807,14 @@ col_num = (sample_num+7)//8
 sample_list = [(source_plate[0],source_plate[1]+i//8,1+i%8) for i in range(sample_num)]
 dilute_hole = [(sample_dilution_place[0],sample_dilution_place[1]+i//8,1+i%8) for i in range(sample_num)]
 
-# [v7] 使用第一次定量的实际测量浓度值（concentration_list来自第一次定量段落）
-# 删除了原本硬编码的48个浓度值
+# 使用文库定量的实际测量浓度值。
 
 
 
 
 
 sample_concentration = [Sample(*sample_list[i], concentration_list[i], *dilute_hole[i], DilutingSampleVolume=0, DilutingBufferVolume=0) for i in range(sample_num)]
-# Always initialize sample_initial_index for all samples
+# 为所有样本初始化原始样本序号，便于后续追踪过滤前后的样本。
 for i in range(sample_num):
 	sample_concentration[i].sample_initial_index = i
 	# 如果 CSV 过滤样本列表存在，使用 CSV 中的样本编号。
@@ -1914,16 +1894,16 @@ target_dnb_num = len(dnb_list)
 # 根据计算出的 DNB 数量更新 Hybridization_num。
 Hybridization_num = target_dnb_num
 
+# 本轮拆分为 2 个及以上 DNB 时提示操作员（重复 barcode 会被避让到不同 DNB，或样本数超单 DNB 容量）；仅告警，不中断运行。
 if target_dnb_num >= 2:
 	dnb_split_message = f"本轮 pooling 将拆分为 {target_dnb_num} 个 DNB；请确认下游杂交/上机按 {target_dnb_num} 个 DNB 准备。"
 	print(f"[WARNING] {dnb_split_message}")
 	report({"Phase":"pooling","Step":dnb_split_message,"TaskType":"library","RemainingTime":None})
 
-# 保存初始 dnb_list；必须在 dnb_list 填充完成后执行。
-initial_dnb_list = [group.copy() for group in dnb_list]  # 复制各分组列表，保留原始 pooling 分组。
+initial_dnb_list = [group.copy() for group in dnb_list]  # 保留初始分组的列表结构。
 
 
-# 原方案：组内浓度比超过 8 时，高浓度样本先做 8 倍稀释；未通过体积校验时再尝试固定备用分档。
+# 首选按组内浓度比进行 8 倍预稀释；体积校验不通过时尝试固定备用分档。
 for i in range(target_dnb_num):
 	cur_samples = dnb_list[i]
 	cur_l = len(cur_samples)
@@ -2053,9 +2033,9 @@ output_hybrid_pooling_info(dnb_list, temp, output_file_path)
 print(f"样本的 pooling 组、取样体积、稀释倍数和放大倍数已输出到文件：{output_file_path}")
 
 
-# 流程: POS11→POS23 → 独立孔稀释(POS8) → pooling(POS13/POS8→POS23) → 转移到POS20 → POS23→POS11
+# 标准化稀释与 pooling：POS11→POS23，样本在 POS8 稀释后汇集到 POS23，再转移到 POS20，最后恢复 POS11。
 
-# 第一步：将 POS11 pooling 汇集板移到 POS23，供 P1/P8 操作。
+# 将 POS11 pooling 汇集板移到 POS23，供 P1/P8 操作。
 transfer({"StartPosition":"M2_POS11","EndPosition":"M2_POS23","LoosenOffsetOfZ":0})  # POS11 → POS23
 
 # 操作时pooling管在POS23 Col 7
@@ -2071,6 +2051,7 @@ if water_loc_list:
 		p1_aspirate({"Position": dilution_buffer_loc[0], "Row": dilution_buffer_loc[2], "Col": dilution_buffer_loc[1], "FirstSegmentSpeed": 150, "SpeedChangeOffsetOfZ": 0, "PreAirSpeed": 100, "PreAirVolume": 10, "SecondSegmentSpeed": 100, "AspirateOffsetOfZ": 1.0, "AspirateSpeed": 20, "AspirateVolume": water_loc_list[i][3], "DelayAfterAspirate": 0.5, "TipTouchTimes": 0, "TipTouchOffsetOfZ": 10, "TipTouchRangeOfX": 2, "TipTouchSpeed": 100, "PostAirSpeed": 100, "PostAirVolume": 10})
 		p1_empty({"Position": water_loc_list[i][0], "Row": water_loc_list[i][1], "Col": water_loc_list[i][2], "FirstSegmentSpeed": 150, "SpeedChangeOffsetOfZ": 0, "SecondSegmentSpeed": 100, "EmptyOffsetOfZ": 1, "EmptySpeed": 190, "DelayAfterEmpty": 0.5, "TipTouchTimes": 0, "TipTouchOffsetOfZ": 10, "TipTouchRangeOfX": 2, "TipTouchSpeed": 100})
 
+# 稀释孔在后续 pooling 转移循环中加样并混匀。
 # P1 向 pooling 汇集管和 DNB 反应孔补加 T2 缓冲液。
 for i in range(len(water_volume_list)):
 	if temp[i][0] > 8:
@@ -2083,10 +2064,10 @@ for i in range(len(water_volume_list)):
 
 p1_unload_tips2({"Position":"M2_Trash","Col":None,"Row":None})
 
+# P8 执行 pooling 转移；非稀释样本从 POS13 直转 POS23，需稀释样本先在 POS8 稀释后再转入 POS23。
 # P8 即将访问 POS13。POS11 深孔板已移至 POS23，将 POS14 定量管架临时停放至 POS11，并保持 POS30 供动态枪头换盒使用。
 transfer({"StartPosition":"M2_POS14","EndPosition":"M2_POS11","LoosenOffsetOfZ":0})
 
-# 非稀释样本从 POS13 直转 POS23；需稀释样本先在 POS8 稀释后再转入 POS23。
 for i,poolings in enumerate(temp):
 	samples = dnb_list[i]
 	for sample in samples:
@@ -2108,12 +2089,12 @@ for i,poolings in enumerate(temp):
 # POS13 pooling 取样完成后，将定量管架从 POS11 恢复至 POS14。
 transfer({"StartPosition":"M2_POS11","EndPosition":"M2_POS14","LoosenOffsetOfZ":0})
 
-# Step 6: 混匀pooling管并转移到POS20 Col 7 Row 1-6 (DNB环化反应位)
+# 混匀 pooling 汇集管，并转移到 POS20 Col7 Row1-6 的 DNB 环化反应位。
 for i in range(target_dnb_num):
 	target_tip_loc = tip_300.load(1)
 	target_tip_pos,target_tip_col,target_tip_row = target_tip_loc[0]
 	p8_load_tips({"Position": target_tip_pos, "Row": target_tip_row, "Col": target_tip_col})
-	# 混匀pooling管。
+	# 混匀 pooling 汇集管。
 	p8_mix({"Position":pooling_tube_pos,"Col":pooling_tube_col,"Row":i+1,"PreAirVolume":0,"MixTimes":20,"MixAspirateSpeed":100,"MixAspirateOffsetOfZ":1,"MixVolume":240,"MixDispenseOffsetOfZ":8,"MixDispenseSpeed":100,"DelayAfterMixLoop":1,"MixEmptyOffsetOfZ":5,"MixEmptySpeed":200,"PreAirSpeed":50,"DelayAfterMixAspirate":0.5,"DelayAfterMixDispense":0.5,"DelayAfterMixEmpty":0.5,"PostAirSpeed":50,"PostAirVolume":0,"FirstSegmentSpeed":100,"SpeedChangeOffsetOfZ":0,"SecondSegmentSpeed":80, "TipTouchTimes": 0, "TipTouchOffsetOfZ": 5, "TipTouchRangeOfX": 1.2, "TipTouchSpeed": 100})
 	p8_unload_tips({"Position":"M2_Trash","Col":None,"Row":None})
 
@@ -2131,7 +2112,7 @@ for i in range(target_dnb_num):
 	p8_empty_modified(target_dnb_loc_list[i][0],target_dnb_loc_list[i][2],target_dnb_loc_list[i][1])
 	p8_unload_tips({"Position":"M2_Trash","Col":None,"Row":None})
 
-# Step 7: 移回POS23 → POS11，关PCR盖板
+# 将 POS23 上的 pooling 汇集板移回 POS11，并关闭 PCR 盖板。
 transfer({"StartPosition":"M2_POS23","EndPosition":"M2_POS11","LoosenOffsetOfZ":0})  # POS23 → POS11 (恢复)
 transfer({"StartPosition":"M2_POS26","EndPosition":"M2_POS20","LoosenOffsetOfZ":0})  #关PCR盖板
 pcr_close_door()
@@ -2159,14 +2140,14 @@ ss = parallel_block(blockSS)
 
 transfer({"StartPosition":"M2_POS17","EndPosition":"M2_POS27","LoosenOffsetOfZ":0})###开试剂盖板
 
-#配置环化反应液——D1 Buffer打入D2 Enzyme源管混合（big-into-small, D4工作管保留但不使用）
-#DNB Cycling: D1 buffer(大体积) → D2 enzyme tube → mix in D2 → 后续直接从D2分装
+# 配置环化反应液：D1 Buffer 打入 D2 Enzyme 源管混合；采用“大体积打入小体积”策略，D4 工作管保留但不使用。
+# DNB 环化反应液配置：D1 缓冲液大体积打入 D2 酶小体积管，在 D2 内混匀后直接从 D2 分装。
 p8_load_modified(tip_300.load(1)[0])
-# Step 1: 吸取D1环化反应缓冲液——手工配置环化酶量 = 0.5*(DNB_Num+1) µL 在D2 enzyme管中
+# 第一步：吸取 D1 环化反应缓冲液；D2 酶管中已按手工方案预置 0.5*(DNB_Num+1) uL 环化酶。
 p8_aspirate({"Position":"M2_POS17", "Col":1, "Row":4,"PreAirVolume":5,"AspirateOffsetOfZ":0.6,"AspirateSpeed":15,"AspirateVolume":11.6 * (DNB_Num + 1),"PreAirSpeed":30,"DelayAfterAspirate":5,"PostAirSpeed":50,"PostAirVolume":5,"IfTrack":False,"FirstSegmentSpeed":100,"SpeedChangeOffsetOfZ":0,"SecondSegmentSpeed":80,"TipTouchTimes":2, "TipTouchOffsetOfZ": 3, "TipTouchRangeOfX": 1.2, "TipTouchSpeed": 100})
-# Step 2: 打入D2 enzyme源管 (big into small, 冲洗小体积enzyme)
+# 第二步：将 D1 打入 D2 酶源管，用大体积冲洗并混合小体积酶液。
 p8_empty({"Position":"M2_POS17","Col":2,"Row":4,"EmptyOffsetOfZ":0.5,"EmptySpeed":10,"DelayAfterEmpty":0.5,"PostAirSpeed":50,"PostAirVolume":0,"FirstSegmentSpeed":100,"SpeedChangeOffsetOfZ":0,"SecondSegmentSpeed":80,"TipTouchTimes":2, "TipTouchOffsetOfZ": 5, "TipTouchRangeOfX": 0, "TipTouchSpeed": 100})
-# Step 3: 在D2管中混合Enzyme + Buffer
+# 第三步：在 D2 管中混匀酶和缓冲液。
 p8_mix({"Position":"M2_POS17","Col":2,"Row":4,"PreAirVolume":10,"MixTimes":20,"MixAspirateSpeed":50,"MixAspirateOffsetOfZ":0.5,"MixVolume":10*DNB_Num,"MixDispenseOffsetOfZ":8,"MixDispenseSpeed":50,"DelayAfterMixLoop":2,"MixEmptyOffsetOfZ":2,"MixEmptySpeed":50,"PreAirSpeed":50,"DelayAfterMixAspirate":0.5,"DelayAfterMixDispense":0.5,"DelayAfterMixEmpty":0.5,"TipTouchTimes":0,"PostAirSpeed":50,"PostAirVolume":0,"FirstSegmentSpeed":100,"SpeedChangeOffsetOfZ":0,"SecondSegmentSpeed":80})
 p8_unload_tips({"Position":"M2_Trash","Col":None,"Row":None})
 transfer({"StartPosition":"M2_POS27","EndPosition":"M2_POS17","LoosenOffsetOfZ":0})###关试剂盖板
@@ -2175,18 +2156,18 @@ ss.Wait()
 pcr_open_door()
 transfer({"StartPosition":"M2_POS20","EndPosition":"M2_POS26","LoosenOffsetOfZ":0}) #开PCR盖板
 transfer({"StartPosition":"M2_POS17","EndPosition":"M2_POS27","LoosenOffsetOfZ":0})###开试剂盖板
-# [v7] 加入环化mix - Column布局: POS20 Col 7, Row 1-6
+# 加入环化 mix：POS20 Col7，各 DNB 组占一行。
 DNB_mix_cycling = tip_300.load(DNB_Num,1)
 for x in range(DNB_Num):
 	p8_load_modified(DNB_mix_cycling[x])
-	# DNB Cycling Mix: 12.1 µL per reaction (从D2源管取, big-into-small后混合液在D2中)
+	# DNB Cycling Mix: 12.1 µL per reaction (从D2源管取)
 	p8_aspirate({"Position":"M2_POS17", "Col":2, "Row":4,"PreAirVolume":5,"AspirateOffsetOfZ":0.6,"AspirateSpeed":15,"AspirateVolume":12.1,"PreAirSpeed":30,"DelayAfterAspirate":5,"PostAirSpeed":50,"PostAirVolume":5,"IfTrack":False,"FirstSegmentSpeed":100,"SpeedChangeOffsetOfZ":0,"SecondSegmentSpeed":80,"TipTouchTimes":2, "TipTouchOffsetOfZ": 3, "TipTouchRangeOfX": 1.2, "TipTouchSpeed": 100})
 	p8_empty({"Position":"M2_POS20","Col":7,"Row":1+x,"EmptyOffsetOfZ":0.5,"EmptySpeed":5,"DelayAfterEmpty":0.5,"PostAirSpeed":50,"PostAirVolume":0,"FirstSegmentSpeed":100,"SpeedChangeOffsetOfZ":0,"SecondSegmentSpeed":80,"TipTouchTimes":2, "TipTouchOffsetOfZ": 5, "TipTouchRangeOfX": 0, "TipTouchSpeed": 100})
 	p8_mix({"Position":"M2_POS20","Col":7,"Row":1+x,"PreAirVolume":10,"MixTimes":20,"MixAspirateSpeed":30,"MixAspirateOffsetOfZ":0.5,"MixVolume":40,"MixDispenseOffsetOfZ":8,"MixDispenseSpeed":30,"DelayAfterMixLoop":2,"MixEmptyOffsetOfZ":2,"MixEmptySpeed":50,"PreAirSpeed":50,"DelayAfterMixAspirate":0.5,"DelayAfterMixDispense":0.5,"DelayAfterMixEmpty":0.5,"TipTouchTimes":0,"PostAirSpeed":50,"PostAirVolume":0,"FirstSegmentSpeed":100,"SpeedChangeOffsetOfZ":0,"SecondSegmentSpeed":80})
 	p8_empty({"Position":"M2_POS20","Col":7,"Row":1+x,"EmptyOffsetOfZ":0.5,"EmptySpeed":5,"DelayAfterEmpty":0.5,"PostAirSpeed":50,"PostAirVolume":0,"FirstSegmentSpeed":100,"SpeedChangeOffsetOfZ":0,"SecondSegmentSpeed":80,"TipTouchTimes":2, "TipTouchOffsetOfZ": 5, "TipTouchRangeOfX": 0, "TipTouchSpeed": 100})
 	p8_unload_tips({"Position":"M2_Trash","Col":None,"Row":None})
 
-# [已移除] MakeDNB环节不添加矿物油（与CNVseq/PTseq Plus/NIFTY保持一致）
+# MakeDNB 环节不添加矿物油。
 
 ###PCR关门
 transfer({"StartPosition":"M2_POS26","EndPosition":"M2_POS20","LoosenOffsetOfZ":0}) #PCR盖板
@@ -2222,7 +2203,7 @@ for x in range(DNB_Num):
 p8_unload_tips({"Position":"M2_Trash","Col":None,"Row":None})
 
 
-# [v7] 加样本（从环化反应孔Col 7转移到DNB制备孔Col 8）— 循环处理所有DNB组
+# 将各组环化产物从 POS20 Col7 转移到 Col8 的 DNB 制备孔。
 DNB1_mix = tip_300.load(DNB_Num,1)
 for x in range(DNB_Num):
 	p8_load_modified(DNB1_mix[x])
@@ -2250,14 +2231,14 @@ def blockD1():
 d1 = parallel_block(blockD1)
 
 ##################################################################################### DNB制备体系2 ############################################################################
-#配置DNB制备体系2——E1 Mix I打入E2 Mix II源管混合（big-into-small, E5工作管保留但不使用）
-#DNB Polymerase: E1 Mix I(大体积) → E2 Mix II tube → mix in E2 → 后续直接从E2分装
+# 配置 DNB 制备体系 2：E1 Mix I 打入 E2 Mix II 源管混合；采用“大体积打入小体积”策略，E5 工作管保留但不使用。
+# DNB 聚合酶反应液配置：E1 Mix I 大体积打入 E2 Mix II 小体积管，在 E2 内混匀后直接从 E2 分装。
 p8_load_modified(tip_300.load(1)[0])
 # Step 1: 吸取E1 DNB聚合酶混合液I——手工配置DNB聚合酶混合液II(LC) = 4*(DNB_Num+0.5) µL 在E2 Mix II管中
 p8_aspirate({"Position":"M2_POS17", "Col":1, "Row":5,"PreAirVolume":5,"AspirateOffsetOfZ":0.6,"AspirateSpeed":15,"AspirateVolume":40 * (DNB_Num + 0.5),"PreAirSpeed":30,"DelayAfterAspirate":5,"PostAirSpeed":50,"PostAirVolume":5,"IfTrack":False,"FirstSegmentSpeed":100,"SpeedChangeOffsetOfZ":0,"SecondSegmentSpeed":80,"TipTouchTimes":2, "TipTouchOffsetOfZ": 3, "TipTouchRangeOfX": 1.2, "TipTouchSpeed": 100})
-# Step 2: 打入E2 Mix II源管 (big into small, 冲洗小体积Mix II)
+# 第二步：将 E1 打入 E2 Mix II 源管，用大体积冲洗并混合小体积 Mix II。
 p8_empty({"Position":"M2_POS17","Col":2,"Row":5,"EmptyOffsetOfZ":0.5,"EmptySpeed":10,"DelayAfterEmpty":0.5,"PostAirSpeed":50,"PostAirVolume":0,"FirstSegmentSpeed":100,"SpeedChangeOffsetOfZ":0,"SecondSegmentSpeed":80,"TipTouchTimes":2, "TipTouchOffsetOfZ": 5, "TipTouchRangeOfX": 0, "TipTouchSpeed": 100})
-# Step 3: 在E2管中混合Mix I + Mix II
+# 第三步：在 E2 管中混匀 Mix I 和 Mix II。
 p8_mix({"Position":"M2_POS17","Col":2,"Row":5,"PreAirVolume":10,"MixTimes":20,"MixAspirateSpeed":30,"MixAspirateOffsetOfZ":0.5,"MixVolume":40*DNB_Num+15,"MixDispenseOffsetOfZ":8,"MixDispenseSpeed":30,"DelayAfterMixLoop":2,"MixEmptyOffsetOfZ":2,"MixEmptySpeed":50,"PreAirSpeed":50,"DelayAfterMixAspirate":0.5,"DelayAfterMixDispense":0.5,"DelayAfterMixEmpty":0.5,"TipTouchTimes":0,"PostAirSpeed":50,"PostAirVolume":0,"FirstSegmentSpeed":100,"SpeedChangeOffsetOfZ":0,"SecondSegmentSpeed":80})
 p8_unload_tips({"Position":"M2_Trash","Col":None,"Row":None})
 
@@ -2271,7 +2252,7 @@ transfer({"StartPosition":"M2_POS17","EndPosition":"M2_POS27","LoosenOffsetOfZ":
 
 ##################################################################################### DNB制备体系2 ############################################################################
 
-# [v7] 加入DNB聚合酶混合液mix（LC） → POS20 Col 8, Row 1-6 (从E2源管取, big-into-small后混合液在E2中)
+# 从 E2 源管向 POS20 Col8 各 DNB 孔加入聚合酶混合液。
 DNB_mix_2 = tip_300.load(DNB_Num,1)
 for x in range(DNB_Num):
 	p8_load_modified(DNB_mix_2[x])
@@ -2299,8 +2280,7 @@ def blockD2():
 d2 = parallel_block(blockD2)
 
 
-# Removed: Hybridization product recovery artifact
-# This step was unnecessary - library products remain at M2_POS13, Columns 7-12
+# 文库产物保留在 POS13 Col7-12，等待 DNB 制备完成。
 
 d2.Wait()
 
@@ -2310,7 +2290,7 @@ pcr_open_door()
 transfer({"StartPosition":"M2_POS20","EndPosition":"M2_POS26","LoosenOffsetOfZ":0}) #开PCR盖板
 transfer({"StartPosition":"M2_POS17","EndPosition":"M2_POS27","LoosenOffsetOfZ":0})###开盖板
 
-# [v7] 加入DNB终止缓冲液 → POS20 Col 8, Row 1-6
+# 向 POS20 Col8 各 DNB 孔加入终止缓冲液。
 DNB_temp1_300 = tip_300.load(DNB_Num,1)
 for x in range(DNB_Num):
 	p1_load_modified(DNB_temp1_300[x])
@@ -2319,7 +2299,7 @@ for x in range(DNB_Num):
 	p1_mix({"Position":"M2_POS20","Col":8,"Row":1+x,"PreAirVolume":10,"MixTimes":15,"MixAspirateSpeed":20,"MixAspirateOffsetOfZ":0.5,"MixVolume":90,"MixDispenseOffsetOfZ":8,"MixDispenseSpeed":20,"DelayAfterMixLoop":2,"MixEmptyOffsetOfZ":2,"MixEmptySpeed":50,"PreAirSpeed":50,"DelayAfterMixAspirate":0.5,"DelayAfterMixDispense":0.5,"DelayAfterMixEmpty":0.5,"TipTouchTimes":0,"PostAirSpeed":50,"PostAirVolume":0,"FirstSegmentSpeed":100,"SpeedChangeOffsetOfZ":0,"SecondSegmentSpeed":80})
 	p1_unload_tips2({"Position":"M2_Trash","Col":None,"Row":None})
 
-# DNB定量已移除 - DNB为单链DNA，机上dsDNA_HS无法准确定量，改为手动ssDNA kit定量
+# DNB 为单链 DNA，使用手动 ssDNA kit 定量。
 
 transfer({"StartPosition":"M2_POS27","EndPosition":"M2_POS17","LoosenOffsetOfZ":0})###关盖板
 ###PCR关门
@@ -2337,5 +2317,5 @@ d3 = parallel_block(blockD3)
 
 d3.Wait()
 
-# Home all axes at end of run to allow easy sample retrieval
+# 程序结束前执行 home，便于操作员取回样本和耗材。
 home()
