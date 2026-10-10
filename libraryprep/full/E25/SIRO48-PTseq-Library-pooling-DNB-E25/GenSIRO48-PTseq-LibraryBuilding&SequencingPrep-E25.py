@@ -15,6 +15,7 @@
 #      POS14 为定量管 home，定量时通过 POS13 访问，结束后恢复。
 #   5. POS16 是温控震荡位，POS23 是磁力架位；需要震荡时必须确认物理板位已经移动到 POS16。
 #   6. 提取产物定量与均一化在建库前执行；最终文库保存在 POS13 Col7-12。
+# 流程状态通过 report(...) 输出到中台软件。
 
 #####################################################################
 # 共用头部：包含平台初始化、枪头管理、移液封装和通用辅助函数。
@@ -33,9 +34,9 @@ def blockA():
 	temp_set({"Name":"M2_tempB","Temp": 6.00, "Duration": -1})# 6 C，POS10。
 
 a = parallel_block(blockA)
-# 温控只在后台启动，用于保护 POS17/POS10 试剂；程序不等待温度到达，避免开局空等。
+# POS17/POS10 低温模块并行启动，后续液体处理立即继续执行。
 
-'''==================================================================枪头管理=================================================================='''
+'''=====================================枪头管理====================================='''
 # 管理可用枪头列、复用锁定列和备用枪头盒交换。
 
 
@@ -134,7 +135,8 @@ def p8_load_modified_BubblePurge(loc):
 	p8_load_tips({"Position":loc[0],"Col":loc[1],"Row":loc[2],"Tips":8,"IsBubblePurge": True, "PreAirSpeed": 100, "PreAirVolume": 20, "BubblePurgeSpeed": 100})
 
 
-'''============================================================枪头位置=============================================================='''
+'''=====================================枪头位置====================================='''
+# 枪头盒布局：300 uL、1000 uL、50 uL 枪头均在这里统一定义。
 
 tip_300_loc = ['M2_POS5','M2_POS6']
 backup_tip_300_loc = ['M2_POS28','M2_POS29']
@@ -148,7 +150,7 @@ tip_50_loc = ['M2_POS15','M2_POS12']
 backup_tip_50_loc = ['M2_POS25','M2_POS19']
 tip_50 = Tips(tip_50_loc,backup_tip_50_loc)
 
-'''============================================================震荡位换板逻辑=============================================================='''
+'''=====================================震荡位换板逻辑====================================='''
 # POS16 是共享温控震荡位，POS23 是共享磁力架位；二者不是某一块板子的永久 home。
 # 当某块板需要震荡但 POS16 已有板时，先把 POS16 上的板临时移到 POS30，再把目标板移入 POS16。
 # 震荡结束后，目标板回到自己的原位置；如果原先 POS16 有板，再从 POS30 恢复到 POS16。
@@ -305,14 +307,10 @@ def report_low_throughput_branch(section_cn, section_en, direct_branch, sample_c
 		report({"Phase":"LOW_THROUGHPUT_P1_DIRECT","Step":message,"TaskType":"library","RemainingTime":None})
 
 
-'''=====================================样本信息读取____建库仪====================================='''
-# 读取样本信息 CSV，将每行记录保存为 Sample 对象。
-
-# ================================输入部分=============================================
-
-# 样本信息文件位置
+'''=====================================样本信息读取====================================='''
+# 读取 D:/Pathogens/PTseq.csv，将有效记录保存为 Sample 对象，并据此计算样本列数和枪头数量。
 sample_info_file_path = r'D:/Pathogens/PTseq.csv'
-# 是否有样本孔需要过滤，默认值位True，即有样本孔需要过滤，反之则设为 False
+# is_filter=True 时会跳过 filtered_sample_qc_type 中定义的 QC 类型。
 is_filter = False
 # 提取过滤的样本质控类型（仅在 is_filter 为 True 时生效）
 filtered_sample_qc_type = {'N','P'}
@@ -438,7 +436,8 @@ sample_num = SampleCount
 n = SampleCount
 col_num = (sample_num+7)//8
 target_tip_num_list = [8]*(sample_num//8) + [sample_num%8]
-'''=====================================以上为样本信息读取建库仪====================================='''
+'''=====================================以上为样本信息读取====================================='''
+# 样本读取结束后，后续流程统一使用 sample_num / col_num / target_tip_num_list 作为通量控制参数。
 
 
 def blockB():
@@ -446,7 +445,7 @@ def blockB():
 	pcr_run_method({"Methods": ["25-4"]})
 
 
-'''=====================================提取产物定量与均一化=============================================================='''
+'''=====================================提取产物定量与均一化====================================='''
 EXTRACTION_TARGET_CONCENTRATION = 20.0
 EXTRACTION_NORMALIZED_VOLUME = 30.0
 EXTRACTION_MIN_SAMPLE_VOLUME = 3.0
@@ -713,11 +712,11 @@ extraction_normalization_plan = build_normalization_plan(extraction_concentratio
 normalize_extraction_products(extraction_normalization_plan)
 b = parallel_block(blockB)
 
-'''=====================================中转位=============================================================='''
+'''=====================================中转位====================================='''
 transposition = "M2_POS30"
 
-'''===================================================cDNA合成==============================================================='''
-#取8的商和余数,计算行列数
+'''=====================================cDNA合成====================================='''
+# 计算样本占用列数。未满 8 个样本的最后一列只加载实际需要的枪头。
 Quotient8= SampleCount//8
 Remainder8= SampleCount%8
 if Remainder8 == 0:
@@ -824,7 +823,7 @@ spx_p0_v_0 = parallel_block(spx_p1_f_0)
 
 # PTseq_RT 运行期间立即配置 T2/T3；后续 spx_p0_v_0.Wait() 会等待 RT 完成后再开盖加样。
 
-'''===================================================cDNA一链合成反应体系==============================================================='''
+'''=====================================cDNA一链合成反应体系====================================='''
 lang=get_lang()
 if lang==1:
  report({"Phase": "cDNA合成", "Step": "cDNA一链合成反应体系", "TaskType": "library", "RemainingTime": None})
@@ -884,7 +883,7 @@ spx_p0_v_0.Wait()
 # RT 完成后打开 POS20，把 cDNA 一链反应液加入 RT 产物。
 pcr_open_door()
 transfer({"StartPosition":"M2_POS20","EndPosition":"M2_POS26","LoosenOffsetOfZ":0})#PCR盖板
-# POS7 无盖板；此处直接访问中转孔。
+# POS7 中转深孔板无盖板，可直接访问。
 
 
 
@@ -921,7 +920,7 @@ transfer({"StartPosition":"M2_POS26","EndPosition":"M2_POS20","LoosenOffsetOfZ":
 
 
 
-'''==================================================cDNA一链合成反应==============================================================='''
+'''=====================================cDNA一链合成反应====================================='''
 pcr_close_door()
 def spx_p2_f_0():
 	pcr_run_method({"Methods":["PTseq_cDNA"]})
@@ -930,9 +929,9 @@ spx_p2_v_0 = parallel_block(spx_p2_f_0)
 # PTseq_cDNA 后等待 30 min，再配置 TA Master Mix，避免 T4/T5/T2 混合液提前放置太久。
 delay({"Duration": 1800})
 
-# POS7 无盖板；此处直接访问中转孔。
+# POS7 中转深孔板无盖板，可直接访问。
 
-'''===================================================靶向扩增反应试剂==============================================================='''
+'''=====================================靶向扩增反应试剂====================================='''
 lang=get_lang()
 if lang==1:
  report({"Phase": "cDNA合成", "Step": "靶向扩增反应体系", "TaskType": "library", "RemainingTime": None})
@@ -1136,7 +1135,7 @@ transfer({"StartPosition":"M2_POS26","EndPosition":"M2_POS20","LoosenOffsetOfZ":
 # 高通量 TA 分支在前面统一打开 POS10 盖板；低通量分支每个样本吸完 primer 后已经关闭 POS10。
 if not low_throughput_p1_direct_col10:
 	transfer({"StartPosition":"M2_POS27","EndPosition":"M2_POS10","LoosenOffsetOfZ":0})
-'''================================================== 二链反应==============================================================='''
+'''=====================================二链反应====================================='''
 
 pcr_close_door()
 def spx_p2_f_1():
@@ -1187,7 +1186,8 @@ if lang==1:
 elif lang==2:
  report({"Phase": "Library Amplification preparation", "Step": "Preparing Library Amplification reaction mixture", "TaskType": "library", "RemainingTime": None})
 
-#Block begin:配置文库扩增反应液
+'''=====================================文库扩增反应液====================================='''
+# LA/PCR Master Mix 配置。
 # [已弃用] _t8_vol 原用于机器从 0.5 mL T8 源管单独吸取时的小体积死体积补偿。
 # T8 手工预置在 POS17 C2R3 的 2.0 mL mixing tube 内；LA/PCR Master Mix 不调用此补偿函数。
 def _t8_vol(n):
@@ -1389,9 +1389,9 @@ def wait_for_magnetic_beads():
 
 magetic_wait = parallel_block(wait_for_magnetic_beads)
 
-# 靶向扩增反应纯化PCR反应液回溶
+'''=====================================靶向扩增反应纯化PCR反应液回溶====================================='''
 
-# ============ 将 POS20 已用 PCR 板与 POS9 新 PCR 板对换 ============
+# ============ POS20/POS9 PCR 板交换 ============
 # TA 结束后 POS20 已有使用过的孔；这里将 POS9 的新 PCR 板换到 POS20，用于 LA 和后续 DNB。
 # 新板的 Col1-6 用于 LA，Col7-12 预留给 DNB 相关反应。
 pcr_open_door()
@@ -1537,7 +1537,8 @@ def spx_p9_f_0():
 
 Pre_PCR_wait = parallel_block(spx_p9_f_0)
 
-# PCR后纯化准备
+'''=====================================文库扩增反应后纯化准备====================================='''
+# PTseq_LA 运行期间延后准备 LA 纯化磁珠，避免磁珠长时间暴露。
 lang=get_lang()
 if lang==1:
  report({"Phase": "文库扩增", "Step": "文库扩增后纯化准备", "TaskType": "library", "RemainingTime": None})
@@ -1547,7 +1548,7 @@ elif lang==2:
 
 delay({"Duration": 1800})
 
-# C21纯化磁珠分装
+# LA 纯化磁珠分装。
 '''
 =====================================DECK CONFIGURATION========================================
 POS7：试剂中转深孔板。
@@ -1575,8 +1576,9 @@ POS8：PCR 板，提供独立的 pooling 稀释孔；原文库保留在 POS13。
 POS14：定量管 home。
 - 定量时 POS13 混合板移至空闲 POS23，POS14 定量管移至 POS13 加液、混匀及读数。
 - 定量结束后，定量管回 POS14，混合板回 POS13。
+- Pooling 访问 POS13 时，定量管临时停放 POS11，完成后恢复至 POS14。
 
-POS30：临时换板位；pooling 期间用于停放 POS14 定量管，完成后恢复。
+POS30：临时换板及备用枪头盒交换位。
 ================================================================================================
 '''
 # 磁珠位置（板、列、行）：T1 磁珠来源，同时用于 TA 和 LA 两轮纯化。
@@ -1704,7 +1706,7 @@ if lang==1:
 elif lang==2:
  report({"Phase": "Pre-PCR", "Step": "Ethanol Wash", "TaskType": "library", "RemainingTime": None})
 
-# LA 乙醇洗涤复用弃上清时放回原位的 temp 枪头，可节省最多 48 个 300 uL 枪头。
+# LA 乙醇洗涤继续使用同列弃上清枪头。
 
 # LA 乙醇洗涤流程：加乙醇后不移板、不吹打，磁吸沉降 120 s 后弃乙醇。
 for i in range(2):
@@ -1771,7 +1773,6 @@ delay({"Duration": 300})
 
 ###回收建库产物
 # 最终文库目标位置已设为 M2_POS13 Col7，回收产物会直接打入该位置。
-# 无需更新位置变量：浓缩后文库的固定目标位置就是 POS13。
 # HIGH RISK：下方 P8 将在 POS13 深孔板打液和混匀，运行前必须确认 POS13/POS14 相邻区域无机械干涉。
 for x in range(col_num):
 	p8_load_modified_BubblePurge(Product[x])
@@ -1785,7 +1786,9 @@ for x in range(col_num):
 # 将纯化板从磁力架位移回震荡位，便于后续取板或保存。
 transfer({"StartPosition":"M2_POS23","EndPosition":"M2_POS16","LoosenOffsetOfZ":0})
 
-'''=====================================定量=============================================================='''
+# 最终文库保留在 POS13。
+
+'''=====================================定量====================================='''
 
 #======================物料设置=============================================================
 lang=get_lang()
@@ -1854,7 +1857,7 @@ concentration_list = []
 
 
 #=================================== 样本稀释部分#===================================
-# 定量流程模板：先在染液混合板中混合样本和染液，再移到 POS16 震荡，随后把定量管换到 POS13 并转移读数。
+# 定量流程先在染液混合板中混合样本和染液，再移到 POS16 震荡，随后把定量管换到 POS13 并转移读数。
 
 # 第一步：向染液混合板 POS13 Col1-6 分装 Qubit 染液。
 if sample_num%8 == 0:
@@ -1959,8 +1962,10 @@ except:
 
 
 
+# 文库产物保留在 POS13 Col7-12，定量后仍从原孔取样。
+
 # pooling 前使用文库定量结果；DNB 制备在 pooling 之后进行。
-'''=====================================pooling（带混匀）=============================================================='''
+'''=====================================pooling（带混匀）====================================='''
 lang=get_lang()
 if lang==1:
  report({"Phase": "pooling", "Step": "pooling", "TaskType": "library", "RemainingTime": None})
@@ -1986,8 +1991,9 @@ max_sample_volume = 20
 
 # 单个DNB样本数 - E25: <=32样本1个pool, >32样本2个pool
 single_dnb_sample_num = 32
-# E25 DNB反应孔内的文库总投入量和体积。
+# 每个 DNB 的目标文库 DNA 投入量（ng）。
 target_dna_ng = 15.84
+# pooling 汇集目标体积（uL）。
 target_pooling_volume = 20
 max_intermediate_concentrate_times = target_pooling_volume * 8 / min_sample_volume
 # 质控浓度
@@ -2002,11 +2008,10 @@ target_tube_loc = [('M2_POS11',7,i) for i in range(1,9)]
 # E25 DNB 反应位置：pooling产物直接进入POS20 Col8 Row1-6。
 # DNB 反应位置列表提供 6 个孔；实际分组由单个 DNB 样本数及 barcode 避让规则确定。
 target_dnb_loc_list = [('M2_POS20',8,1+i) for i in range(6)]
-#pooing取样本枪头位置，要求位置数组，板位，列，行
-# 混匀DNB的枪头位置，要求位置数组，板位，列，行
+# DNB 混匀枪头位置（板位、列、行）。
 dilution_mix_tip_loc = None
 
-# 转移DNB的枪头位置，要求位置数组，板位，列，行
+# DNB 转移枪头位置（板位、列、行）。
 dilution_transfer_tip_loc = None
 
 
@@ -2017,6 +2022,7 @@ Is_blank_pooling = False
 sample_info_file = 'D:\\data\\sample_info.txt'
 # 是否让低于质控阈值的样本参与 pooling；False 表示剔除。
 Is_unqualified_pooling = False
+# pooling 信息输出文件。
 output_file_path = r"D:/data/PTseq_pooling_info.csv"
 
 
@@ -2164,7 +2170,7 @@ target_dnb_num = len(dnb_list)
 # 根据计算出的 DNB 数量更新 Hybridization_num。
 Hybridization_num = target_dnb_num
 
-# 本轮拆分为 2 个及以上 DNB 时提示操作员（重复 barcode 会被避让到不同 DNB，或样本数超单 DNB 容量）；仅告警，不中断运行。
+# 分为多个 DNB 时，将分组提示输出到运行日志和中台；程序继续运行。
 if target_dnb_num >= 2:
 	dnb_split_message = f"本轮 pooling 将拆分为 {target_dnb_num} 个 DNB；请确认下游杂交/上机按 {target_dnb_num} 个 DNB 准备。"
 	print(f"[WARNING] {dnb_split_message}")
@@ -2247,8 +2253,10 @@ def mark_dilution_samples(groups):
 		else:
 			raise Exception("E25 pooling体积可行性检查未收敛，请检查输入浓度")
 
+# 按分组结果设置样本预稀释状态。
 mark_dilution_samples(dnb_list)
 
+# 计算每组样本的放大倍数
 def get_sample_volume(cur_samples):
 	concentrate_times, water_volume, target_transfer_volume, target_volume_list = calculate_pooling_plan(cur_samples)
 	for i, each in enumerate(cur_samples):
@@ -2274,6 +2282,7 @@ def preflight_pooling_plan(groups, temp, water_volume_list):
 	if errors:
 		raise Exception("E25 pooling preflight失败: " + "; ".join(errors))
 
+# 计算每组样本的放大倍数和补液体积。
 temp = [get_sample_volume(each) for each in dnb_list]
 water_volume_list = [each[1] for each in temp]
 preflight_pooling_plan(dnb_list, temp, water_volume_list)
@@ -2400,7 +2409,7 @@ for i in range(target_dnb_num):
 transfer({"StartPosition":"M2_POS23","EndPosition":"M2_POS11","LoosenOffsetOfZ":0})  # POS23 → POS11 (恢复)
 
 
-'''#######################################################make DNB (E25) - 无单链环化步骤#########################################'''
+'''=====================================make DNB (E25) - 无单链环化步骤====================================='''
 DNB_Num = target_dnb_num
 
 ##################################################################################### DNB制备体系1 ############################################################################
@@ -2487,6 +2496,8 @@ def blockD2():
 d2 = parallel_block(blockD2)
 
 
+# 文库产物保留在 POS13 Col7-12，等待 DNB 制备完成。
+
 d2.Wait()
 
 
@@ -2495,7 +2506,7 @@ pcr_open_door()
 transfer({"StartPosition":"M2_POS20","EndPosition":"M2_POS26","LoosenOffsetOfZ":0}) #开PCR盖板
 transfer({"StartPosition":"M2_POS17","EndPosition":"M2_POS27","LoosenOffsetOfZ":0})###开盖板
 
-#加入DNB终止缓冲液 20µL → POS20 Col8 Row 1+x
+# 向 POS20 Col8 各 DNB 孔加入终止缓冲液。
 DNB_temp1_1000 = tip_1000.load(DNB_Num,1)
 for x in range(DNB_Num):
 	p1_load_modified(DNB_temp1_1000[x])

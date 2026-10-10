@@ -3,13 +3,15 @@
 #####################################################################
 # 脚本定位：GenSIRO48 E25 平台 PTseq 上机前准备脚本。
 # 覆盖范围：读取文库浓度和条码 CSV，完成 pooling 和 DNB 制备。
-# 前置条件：
+# 主要体系：pooling、make DNB。
+# 关键设计：
 #   1. 文库产物 PCR 板按 CSV plate_index 首次出现顺序放置在 POS6/POS7/POS11，position 填写真实孔位 A7-H12。
 #   2. 独立稀释 PCR 板放置在 POS8/POS9；第三块来源板需要稀释时，将 POS9 板换到 POS8 操作。
 #   3. CSV 包含样本编号、浓度、孔位、板号、barcode 和质控类型。
 #   4. DNB 试剂放置在 POS17 Row4-5；T2 缓冲液放置在 POS24 Col1 Row2。
 #   5. Pooling 汇集管放置在 POS16 Col7。
 #   6. MakeDNB 环节不添加矿物油。
+# 流程状态通过 report(...) 输出到中台软件。
 
 #####################################################################
 # 共用头部：包含平台初始化、枪头管理、移液封装和通用辅助函数。
@@ -27,10 +29,10 @@ def blockA():
 	temp_set({"Name":"M2_tempB","Temp": 6.00, "Duration": -1})# 6 C，POS10。
 
 a = parallel_block(blockA)
-# 温控只在后台启动，用于保护 POS17/POS10 试剂；程序不等待温度到达，避免开局空等。
+# POS17/POS10 低温模块并行启动，后续液体处理立即继续执行。
 import time
 
-'''=====================================样本信息读取（CSV）====================================='''
+'''=====================================样本信息读取====================================='''
 # 样本信息CSV文件位置
 # CSV格式: sample_id, position, plate_index, concentration, analysis_type, barcode, qc_type
 # 第5列=分析参数(中台AnalysisType,不参与计算); 第7列=质控类型(中台QcType: S样本/P阳性/N阴性/B空白)
@@ -47,6 +49,7 @@ class Sample:
 		self.position = position.strip()
 		self.plate_index = plate_index.strip() or "Plate1"
 		self.Concentration = float(concentration)  # 大写C，兼容全流程代码
+		# 保存原始测量浓度，供 pooling_info.csv 输出使用。
 		self.original_concentration = self.Concentration
 		self.corrected_concentration = self.Concentration
 		self.base_corrected_concentration = self.Concentration
@@ -105,7 +108,7 @@ if not samples_from_csv:
 sample_num = len(samples_from_csv)
 print(f"读取到 {sample_num} 个有效样本")
 
-# 开局立即检查 barcode：缺 barcode 的样本不建议投入，但仅告警不中断；若忽略告警则继续运行。
+# 读取样本信息后检查缺失 barcode；将提示输出到运行日志和中台，程序继续运行。
 missing_barcode_sample_ids = [sample.sample_id for sample in samples_from_csv if not sample.barcode.strip()]
 if missing_barcode_sample_ids:
 	missing_barcode_message = "以下样本缺少barcode（不建议投入），将忽略其barcode唯一性检查并继续运行：" + "、".join(missing_barcode_sample_ids)
@@ -115,7 +118,7 @@ if missing_barcode_sample_ids:
 '''=====================================以上为样本信息读取====================================='''
 
 
-'''==================================================================枪头管理=================================================================='''
+'''=====================================枪头管理====================================='''
 # 管理可用枪头列、复用锁定列和备用枪头盒交换。
 import sys
 class Tips:
@@ -208,7 +211,8 @@ def p1_unload_modified(loc):
 def p8_load_modified_BubblePurge(loc):
 	p8_load_tips({"Position":loc[0],"Col":loc[1],"Row":loc[2],"Tips":8,"IsBubblePurge": True, "PreAirSpeed": 100, "PreAirVolume": 20, "BubblePurgeSpeed": 100})
 
-'''============================================================枪头位置=============================================================='''
+'''=====================================枪头位置====================================='''
+# 枪头盒布局：300 uL、1000 uL、50 uL 枪头均在这里统一定义。
 # 上机前准备从全新枪头开始，不计入文库制备的消耗。
 tip_300_loc = ['M2_POS5']
 backup_tip_300_loc = ['M2_POS28','M2_POS29']
@@ -217,6 +221,7 @@ tip_300 = Tips(tip_300_loc,backup_tip_300_loc)
 tip_1000_loc = ['M2_POS18']
 tip_1000 = Tips(tip_1000_loc)
 
+# POS19 为 50 uL 备用枪头盒，deck.json 中 POS19 也必须定义为 50 uL 枪头盒。
 tip_50_loc = ['M2_POS15','M2_POS12']
 backup_tip_50_loc = ['M2_POS25','M2_POS19']
 tip_50 = Tips(tip_50_loc,backup_tip_50_loc)
@@ -305,9 +310,9 @@ max_sample_volume = 20
 # 单个DNB数据量/样本数 - PTseq按每个样本1份数据量计算，E25每个DNB最多32份数据量。
 max_data_per_dnb = 32
 single_dnb_sample_num = 32
-# 单个DNB投入量 - E25 DNB反应孔内library总量为15.84 ng
+# 每个 DNB 的目标文库 DNA 投入量（ng）。
 target_dna_ng = 15.84
-# pooling总体积
+# pooling 汇集目标体积（uL）。
 target_pooling_volume = 20
 max_intermediate_concentrate_times = target_pooling_volume * 8 / min_sample_volume
 # PTseq 同产品等权计算，product_type 对应每样本的数据量权重。
@@ -324,8 +329,9 @@ target_tube_loc = [('M2_POS16',7,i) for i in range(1,9)]
 # E25按每32个有效样本一个DNB切分，当前POS20最多支持6个DNB。
 target_dnb_loc_list = [('M2_POS20',8,1+i) for i in range(6)]
 
-# 混匀DNB的枪头位置
+# DNB 混匀枪头位置（板位、列、行）。
 dilution_mix_tip_loc = None
+# DNB 转移枪头位置（板位、列、行）。
 dilution_transfer_tip_loc = None
 
 # 需从pool剔除的质控类型代号(中台QcType); 空集=全部进pool(空白/阴阳性对照均测序,监控污染)
@@ -333,7 +339,7 @@ dilution_transfer_tip_loc = None
 exclude_pooling_qc_type = set()
 # 是否让低于质控阈值的样本参与 pooling；False 表示剔除。
 Is_unqualified_pooling = False
-# pooling信息输出文件
+# pooling 信息输出文件。
 output_file_path = r"D:/data/PTseq_pooling_info.csv"
 
 
@@ -476,9 +482,10 @@ dnb_list = group_samples_fixed_capacity_by_barcode(sample_concentration)
 preprocess_groups(dnb_list)
 
 target_dnb_num = len(dnb_list)
+# 根据计算出的 DNB 数量更新 Hybridization_num。
 Hybridization_num = target_dnb_num
 
-# 本轮拆分为 2 个及以上 DNB 时提示操作员（重复 barcode 会被避让到不同 DNB，或样本数超单 DNB 容量）；仅告警，不中断运行。
+# 分为多个 DNB 时，将分组提示输出到运行日志和中台；程序继续运行。
 if target_dnb_num >= 2:
 	dnb_split_message = f"本轮 pooling 将拆分为 {target_dnb_num} 个 DNB；请确认下游杂交/上机按 {target_dnb_num} 个 DNB 准备。"
 	print(f"[WARNING] {dnb_split_message}")
@@ -558,7 +565,7 @@ def mark_dilution_samples(groups):
 			if not promote_dilution(target_sample):
 				break
 
-# 计算每组样本的放大倍数
+# 按分组结果设置样本预稀释状态。
 mark_dilution_samples(dnb_list)
 
 
@@ -596,6 +603,7 @@ def preflight_pooling_plan(groups, temp, water_volume_list):
 		})
 
 
+# 计算每组样本的放大倍数和补液体积。
 temp = [(n,water_volume) for n,water_volume in [get_sample_volume(each) for each in dnb_list]]
 water_volume_list = [each[1] for each in temp]
 preflight_pooling_plan(dnb_list, temp, water_volume_list)
@@ -760,7 +768,7 @@ for i in range(target_dnb_num):
 	p8_empty_modified(target_dnb_loc_list[i][0],target_dnb_loc_list[i][2],target_dnb_loc_list[i][1])
 	p8_unload_tips({"Position":"M2_Trash","Col":None,"Row":None})
 
-'''#######################################################make DNB (E25) - 无单链环化步骤#########################################'''
+'''=====================================make DNB (E25) - 无单链环化步骤====================================='''
 DNB_Num = target_dnb_num
 
 ##################################################################################### DNB制备体系1 ############################################################################
@@ -855,7 +863,7 @@ pcr_open_door()
 transfer({"StartPosition":"M2_POS20","EndPosition":"M2_POS26","LoosenOffsetOfZ":0}) #开PCR盖板
 transfer({"StartPosition":"M2_POS17","EndPosition":"M2_POS27","LoosenOffsetOfZ":0})###开盖板
 
-#加入DNB终止缓冲液 20µL → POS20 Col8 Row 1+x
+# 向 POS20 Col8 各 DNB 孔加入终止缓冲液。
 DNB_temp1_1000 = tip_1000.load(DNB_Num,1)
 for x in range(DNB_Num):
 	p1_load_modified(DNB_temp1_1000[x])
