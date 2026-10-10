@@ -399,12 +399,30 @@ def get_sample_info(sample_info_file_path, is_filter, filtered_sample_qc_type):
 
 
 filtered_samples=get_sample_info(sample_info_file_path, False, filtered_sample_qc_type)
-# 中台在启动任务前生成 D:/Pathogens/PTseq.csv；脚本开局读取后立即检查 barcode。
-missing_barcode_sample_ids = [sample.sample_id for sample in filtered_samples if not sample.barcode.strip()]
-if missing_barcode_sample_ids:
-	missing_barcode_message = "以下样本缺少barcode，将忽略这些样本的barcode唯一性检查并继续运行：" + "、".join(missing_barcode_sample_ids)
-	print(f"[WARNING] {missing_barcode_message}")
-	report({"Phase":"样本信息检查","Step":missing_barcode_message,"TaskType":"library","RemainingTime":None})
+BARCODE_POOL = {
+	"1", "2", "5", "7", "8", "10", "11", "12",
+	"14", "15", "17", "18", "19", "20", "22", "24",
+	"25", "26", "27", "28", "30", "31", "32", "34",
+	"36", "38", "39", "40", "41", "42", "43", "44",
+	"45", "46", "47", "49", "50", "52", "53", "54",
+	"55", "57", "58", "59", "60", "61", "62", "65",
+}
+barcodes = [sample.barcode.strip() for sample in filtered_samples]
+barcode_invalid = (
+	not barcodes
+	or len(set(barcodes)) != len(barcodes)
+	or any(barcode not in BARCODE_POOL for barcode in barcodes)
+)
+if barcode_invalid:
+	while True:
+		try:
+			dialog_message({
+				"Title": "Barcode校验未通过",
+				"Timeout": "02:00:00",
+				"Message": "Barcode填写有误。请检查是否漏填、重复或不属于本产品Barcode池，修正任务表后重新开始实验。本次运行不会继续"
+			})
+		except Exception:
+			delay({"Duration": 60})
 blank_samples = [sample for sample in filtered_samples if sample.sample_qc_type.upper() == BLANK_QC_TYPE]
 blank_positions = set()
 for blank_sample in blank_samples:
@@ -415,9 +433,6 @@ for blank_sample in blank_samples:
 		raise Exception(f"空白对照孔位重复：{blank_position}")
 	blank_positions.add(blank_position)
 SampleCount = len(filtered_samples)
-if not filtered_samples:
-	a = dialog_textbox({"Title": "请输入样本数量", "Timeout": "02:00:00","Parameters":[{"Name": "样本数量", "Value": "48", "Notes": "未检测到样本信息文件，请输入样本数量"}]})
-	SampleCount = int(a["样本数量"])
 sample_num = SampleCount
 n = SampleCount
 col_num = (sample_num+7)//8
@@ -1902,7 +1917,7 @@ if target_dnb_num >= 2:
 initial_dnb_list = [group.copy() for group in dnb_list]  # 保留初始分组的列表结构。
 
 
-# 首选按组内浓度比进行 8 倍预稀释；体积校验不通过时尝试固定备用分档。
+# 按组内浓度比进行 8 倍预稀释。
 for i in range(target_dnb_num):
 	cur_samples = dnb_list[i]
 	cur_l = len(cur_samples)
@@ -1957,9 +1972,9 @@ def pooling_plan_valid(group, plan):
 	if target_pooling_volume * min(1, 8 / k) < min_sample_volume:
 		return False
 	for sample in group:
-		if sample.dilution_type not in (1, 2, 4, 8):
+		if sample.dilution_type not in (1, 8):
 			return False
-		available = {1: max_sample_volume, 2: 10, 4: 20, 8: 16}[sample.dilution_type]
+		available = max_sample_volume if sample.dilution_type == 1 else min(max_sample_volume, 16)
 		volume = sample.DilutingSampleVolume
 		if not math.isfinite(volume) or volume < min_sample_volume or volume > available:
 			return False
@@ -1974,19 +1989,20 @@ for group in dnb_list:
 		valid = pooling_plan_valid(group, plan)
 	except Exception:
 		valid = False
-	if not valid:
-		minimum = max(min(sample.original_concentration for sample in group), sample_qc_concentration)
-		for sample in group:
-			source = max(sample.original_concentration, minimum)
-			ratio = source / minimum
-			sample.dilution_type = 1 if ratio < 8 else 2 if ratio < 16 else 4 if ratio < 32 else 8
-			sample.NeedDilution = sample.dilution_type != 1
-			sample.Concentration = source / sample.dilution_type
-		try:
-			plan = get_sample_volume(group)
-			valid = pooling_plan_valid(group, plan)
-		except Exception:
-			valid = False
+	# 固定备用分档暂不启用；保留原有 8 倍方案的校验结果。
+	# if not valid:
+	# 	minimum = max(min(sample.original_concentration for sample in group), sample_qc_concentration)
+	# 	for sample in group:
+	# 		source = max(sample.original_concentration, minimum)
+	# 		ratio = source / minimum
+	# 		sample.dilution_type = 1 if ratio < 8 else 2 if ratio < 16 else 4 if ratio < 32 else 8
+	# 		sample.NeedDilution = sample.dilution_type != 1
+	# 		sample.Concentration = source / sample.dilution_type
+	# 	try:
+	# 		plan = get_sample_volume(group)
+	# 		valid = pooling_plan_valid(group, plan)
+	# 	except Exception:
+	# 		valid = False
 	if not valid:
 		while True:
 			try:
@@ -1994,7 +2010,7 @@ for group in dnb_list:
 			except Exception:
 				delay({"Duration":60})
 	temp.append(plan)
-water_loc_list = [(sample.DilutingWellPosition, sample.DilutingWellRow, sample.DilutingWellColumn, {2: 5, 4: 15, 8: 14}[sample.dilution_type])
+water_loc_list = [(sample.DilutingWellPosition, sample.DilutingWellRow, sample.DilutingWellColumn, 14)
 	for group in dnb_list for sample in group if sample.NeedDilution]
 water_volume_list = [entry[1] for entry in temp]
 
@@ -2047,7 +2063,7 @@ p1_load_tips({"Position":single_tip_loc[0],'Col':single_tip_loc[1],'Row':single_
 
 if water_loc_list:
 	for i in range(len(water_loc_list)):
-		# 按所选稀释倍数向 POS8 PCR 板加入 T2 缓冲液。
+		# 向 POS8 PCR 板加入 8 倍稀释所需的 T2 缓冲液。
 		p1_aspirate({"Position": dilution_buffer_loc[0], "Row": dilution_buffer_loc[2], "Col": dilution_buffer_loc[1], "FirstSegmentSpeed": 150, "SpeedChangeOffsetOfZ": 0, "PreAirSpeed": 100, "PreAirVolume": 10, "SecondSegmentSpeed": 100, "AspirateOffsetOfZ": 1.0, "AspirateSpeed": 20, "AspirateVolume": water_loc_list[i][3], "DelayAfterAspirate": 0.5, "TipTouchTimes": 0, "TipTouchOffsetOfZ": 10, "TipTouchRangeOfX": 2, "TipTouchSpeed": 100, "PostAirSpeed": 100, "PostAirVolume": 10})
 		p1_empty({"Position": water_loc_list[i][0], "Row": water_loc_list[i][1], "Col": water_loc_list[i][2], "FirstSegmentSpeed": 150, "SpeedChangeOffsetOfZ": 0, "SecondSegmentSpeed": 100, "EmptyOffsetOfZ": 1, "EmptySpeed": 190, "DelayAfterEmpty": 0.5, "TipTouchTimes": 0, "TipTouchOffsetOfZ": 10, "TipTouchRangeOfX": 2, "TipTouchSpeed": 100})
 
@@ -2079,9 +2095,9 @@ for i,poolings in enumerate(temp):
 			p8_empty_modified(pooling_tube_pos, i+1, pooling_tube_col)
 		else:
 			# HIGH RISK：P8 从 POS13 深孔板吸取文库到 POS8，同一列枪头完成混匀和 pooling 转移。
-			p8_aspirate_modified(sample.SampleWellPosition, sample.SampleWellRow, sample.SampleWellColumn, 2 if sample.dilution_type == 8 else 5, PreAirVolume=10, AspirateSpeed=80, AspirateOffsetOfZ=0.3, DelayAfterAspirate=0.5, PostAirVolume=0)
+			p8_aspirate_modified(sample.SampleWellPosition, sample.SampleWellRow, sample.SampleWellColumn, 2, PreAirVolume=10, AspirateSpeed=80, AspirateOffsetOfZ=0.3, DelayAfterAspirate=0.5, PostAirVolume=0)
 			p8_empty_modified(sample.DilutingWellPosition, sample.DilutingWellRow, sample.DilutingWellColumn, EmptyOffsetOfZ=0.5, EmptySpeed=10)
-			p8_mix({"Position":sample.DilutingWellPosition,"Col":sample.DilutingWellColumn,"Row":sample.DilutingWellRow,"PreAirVolume":10,"MixTimes":5,"MixAspirateSpeed":100,"MixAspirateOffsetOfZ":0.5,"MixVolume":5 if sample.dilution_type == 2 else 10,"MixDispenseOffsetOfZ":10,"MixDispenseSpeed":100,"DelayAfterMixLoop":0.5,"MixEmptyOffsetOfZ":10,"MixEmptySpeed":100,"PreAirSpeed":50,"DelayAfterMixAspirate":0.5,"DelayAfterMixDispense":0.5,"DelayAfterMixEmpty":0.5,"PostAirSpeed":50,"PostAirVolume":0,"FirstSegmentSpeed":100,"SpeedChangeOffsetOfZ":0,"SecondSegmentSpeed":80,"TipTouchTimes":1,"TipTouchOffsetOfZ":5,"TipTouchRangeOfX":1.2,"TipTouchSpeed":100})
+			p8_mix({"Position":sample.DilutingWellPosition,"Col":sample.DilutingWellColumn,"Row":sample.DilutingWellRow,"PreAirVolume":10,"MixTimes":5,"MixAspirateSpeed":100,"MixAspirateOffsetOfZ":0.5,"MixVolume":10,"MixDispenseOffsetOfZ":10,"MixDispenseSpeed":100,"DelayAfterMixLoop":0.5,"MixEmptyOffsetOfZ":10,"MixEmptySpeed":100,"PreAirSpeed":50,"DelayAfterMixAspirate":0.5,"DelayAfterMixDispense":0.5,"DelayAfterMixEmpty":0.5,"PostAirSpeed":50,"PostAirVolume":0,"FirstSegmentSpeed":100,"SpeedChangeOffsetOfZ":0,"SecondSegmentSpeed":80,"TipTouchTimes":1,"TipTouchOffsetOfZ":5,"TipTouchRangeOfX":1.2,"TipTouchSpeed":100})
 			p8_aspirate_modified(sample.DilutingWellPosition, sample.DilutingWellRow, sample.DilutingWellColumn, sample_volume, PreAirVolume=10, AspirateSpeed=80, AspirateOffsetOfZ=0.5, DelayAfterAspirate=0.5, PostAirVolume=0)
 			p8_empty_modified(pooling_tube_pos, i+1, pooling_tube_col)
 		p8_unload_tips({"Position":"M2_Trash","Col":None,"Row":None})
