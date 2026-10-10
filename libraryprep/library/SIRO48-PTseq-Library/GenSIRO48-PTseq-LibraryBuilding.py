@@ -28,8 +28,8 @@ import math
 
 home()
 def blockA():
-	temp_set({"Name":"M2_tempC","Temp": 6.00, "Duration": -1})# 6 C，POS17。
-	temp_set({"Name":"M2_tempB","Temp": 6.00, "Duration": -1})# 6 C，POS10。
+	temp_set({"Name":"M2_tempC","Temp": 6.00, "Duration": -1})  # 6 C，POS17。
+	temp_set({"Name":"M2_tempB","Temp": 6.00, "Duration": -1})  # 6 C，POS10。
 
 a = parallel_block(blockA)
 # POS17/POS10 低温模块并行启动，后续液体处理立即继续执行。
@@ -42,7 +42,7 @@ a = parallel_block(blockA)
 import sys
 class Tips:
 	def __init__(self,tip_pos,backup_tip_pos=[]):
-		self.transposition =  "M2_POS30" # 交换枪头的中转板位
+		self.transposition =  "M2_POS30"  # 交换枪头的中转板位
 		self.tip_pos = tip_pos
 		self.backup_tip_pos = backup_tip_pos
 		self.tip_list = []
@@ -470,7 +470,7 @@ for blank_sample in blank_samples:
 	p1_empty_modified("M2_POS11", Row=blank_sample.row, Col=1, EmptyOffsetOfZ=10, EmptySpeed=100)
 	p1_unload_tips2({"Position":"M2_Trash","Col":None,"Row":None})
 
-transfer({"StartPosition":"M2_POS17","EndPosition":"M2_POS27","LoosenOffsetOfZ":0})  # 打开 POS17 试剂盖。
+transfer({"StartPosition":"M2_POS17","EndPosition":"M2_POS27","LoosenOffsetOfZ":0})  # 打开 POS17 试剂盖板。
 
 # T12 空白对照放在 POS17 F1（0.5 mL 管；API 坐标 Col1 Row6）。
 # 根据 PTseq.csv 中所有 QcType=B 的动态孔位，逐孔向 POS8 提取产物板加入 14 uL T12。
@@ -490,7 +490,7 @@ for col_group_start in range(0, col_num, 3):
 			p1_aspirate_modified("M2_POS17", 1, 1, 2, AspirateSpeed=10)
 			p1_empty_modified("M2_POS20", j+1, i+1, EmptyOffsetOfZ=0.5)
 	p1_unload_tips2({"Position":"M2_Trash","Col":None,"Row":None})
-transfer({"StartPosition":"M2_POS27","EndPosition":"M2_POS17","LoosenOffsetOfZ":0})  # 关闭 POS17 试剂盖。
+transfer({"StartPosition":"M2_POS27","EndPosition":"M2_POS17","LoosenOffsetOfZ":0})  # 关闭 POS17 试剂盖板。
 
 # 从 POS8 提取产物板转移 14 uL 样本到 POS20 Col1-6，并与 T1 在孔内混匀。
 col_num = (sample_num+7)//8
@@ -521,11 +521,10 @@ for i in range(col_num-1,-1,-1):
 		p8_load_modified(oil_1[0])
 p8_unload_tips({"Position":"M2_Trash","Col":None,"Row":None})
 
-# 合上 POS20 PCR 盖板。
-transfer({"StartPosition":"M2_POS26","EndPosition":"M2_POS20","LoosenOffsetOfZ":0})  #PCR盖板
+transfer({"StartPosition":"M2_POS26","EndPosition":"M2_POS20","LoosenOffsetOfZ":0})  # 合上 POS20 PCR 盖板。
 
 
-pcr_close_door()
+pcr_close_door()  # 关闭 PCR 门。
 def spx_p1_f_0():
 	pcr_run_method({"Methods":["PTseq_RT"]})
 
@@ -541,7 +540,7 @@ elif lang==2:
  report({"Phase": "cDNA synthesis", "Step": "cDNA first-strand synthesis reaction system", "TaskType": "library", "RemainingTime": None})
 
 # 配置一链反应试剂
-transfer({"StartPosition":"M2_POS17","EndPosition":"M2_POS27","LoosenOffsetOfZ":0})
+transfer({"StartPosition":"M2_POS17","EndPosition":"M2_POS27","LoosenOffsetOfZ":0})  # 打开 POS17 试剂盖板。
 low_throughput_p1_direct_col9 = use_low_throughput_p1_direct(SampleCount)
 report_low_throughput_branch("第9列cDNA反应液", "Col9 cDNA mix", low_throughput_p1_direct_col9, SampleCount)
 # 低通量分支直接从 POS17 混合管分装到反应孔，只计算 POS17 混合管死体积。
@@ -585,28 +584,27 @@ if not low_throughput_p1_direct_col9:
 			p1_empty({"Position":"M2_POS7","Col":9,"Row":i+1,"EmptyOffsetOfZ":2,"EmptySpeed":50,"DelayAfterEmpty":0.5,"TipTouchTimes":0,"PostAirSpeed":100,"PostAirVolume":0,"FirstSegmentSpeed":100,"SpeedChangeOffsetOfZ":0,"SecondSegmentSpeed":80})
 	p1_unload_tips2({"Position":"M2_Trash","Col":None,"Row":None})
 
-# 盖上试剂盖
-transfer({"StartPosition":"M2_POS27","EndPosition":"M2_POS17","LoosenOffsetOfZ":0})  #试剂盖板
+transfer({"StartPosition":"M2_POS27","EndPosition":"M2_POS17","LoosenOffsetOfZ":0})  # 关闭 POS17 试剂盖板。
 # POS7 无盖板，因此这里不需要任何开关盖动作。
 spx_p0_v_0.Wait()
 
 # RT 完成后打开 POS20，把 cDNA 一链反应液加入 RT 产物。
-pcr_open_door()
-transfer({"StartPosition":"M2_POS20","EndPosition":"M2_POS26","LoosenOffsetOfZ":0})  #PCR盖板
+pcr_open_door()  # 打开 PCR 门。
+transfer({"StartPosition":"M2_POS20","EndPosition":"M2_POS26","LoosenOffsetOfZ":0})  # 打开 POS20 PCR 盖板。
 # POS7 中转深孔板无盖板，可直接访问。
 
 
 
 # 低通量直接从 POS17 混合管加样；高通量从 POS7 Col9 中转加样。
 if low_throughput_p1_direct_col9:
-	transfer({"StartPosition":"M2_POS17","EndPosition":"M2_POS27","LoosenOffsetOfZ":0})
+	transfer({"StartPosition":"M2_POS17","EndPosition":"M2_POS27","LoosenOffsetOfZ":0})  # 打开 POS17 试剂盖板。
 	cDNA_direct_tips = tip_50.load(sample_num, 1)
 	for tip_index, (col_index, row) in enumerate(active_sample_wells(SampleCount)):
 		p1_load_modified(cDNA_direct_tips[tip_index])
 		p1_aspirate_modified("M2_POS17", 1, 4, 4, PreAirVolume=5, AspirateSpeed=10, AspirateOffsetOfZ=0.5, DelayAfterAspirate=0.5, PostAirVolume=0, IfTrack=False)
 		p1_empty_modified("M2_POS20", row, col_index+1, EmptyOffsetOfZ=0.8, EmptySpeed=30, DelayAfterEmpty=2, TipTouchTimes=2, TipTouchOffsetOfZ=3, TipTouchRangeOfX=1.2, TipTouchSpeed=100, PostAirVolume=0)
 		p1_unload_tips2({"Position":"M2_Trash","Col":None,"Row":None})
-	transfer({"StartPosition":"M2_POS27","EndPosition":"M2_POS17","LoosenOffsetOfZ":0})
+	transfer({"StartPosition":"M2_POS27","EndPosition":"M2_POS17","LoosenOffsetOfZ":0})  # 关闭 POS17 试剂盖板。
 	for i in range(col_num):
 		p8_load_modified(tip_50.load(target_tip_num_list[i])[0])
 		p8_mix({"Position":"M2_POS20","Col":i+1,"Row":1,"PreAirVolume":10,"MixTimes":15,"MixAspirateSpeed":20,"MixAspirateOffsetOfZ":0.5,"MixVolume":16,"MixDispenseOffsetOfZ":8,"MixDispenseSpeed":20,"DelayAfterMixLoop":2,"MixEmptyOffsetOfZ":3,"MixEmptySpeed":20,"PreAirSpeed":50,"DelayAfterMixAspirate":0.5,"DelayAfterMixDispense":0.5,"DelayAfterMixEmpty":0.5,"TipTouchTimes":0,"PostAirSpeed":50,"PostAirVolume":0,"FirstSegmentSpeed":100,"SpeedChangeOffsetOfZ":0,"SecondSegmentSpeed":80})
@@ -625,13 +623,12 @@ else:
 
 # 矿物油已在 PTseq_RT 前加到 POS20 Col1-6，cDNA 复用同孔无需再加。
 
-# 盖上PCR盖板
-transfer({"StartPosition":"M2_POS26","EndPosition":"M2_POS20","LoosenOffsetOfZ":0})  #PCR盖板
+transfer({"StartPosition":"M2_POS26","EndPosition":"M2_POS20","LoosenOffsetOfZ":0})  # 合上 POS20 PCR 盖板。
 
 
 
 '''=====================================cDNA一链合成反应====================================='''
-pcr_close_door()
+pcr_close_door()  # 关闭 PCR 门。
 def spx_p2_f_0():
 	pcr_run_method({"Methods":["PTseq_cDNA"]})
 spx_p2_v_0 = parallel_block(spx_p2_f_0)
@@ -650,7 +647,7 @@ elif lang==2:
 
 
 # 配置靶向扩增反应试剂
-transfer({"StartPosition":"M2_POS17","EndPosition":"M2_POS27","LoosenOffsetOfZ":0})
+transfer({"StartPosition":"M2_POS17","EndPosition":"M2_POS27","LoosenOffsetOfZ":0})  # 打开 POS17 试剂盖板。
 c = 1.4  # T2 缓冲液向 POS7 Col7 预分装的安全系数；独立于反应液的逐孔死体积算法。
 low_throughput_p1_direct_col10 = use_low_throughput_p1_direct(SampleCount)
 report_low_throughput_branch("第10列靶向扩增反应液", "Col10 targeted amplification mix", low_throughput_p1_direct_col10, SampleCount)
@@ -749,7 +746,7 @@ if not low_throughput_p1_direct_col10:
 	# 8 行全部分装完成后再丢弃枪头。
 	p1_unload_tips2({"Position":"M2_Trash","Col":None,"Row":None})
 
-transfer({"StartPosition":"M2_POS27","EndPosition":"M2_POS17","LoosenOffsetOfZ":0})
+transfer({"StartPosition":"M2_POS27","EndPosition":"M2_POS17","LoosenOffsetOfZ":0})  # 关闭 POS17 试剂盖板。
 
 # =============================================
 # 关键步骤：向 POS7 Col7 预分装 T2 缓冲液。
@@ -771,15 +768,15 @@ dispense_t2_to_pos7(25)
 spx_p2_v_0.Wait()
 
 # cDNA 程序完成后打开 POS20，向 Col7-12 配置 TA 反应体系。
-pcr_open_door()
-transfer({"StartPosition":"M2_POS20","EndPosition":"M2_POS26","LoosenOffsetOfZ":0})
+pcr_open_door()  # 打开 PCR 门。
+transfer({"StartPosition":"M2_POS20","EndPosition":"M2_POS26","LoosenOffsetOfZ":0})  # 打开 POS20 PCR 盖板。
 
 # 添加靶向扩增反应液到样本中：15 uL TA Master Mix + 5 uL T6/index 引物 + 5 uL cDNA 产物。
 if low_throughput_p1_direct_col10:
 	# 低通量直接分装按来源分阶段执行，避免每个样本反复开关 POS10 盖板。
 	# TA Master Mix 只接触同一混合液和空 TA 目标孔，每个样本列复用 1 支 50 uL 枪头。
 	# T6/index 按列使用 P8 排枪转移；cDNA 产物仍使用逐样本独立枪头，避免样本回带。
-	transfer({"StartPosition":"M2_POS17","EndPosition":"M2_POS27","LoosenOffsetOfZ":0})
+	transfer({"StartPosition":"M2_POS17","EndPosition":"M2_POS27","LoosenOffsetOfZ":0})  # 打开 POS17 试剂盖板。
 	ta_direct_mix_tips = tip_50.load(col_num, 1)
 	for col_index in range(col_num):
 		p1_load_modified(ta_direct_mix_tips[col_index])
@@ -788,16 +785,16 @@ if low_throughput_p1_direct_col10:
 			p1_aspirate_modified("M2_POS17", 2, 4, 15, PreAirVolume=5, AspirateSpeed=10, AspirateOffsetOfZ=0.6, DelayAfterAspirate=1, PostAirVolume=0, IfTrack=False)
 			p1_empty_modified("M2_POS20", row, col_index+7, EmptyOffsetOfZ=3, EmptySpeed=50, DelayAfterEmpty=0.5, TipTouchTimes=0, PostAirVolume=0)
 		p1_unload_tips2({"Position":"M2_Trash","Col":None,"Row":None})
-	transfer({"StartPosition":"M2_POS27","EndPosition":"M2_POS17","LoosenOffsetOfZ":0})
+	transfer({"StartPosition":"M2_POS27","EndPosition":"M2_POS17","LoosenOffsetOfZ":0})  # 关闭 POS17 试剂盖板。
 	# POS10 T6/index 引物一次开盖处理完全部样本，处理完立即关盖。
-	transfer({"StartPosition":"M2_POS10","EndPosition":"M2_POS27","LoosenOffsetOfZ":0})
+	transfer({"StartPosition":"M2_POS10","EndPosition":"M2_POS27","LoosenOffsetOfZ":0})  # 打开 POS10 试剂盖板。
 	ta_direct_reagent_tips = tip_50.load(sample_num, 8, 1)
 	for col_index in range(col_num):
 		p8_load_modified(ta_direct_reagent_tips[col_index])
 		p8_aspirate({"Position":"M2_POS10","Col":col_index+1,"Row":1,"PreAirVolume":5,"AspirateOffsetOfZ":0.5,"AspirateSpeed":10,"AspirateVolume":5,"PreAirSpeed":50,"DelayAfterAspirate":1,"TipTouchTimes":0,"PostAirSpeed":50,"PostAirVolume":0,"IfTrack":False,"FirstSegmentSpeed":100,"SpeedChangeOffsetOfZ":0,"SecondSegmentSpeed":80})
 		p8_empty({"Position":"M2_POS20","Col":col_index+7,"Row":1,"EmptyOffsetOfZ":3,"EmptySpeed":50,"DelayAfterEmpty":0.5,"TipTouchTimes":0,"PostAirSpeed":50,"PostAirVolume":0,"FirstSegmentSpeed":100,"SpeedChangeOffsetOfZ":0,"SecondSegmentSpeed":80})
 		p8_unload_tips({"Position":"M2_Trash","Col":None,"Row":None})
-	transfer({"StartPosition":"M2_POS27","EndPosition":"M2_POS10","LoosenOffsetOfZ":0})
+	transfer({"StartPosition":"M2_POS27","EndPosition":"M2_POS10","LoosenOffsetOfZ":0})  # 关闭 POS10 试剂盖板。
 	# 第二套 50 uL 单枪头：从 POS20 cDNA 产物来源孔加入 5 uL 到对应 TA 目标孔。
 	ta_direct_sample_tips = tip_50.load(sample_num, 1)
 	for tip_index, (col_index, row) in enumerate(active_sample_wells(SampleCount)):
@@ -810,7 +807,7 @@ if low_throughput_p1_direct_col10:
 		p8_mix({"Position":"M2_POS20","Col":i+7,"Row":1,"PreAirVolume":10,"MixTimes":15,"MixAspirateSpeed":50,"MixAspirateOffsetOfZ":0.5,"MixVolume":22,"MixDispenseOffsetOfZ":5,"MixDispenseSpeed":50,"DelayAfterMixLoop":2,"MixEmptyOffsetOfZ":50,"MixEmptySpeed":50,"PreAirSpeed":50,"DelayAfterMixAspirate":0.5,"DelayAfterMixDispense":0.5,"DelayAfterMixEmpty":0.5,"TipTouchTimes":0,"PostAirSpeed":50,"PostAirVolume":0,"FirstSegmentSpeed":100,"SpeedChangeOffsetOfZ":0,"SecondSegmentSpeed":80})
 		p8_unload_tips({"Position":"M2_Trash","Col":None,"Row":None})
 else:
-	transfer({"StartPosition":"M2_POS10","EndPosition":"M2_POS27","LoosenOffsetOfZ":0})
+	transfer({"StartPosition":"M2_POS10","EndPosition":"M2_POS27","LoosenOffsetOfZ":0})  # 打开 POS10 试剂盖板。
 	for i in range(col_num):
 		p8_load_modified(tip_50.load(target_tip_num_list[i])[0])
 		p8_aspirate({"Position":"M2_POS7","Col":10,"Row":1,"PreAirVolume":8,"AspirateOffsetOfZ":0.5,"AspirateSpeed":10,"AspirateVolume":15,"PreAirSpeed":50,"DelayAfterAspirate":1,"TipTouchTimes":0,"PostAirSpeed":50,"PostAirVolume":3,"IfTrack":False,"FirstSegmentSpeed":100,"SpeedChangeOffsetOfZ":0,"SecondSegmentSpeed":80})
@@ -840,15 +837,14 @@ for i in range(col_num-1,-1,-1):
 		p8_load_modified(oil_2[0])
 p8_unload_tips({"Position":"M2_Trash","Col":None,"Row":None})
 
-# 盖上PCR盖板
-transfer({"StartPosition":"M2_POS26","EndPosition":"M2_POS20","LoosenOffsetOfZ":0})  #PCR盖板
+transfer({"StartPosition":"M2_POS26","EndPosition":"M2_POS20","LoosenOffsetOfZ":0})  # 合上 POS20 PCR 盖板。
 # 高通量 TA 分支在前面统一打开 POS10 盖板；低通量分支每个样本吸完 primer 后已经关闭 POS10。
 if not low_throughput_p1_direct_col10:
-	transfer({"StartPosition":"M2_POS27","EndPosition":"M2_POS10","LoosenOffsetOfZ":0})
+	transfer({"StartPosition":"M2_POS27","EndPosition":"M2_POS10","LoosenOffsetOfZ":0})  # 关闭 POS10 试剂盖板。
 
 '''=====================================二链反应====================================='''
 
-pcr_close_door()
+pcr_close_door()  # 关闭 PCR 门。
 def spx_p2_f_1():
 	pcr_run_method({"Methods":["PTseq_TA"]})
 
@@ -923,7 +919,7 @@ la_split_t2_to_pos7 = not low_throughput_p1_direct_col11 and mix_total_col11 > L
 la_t7_t8_pos7_volumes = [volume * 21 / 30 for volume in pos7_col11_volumes]
 la_t2_pos7_volumes = [volume * 9 / 30 for volume in pos7_col11_volumes]
 
-transfer({"StartPosition":"M2_POS17","EndPosition":"M2_POS27","LoosenOffsetOfZ":0})
+transfer({"StartPosition":"M2_POS17","EndPosition":"M2_POS27","LoosenOffsetOfZ":0})  # 打开 POS17 试剂盖板。
 # T8 手工预置在 POS17 C2R3 的 2.0 mL mixing tube 内。
 # 机器只把 T7（POS17 C1R3）和 T2（POS24 C1R2）加入 C2R3，再原地混匀。
 if SampleCount > 20:
@@ -984,11 +980,11 @@ else:
 	p1_empty({"Position":"M2_POS17","Col":2,"Row":3,"EmptyOffsetOfZ":2,"LiquidLevelDetection":"None","EmptySpeed":100,"DelayAfterEmpty":0.5,"TipTouchTimes":0,"PostAirSpeed":100,"PostAirVolume":0,"FirstSegmentSpeed":190,"SpeedChangeOffsetOfZ":0,"SecondSegmentSpeed":100})
 	p1_unload_tips2({"Position":"M2_Trash","Col":None,"Row":None})
 
-transfer({"StartPosition":"M2_POS27","EndPosition":"M2_POS17","LoosenOffsetOfZ":0})
+transfer({"StartPosition":"M2_POS27","EndPosition":"M2_POS17","LoosenOffsetOfZ":0})  # 关闭 POS17 试剂盖板。
 
 spx_p2_v_1.Wait()
-pcr_open_door()
-transfer({"StartPosition":"M2_POS20","EndPosition":"M2_POS26","LoosenOffsetOfZ":0})
+pcr_open_door()  # 打开 PCR 门。
+transfer({"StartPosition":"M2_POS20","EndPosition":"M2_POS26","LoosenOffsetOfZ":0})  # 打开 POS20 PCR 盖板。
 
 TA_purification_tips = tip_300.load(sample_num,8,1)
 
@@ -1016,8 +1012,8 @@ temp_shaker_set({"TempParameters": {"IsEnable": False, "Temp": 25.00, "Duration"
 
 delay({"Duration": 300})
 
-transfer({"StartPosition":"M2_POS26","EndPosition":"M2_POS20","LoosenOffsetOfZ":0})#关PCR盖板
-pcr_close_door()  # PCR 盖板放回后立即关闭 PCR 门。
+transfer({"StartPosition":"M2_POS26","EndPosition":"M2_POS20","LoosenOffsetOfZ":0})  # 合上 POS20 PCR 盖板。
+pcr_close_door()  # 关闭 PCR 门。
 
 def predispense_ethanol_to_pos7(source_col):
 	# TA/LA 各使用一个 POS3 50 mL 槽；每阶段每孔 500 uL，供两次 200 uL 洗涤。
@@ -1106,8 +1102,8 @@ magetic_wait = parallel_block(wait_for_magnetic_beads)
 # ============ POS20/POS9 PCR 板交换 ============
 # TA 结束后，POS9 的新 PCR 板换到 POS20，用于 LA 和最终文库保存。
 # 新 PCR 板用于 LA 反应 Col1-6 和最终文库保存 Col7-12。
-pcr_open_door()
-transfer({"StartPosition":"M2_POS20","EndPosition":"M2_POS26","LoosenOffsetOfZ":0})  #开PCR盖板
+pcr_open_door()  # 打开 PCR 门。
+transfer({"StartPosition":"M2_POS20","EndPosition":"M2_POS26","LoosenOffsetOfZ":0})  # 打开 POS20 PCR 盖板。
 transfer({"StartPosition":"M2_POS20","EndPosition":transposition,"LoosenOffsetOfZ":0})  #POS20 (used) → POS30 (temp)
 transfer({"StartPosition":"M2_POS9","EndPosition":"M2_POS20","LoosenOffsetOfZ":0})  #POS9 (fresh) → POS20
 transfer({"StartPosition":transposition,"EndPosition":"M2_POS9","LoosenOffsetOfZ":0})  # POS30 → POS9，存放已经用过的 PCR 板。
@@ -1125,7 +1121,7 @@ elif lang==2:
 if not low_throughput_p1_direct_col11:
 	# POS7 Col11 每行预分装体积来自上方中转孔总冗余算法。
 	target_volume_list_pre_PCR = pos7_col11_volumes
-	transfer({"StartPosition":"M2_POS17","EndPosition":"M2_POS27","LoosenOffsetOfZ":0})
+	transfer({"StartPosition":"M2_POS17","EndPosition":"M2_POS27","LoosenOffsetOfZ":0})  # 打开 POS17 试剂盖板。
 
 
 	p1_load_modified(tip_1000.load(1)[0])
@@ -1142,7 +1138,7 @@ if not low_throughput_p1_direct_col11:
 			p1_aspirate({"Position":"M2_POS24","Col":1,"Row":2,"PreAirVolume":5,"AspirateOffsetOfZ":0.8,"AspirateSpeed":150,"AspirateVolume":la_t2_pos7_volumes[i],"PreAirSpeed":100,"DelayAfterAspirate":0.5,"TipTouchTimes":0,"PostAirSpeed":100,"PostAirVolume":5,"IfTrack":True,"FirstSegmentSpeed":190,"SpeedChangeOffsetOfZ":0,"SecondSegmentSpeed":100})
 			p1_empty({"Position":"M2_POS7","Col":11,"Row":i+1,"EmptyOffsetOfZ":0.5,"LiquidLevelDetection":"None","EmptySpeed":100,"DelayAfterEmpty":0.5,"TipTouchTimes":3,"PostAirSpeed":100,"PostAirVolume":0,"FirstSegmentSpeed":190,"SpeedChangeOffsetOfZ":0,"SecondSegmentSpeed":100, "TipTouchOffsetOfZ": 15, "TipTouchRangeOfX": 1.2, "TipTouchSpeed": 100})
 		p1_unload_tips2({"Position":"M2_Trash","Col":None,"Row":None})
-	transfer({"StartPosition":"M2_POS27","EndPosition":"M2_POS17","LoosenOffsetOfZ":0})
+	transfer({"StartPosition":"M2_POS27","EndPosition":"M2_POS17","LoosenOffsetOfZ":0})  # 关闭 POS17 试剂盖板。
 
 	# 使用后续分装同一列 300 uL 枪头混匀 POS7 Col11，放回原位后继续复用，不增加枪头消耗。
 	LA_dispense_tips = tip_300.load(sample_num,8,1)
@@ -1161,7 +1157,7 @@ magetic_wait.Wait()
 # LA 建库反应前处理：先把 LA/PCR Master Mix 加到 POS23 磁架上的干燥磁珠产物，再转到 POS16 振荡回溶形成磁珠悬液。
 # 第一步：向 POS23 Col7-12 的干燥磁珠产物中加入 30 uL LA/PCR Master Mix。
 if low_throughput_p1_direct_col11:
-	transfer({"StartPosition":"M2_POS17","EndPosition":"M2_POS27","LoosenOffsetOfZ":0})
+	transfer({"StartPosition":"M2_POS17","EndPosition":"M2_POS27","LoosenOffsetOfZ":0})  # 打开 POS17 试剂盖板。
 	LA_direct_tips = tip_50.load(sample_num, 1)
 	for tip_index, (col_index, row) in enumerate(active_sample_wells(SampleCount)):
 		p1_load_modified(LA_direct_tips[tip_index])
@@ -1169,7 +1165,7 @@ if low_throughput_p1_direct_col11:
 		p1_aspirate_modified("M2_POS17", 3, 2, 30, PreAirVolume=5, AspirateSpeed=50, AspirateOffsetOfZ=0.5, DelayAfterAspirate=0.5, TipTouchTimes=3, TipTouchOffsetOfZ=35, TipTouchRangeOfX=3.5, TipTouchSpeed=100, PostAirVolume=0, IfTrack=True)
 		p1_empty_modified("M2_POS23", row, col_index+7, EmptyOffsetOfZ=0.5, EmptySpeed=20, DelayAfterEmpty=0.5, TipTouchTimes=0, PostAirVolume=5)
 		p1_unload_tips2({"Position":"M2_Trash","Col":None,"Row":None})
-	transfer({"StartPosition":"M2_POS27","EndPosition":"M2_POS17","LoosenOffsetOfZ":0})
+	transfer({"StartPosition":"M2_POS27","EndPosition":"M2_POS17","LoosenOffsetOfZ":0})  # 关闭 POS17 试剂盖板。
 else:
 	for i in range(col_num):
 		p8_load_modified(LA_dispense_tips[i])
@@ -1210,7 +1206,7 @@ for i in range(col_num):
 	reshake_la_slurry_on_pos16()
 
 # 向 POS20 Col1-6 加入 10 uL T9 index 引物。
-transfer({"StartPosition":"M2_POS10","EndPosition":"M2_POS27","LoosenOffsetOfZ":0})# 打开 POS10 盖板，暴露 T9 index 引物
+transfer({"StartPosition":"M2_POS10","EndPosition":"M2_POS27","LoosenOffsetOfZ":0})  # 打开 POS10 试剂盖板。
 T9_primer_tips = tip_50.load(sample_num,8,1)
 for i in range(col_num):
 	p8_load_modified(T9_primer_tips[i])
@@ -1222,7 +1218,7 @@ for i in range(col_num):
 	p8_mix({"Position":"M2_POS20","Col":1+i,"Row":1,"PreAirVolume":5,"MixTimes":8,"MixAspirateSpeed":50,"MixAspirateOffsetOfZ":0.6,"MixVolume":35,"MixDispenseOffsetOfZ":10,"MixDispenseSpeed":50,"DelayAfterMixLoop":1,"MixEmptyOffsetOfZ":10,"MixEmptySpeed":50,"PreAirSpeed":50,"DelayAfterMixAspirate":0.5,"DelayAfterMixDispense":0.5,"DelayAfterMixEmpty":0.5,"TipTouchTimes":2,"PostAirSpeed":50,"PostAirVolume":5,"FirstSegmentSpeed":100,"SpeedChangeOffsetOfZ":0,"SecondSegmentSpeed":80,"TipTouchOffsetOfZ": 5, "TipTouchRangeOfX": 1.2, "TipTouchSpeed": 100})
 	p8_unload_tips({"Position":"M2_Trash","Col":None,"Row":None})
 
-transfer({"StartPosition":"M2_POS27","EndPosition":"M2_POS10","LoosenOffsetOfZ":0})  # 关闭 POS10 盖板。
+transfer({"StartPosition":"M2_POS27","EndPosition":"M2_POS10","LoosenOffsetOfZ":0})  # 关闭 POS10 试剂盖板。
 
 # PTseq_LA 前向新 PCR 板 POS20 Col1-6 加 20 uL 矿物油，防止 LA PCR 蒸发。
 if SampleCount%8 == 0:
@@ -1241,10 +1237,10 @@ for i in range(col_num-1,-1,-1):
 		p8_load_modified(oil_3[0])
 p8_unload_tips({"Position":"M2_Trash","Col":None,"Row":None})
 
-transfer({"StartPosition":"M2_POS26","EndPosition":"M2_POS20","LoosenOffsetOfZ":0})
+transfer({"StartPosition":"M2_POS26","EndPosition":"M2_POS20","LoosenOffsetOfZ":0})  # 合上 POS20 PCR 盖板。
 
 def spx_p9_f_0():
-	pcr_close_door()
+	pcr_close_door()  # 关闭 PCR 门。
 	pcr_run_method({"Methods":["PTseq_LA"]})
 
 Pre_PCR_wait = parallel_block(spx_p9_f_0)
@@ -1261,6 +1257,37 @@ elif lang==2:
 delay({"Duration": 1800})
 
 # LA 纯化磁珠分装。
+'''
+=====================================DECK CONFIGURATION========================================
+POS7：试剂中转深孔板。
+- Col1-6：TA 和 LA 分别从 POS3 两个乙醇槽分装，复用同一组中转孔。
+- Col7：T2 缓冲液，TA 结合及 LA 洗脱各在使用前分装。
+- Col8：LA 纯化磁珠；Col12：TA 纯化磁珠。
+- Col9：T2/T3 cDNA 一链反应液；Col10：T4/T5/T2 TA 反应液；Col11：T7/T8/T2 LA 反应液。
+
+POS16：共享温控震荡位；POS23：共享磁力架位。
+- 纯化板 Col1-6 用于 LA 纯化，Col7-12 用于 TA 纯化。
+- 纯化废液回收到 POS11 Col1-6，按样本列一一对应。
+- 目标板进入 POS16 震荡前，须先腾空该位置；震荡结束后恢复各板原位。
+
+POS13：定量混合板。
+- Col1-6：Qubit 样本与染液混合孔。
+- 定量混合液在 POS16 震荡时，原 POS16 纯化板临时停放于 POS23，完成后恢复。
+
+POS11：废液及矿物油中转板。
+- Col1-6：纯化废液；Col8-9：矿物油中转孔。
+
+POS8：提取产物 PCR 板。
+POS20：LA 反应及最终文库保存 PCR 板。
+- Col1-6：LA 反应；Col7-12：最终文库产物。
+
+POS14：定量管 home。
+- 定量时 POS13 混合板移至空闲 POS23，POS14 定量管移至 POS13 加液、混匀及读数。
+- 定量结束后，定量管回 POS14，混合板回 POS13。
+
+POS30：临时换板及备用枪头盒交换位。
+================================================================================================
+'''
 # 磁珠位置（板、列、行）：T1 磁珠来源，同时用于 TA 和 LA 两轮纯化。
 magetic_beads_pos = {"Position":"M2_POS24","Col":1,"Row":1}
 # LA 磁珠预分位置：POS7 Col8，避免复用 TA 磁珠的 POS7 Col12 中转孔。
@@ -1323,7 +1350,7 @@ for i in range(col_num-1,-1,-1):
 p8_unload_tips({"Position":"M2_Trash","Col":None,"Row":None})
 
 Pre_PCR_wait.Wait()
-pcr_open_door()
+pcr_open_door()  # 打开 PCR 门。
 # 文库扩增反应后纯化
 lang=get_lang()
 if lang==1:
@@ -1331,7 +1358,7 @@ if lang==1:
 elif lang==2:
  report({"Phase": "Library amplification", "Step": "Library amplification purification", "TaskType": "library", "RemainingTime": None})
 
-transfer({"StartPosition":"M2_POS20","EndPosition":"M2_POS26","LoosenOffsetOfZ":0})
+transfer({"StartPosition":"M2_POS20","EndPosition":"M2_POS26","LoosenOffsetOfZ":0})  # 打开 POS20 PCR 盖板。
 
 # 转移样本到磁珠1位置
 temp = tip_300.load(sample_num,8,1)
@@ -1350,9 +1377,8 @@ temp_shaker_set({"TempParameters": {"IsEnable": False, "Temp": 25.00, "Duration"
 delay({"Duration": 300})
 
 
-###PCR关门
-transfer({"StartPosition":"M2_POS26","EndPosition":"M2_POS20","LoosenOffsetOfZ":0})  #PCR盖板
-pcr_close_door()
+transfer({"StartPosition":"M2_POS26","EndPosition":"M2_POS20","LoosenOffsetOfZ":0})  # 合上 POS20 PCR 盖板。
+pcr_close_door()  # 关闭 PCR 门。
 
 
 
@@ -1451,9 +1477,10 @@ transfer({"StartPosition":"M2_POS16","EndPosition":"M2_POS23","LoosenOffsetOfZ":
 delay({"Duration": 300})
 
 # 回收建库产物到 POS20 Col7-12，产物保存在该 PCR 板中。
-pcr_open_door()
-transfer({"StartPosition":"M2_POS20","EndPosition":"M2_POS26","LoosenOffsetOfZ":0})  # 开PCR盖板
+pcr_open_door()  # 打开 PCR 门。
+transfer({"StartPosition":"M2_POS20","EndPosition":"M2_POS26","LoosenOffsetOfZ":0})  # 打开 POS20 PCR 盖板。
 
+# 回收建库产物。
 for x in range(col_num):
 	p8_load_modified_BubblePurge(Product[x])
 	# 回收 21 uL 最终文库产物；对应 SOP 中 23 uL 洗脱、21 uL 回收。
@@ -1493,7 +1520,7 @@ sample_dilute_tip_loc = tip_50.load(sample_num,8,1)
 # 样本来源起始位置：从 POS20 Col7-12 取最终文库产物。
 source_plate = ['M2_POS20',7]
 
-# 样本与染液的混合起始位置：POS13 Col1-6，按样本列映射。
+# 样本与染液的混合起始位置：POS13 Col1-6，按列内 A-H、列间从左到右的顺序映射。
 dye_mix_plate = ['M2_POS13',1]
 
 # 定量管 home 在 POS14；实际读数/移液时临时换到 POS13 访问。
@@ -1502,8 +1529,8 @@ quantification_tube_operating_pos = 'M2_POS13'
 # 定量管操作位置,板位，起始列，样本必须从上到下，从左到右，从第一个开始
 quantification_tube_loc = [quantification_tube_operating_pos,1]
 
-#=====================定量浓度输出文件位置======================================
 import time
+#=====================定量浓度输出文件位置======================================
 # 获取当前日期和时间
 current_datetime = time.strftime("%Y%m%d_%H%M%S")
 # 生成文件路径
@@ -1566,8 +1593,8 @@ for i in range(col_num):
 	p8_unload_modified(sample_dilute_tip_loc[i])
 
 # 定量取样完成后关闭 POS20 盖板，并启动 PCR 模块 4 度过夜保存。
-transfer({"StartPosition":"M2_POS26","EndPosition":"M2_POS20","LoosenOffsetOfZ":0})  # 关PCR盖板
-pcr_close_door()
+transfer({"StartPosition":"M2_POS26","EndPosition":"M2_POS20","LoosenOffsetOfZ":0})  # 合上 POS20 PCR 盖板。
+pcr_close_door()  # 关闭 PCR 门。
 
 lang=get_lang()
 if lang==1:
