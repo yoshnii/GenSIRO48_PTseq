@@ -418,7 +418,7 @@ if barcode_invalid:
 	dialog_message({
 		"Title": "Barcode校验未通过",
 		"Timeout": "02:00:00",
-		"Message": "Barcode填写有误。请检查是否漏填、重复或不属于本产品Barcode池。强烈不建议继续实验，请修正任务表后重新开始实验。"
+		"Message": "Barcode填写有误。请检查是否漏填、重复或不属于本产品Barcode池。强烈不建议继续实验，请修正任务表后重新开始实验。点击确定将继续实验。如需终止或暂停，请在中台或下位机手动操作。"
 	})
 blank_samples = [sample for sample in filtered_samples if sample.sample_qc_type.upper() == BLANK_QC_TYPE]
 blank_positions = set()

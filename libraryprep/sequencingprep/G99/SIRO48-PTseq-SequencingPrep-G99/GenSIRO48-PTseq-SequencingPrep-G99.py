@@ -541,7 +541,7 @@ def preflight_pooling_plan(groups, temp, water_volume_list):
 		dialog_message({
 			"Title": "Pooling校验未通过",
 			"Timeout": "02:00:00",
-			"Message": "Pooling计算结果不满足体积要求。强烈不建议继续实验，请检查文库浓度和任务表，修正后重新开始实验。"
+			"Message": "Pooling计算结果不满足体积要求。强烈不建议继续实验，请检查文库浓度和任务表，修正后重新开始实验。点击确定将继续实验。如需终止或暂停，请在中台或下位机手动操作。"
 		})
 
 preflight_pooling_plan(dnb_list, temp, water_volume_list)
