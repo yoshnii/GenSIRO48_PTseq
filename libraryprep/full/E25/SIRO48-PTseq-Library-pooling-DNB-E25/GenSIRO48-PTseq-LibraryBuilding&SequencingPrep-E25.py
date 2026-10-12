@@ -1,6 +1,5 @@
 
 # -*- coding: utf-8 -*-
-
 #####################################################################
 # 脚本定位：GenSIRO48 E25 平台 PTseq 全流程脚本。
 # 覆盖范围：从提取产物定量与均一化开始，依次完成建库、文库定量、E25 pooling 和 DNB 制备。
@@ -30,14 +29,16 @@ import math
 
 home()
 def blockA():
-	temp_set({"Name":"M2_tempC","Temp": 6.00, "Duration": -1})  # 6 C，POS17。
-	temp_set({"Name":"M2_tempB","Temp": 6.00, "Duration": -1})  # 6 C，POS10。
+	temp_set({"Name":"M2_tempC","Temp": 6.00, "Duration": -1})#6度，POS17
+	temp_set({"Name":"M2_tempB","Temp": 6.00, "Duration": -1})#6度，POS10
 
 a = parallel_block(blockA)
-# POS17/POS10 低温模块并行启动，后续液体处理立即继续执行。
+# 温控只在后台启动，用于保护 POS17/POS10 试剂；程序不等待温度到达，避免开局空等。
 
-'''=====================================枪头管理====================================='''
-# 管理可用枪头列、复用锁定列和备用枪头盒交换。
+'''==================================================================自动计算取枪头位置逻辑v6======================================================'''
+# 更新内容
+# 本版本新增reuse指令，可以生成n列没有被使用过的空枪头列，用来放回单根枪头返回值为板，列元组组成的列表
+# 本版本修复了自动取枪头枪头盒更换问题
 
 
 
@@ -46,7 +47,7 @@ import os
 import time
 class Tips:
 	def __init__(self,tip_pos,backup_tip_pos=[]):
-		self.transposition =  "M2_POS30"  # 交换枪头的中转板位
+		self.transposition =  "M2_POS30" # 交换枪头的中转板位
 		self.tip_pos = tip_pos
 		self.backup_tip_pos = backup_tip_pos
 		self.tip_list = []
@@ -120,7 +121,7 @@ class Tips:
 			res = []
 		return res
 
-#===========================================================================取放枪头封装=======================================================================
+#===========================================================================优化取枪头逻辑=======================================================================
 def p8_load_modified(loc):
 	p8_load_tips({"Position":loc[0],"Col":loc[1],"Row":loc[2],"Tips":8})
 def p8_unload_modified(loc):
@@ -149,6 +150,9 @@ tip_1000 = Tips(tip_1000_loc)
 tip_50_loc = ['M2_POS15','M2_POS12']
 backup_tip_50_loc = ['M2_POS25','M2_POS19']
 tip_50 = Tips(tip_50_loc,backup_tip_50_loc)
+
+'''=====================================中转位====================================='''
+transposition = "M2_POS30"
 
 '''=====================================震荡位换板逻辑====================================='''
 # POS16 是共享温控震荡位，POS23 是共享磁力架位；二者不是某一块板子的永久 home。
@@ -182,7 +186,7 @@ def shaker_swap(target_plate_pos, operation_callback, current_shaker_occupant=No
 	if current_shaker_occupant:
 		transfer({"StartPosition":"M2_POS30","EndPosition":"M2_POS16","LoosenOffsetOfZ":0})
 
-#===========================================================================吸液封装=======================================================================
+#===========================================================================优化吸液逻辑=======================================================================
 
 
 def p8_aspirate_modified(Position,Row,Col,AspirateVolume,FirstSegmentSpeed=100,SpeedChangeOffsetOfZ=5,PreAirSpeed=100,SecondSegmentSpeed = 50,\
@@ -307,10 +311,16 @@ def report_low_throughput_branch(section_cn, section_en, direct_branch, sample_c
 		report({"Phase":"LOW_THROUGHPUT_P1_DIRECT","Step":message,"TaskType":"library","RemainingTime":None})
 
 
-'''=====================================样本信息读取====================================='''
+'''=====================================样本信息读取____建库仪====================================='''
+# 该代码用于读取样本信息文件，并将每一行数据存储为一个 Sample 对象
+# 该代码使用了 Python 的内置库，不需要额外安装任何库
+
 # 读取 D:/Pathogens/PTseq.csv，将有效记录保存为 Sample 对象，并据此计算样本列数和枪头数量。
+# ================================输入部分=============================================
+
+# 样本信息文件位置
 sample_info_file_path = r'D:/Pathogens/PTseq.csv'
-# is_filter=True 时会跳过 filtered_sample_qc_type 中定义的 QC 类型。
+# 是否有样本孔需要过滤，默认值位True，即有样本孔需要过滤，反之则设为 False
 is_filter = False
 # 提取过滤的样本质控类型（仅在 is_filter 为 True 时生效）
 filtered_sample_qc_type = {'N','P'}
@@ -328,12 +338,12 @@ class Sample:
 		volume_dict = {key:5 for key in sample_type_list}
 		default_volume = 35
 		self.sample_id = sample_id  # 样本编号
-		self.position = position  # 孔位
+		self.position = position    # 孔位
 		self.target_position = target_position
 		self.sample_type = sample_type  # 样本类型
 		self.sample_qc_type = sample_qc_type  # 样本质控类型
-		self.barcode = barcode  # 样本 barcode / index 信息
-		# 计算行列号
+		self.barcode = barcode      # 样本 barcode / index 信息
+		 # 计算行列号
 		self.row = ord(position[0].upper()) - ord('A') + 1  # 行号（1-based）
 		self.column = int(position[1:])  # 列号（1-based）
 		self.target_row = ord(self.target_position[0].upper()) - ord('A') + 1  # 行号（1-based）
@@ -361,7 +371,7 @@ def get_sample_info(sample_info_file_path, is_filter, filtered_sample_qc_type):
 
 		return samples
 
-	# 跳过表头；样本在自动化流程内按 A1-H1、A2-H2 的顺序重排到连续孔位。
+	# 遍历每一行数据（跳过表头）
 	for line in lines[1:]:
 		# 去掉行首行尾的空白字符（包括换行符）
 		line = line.strip()
@@ -374,8 +384,8 @@ def get_sample_info(sample_info_file_path, is_filter, filtered_sample_qc_type):
 		decoded_str = line.decode('utf-8')
 		columns = decoded_str.split(',')
 
-		# 输入 CSV 每行须包含 7 个字段。
-		if len(columns) < 7:
+		# 检查列数是否足够
+		if len(columns) < 7:  # 根据实际需要调整列数检查
 
 			continue
 
@@ -402,26 +412,12 @@ def get_sample_info(sample_info_file_path, is_filter, filtered_sample_qc_type):
 
 
 filtered_samples=get_sample_info(sample_info_file_path, False, filtered_sample_qc_type)
-BARCODE_POOL = {
-	"1", "2", "5", "7", "8", "10", "11", "12",
-	"14", "15", "17", "18", "19", "20", "22", "24",
-	"25", "26", "27", "28", "30", "31", "32", "34",
-	"36", "38", "39", "40", "41", "42", "43", "44",
-	"45", "46", "47", "49", "50", "52", "53", "54",
-	"55", "57", "58", "59", "60", "61", "62", "65",
-}
-barcodes = [sample.barcode.strip() for sample in filtered_samples]
-barcode_invalid = (
-	not barcodes
-	or len(set(barcodes)) != len(barcodes)
-	or any(barcode not in BARCODE_POOL for barcode in barcodes)
-)
-if barcode_invalid:
-	dialog_message({
-		"Title": "Barcode校验未通过",
-		"Timeout": "02:00:00",
-		"Message": "Barcode填写有误。请检查是否漏填、重复或不属于本产品Barcode池。强烈不建议继续实验，请修正任务表后重新开始实验。点击确定将继续实验。如需终止或暂停，请在中台或下位机手动操作。"
-	})
+# 中台在启动任务前生成 D:/Pathogens/PTseq.csv；脚本开局读取后立即检查 barcode。
+missing_barcode_sample_ids = [sample.sample_id for sample in filtered_samples if not sample.barcode.strip()]
+if missing_barcode_sample_ids:
+	missing_barcode_message = "以下样本缺少barcode，将忽略这些样本的barcode唯一性检查并继续运行：" + "、".join(missing_barcode_sample_ids)
+	print(f"[WARNING] {missing_barcode_message}")
+	report({"Phase":"样本信息检查","Step":missing_barcode_message,"TaskType":"library","RemainingTime":None})
 blank_samples = [sample for sample in filtered_samples if sample.sample_qc_type.upper() == BLANK_QC_TYPE]
 blank_positions = set()
 for blank_sample in blank_samples:
@@ -432,6 +428,9 @@ for blank_sample in blank_samples:
 		raise Exception(f"空白对照孔位重复：{blank_position}")
 	blank_positions.add(blank_position)
 SampleCount = len(filtered_samples)
+if not filtered_samples:
+	a = dialog_textbox({"Title": "请输入样本数量", "Timeout": "02:00:00","Parameters":[{"Name": "样本数量", "Value": "48", "Notes": "未检测到样本信息文件，请输入样本数量"}]})
+	SampleCount = int(a["样本数量"])
 sample_num = SampleCount
 n = SampleCount
 col_num = (sample_num+7)//8
@@ -1400,7 +1399,7 @@ transfer({"StartPosition":transposition,"EndPosition":"M2_POS9","LoosenOffsetOfZ
 
 lang=get_lang()
 if lang==1:
- report({"Phase": "Pre-PCR", "Step": "添加PCR mix", "TaskType": "library", "RemainingTime": None})
+ report({"Phase": "PCR前准备", "Step": "添加PCR反应液", "TaskType": "library", "RemainingTime": None})
 elif lang==2:
  report({"Phase": "Pre-PCR", "Step": "Adding PCR mix", "TaskType": "library", "RemainingTime": None})
 
@@ -1696,7 +1695,7 @@ for i in range(col_num):
 # 乙醇洗2次
 lang=get_lang()
 if lang==1:
- report({"Phase": "Pre-PCR", "Step": "乙醇清洗", "TaskType": "library", "RemainingTime": None})
+ report({"Phase": "PCR前准备", "Step": "乙醇清洗", "TaskType": "library", "RemainingTime": None})
 elif lang==2:
  report({"Phase": "Pre-PCR", "Step": "Ethanol Wash", "TaskType": "library", "RemainingTime": None})
 
@@ -1713,7 +1712,6 @@ for i in range(2):
 
 	# 第二步：静置磁吸沉降，板始终保持在 POS23 磁力架位。
 	delay({"Duration": 120})
-
 	if i == 1:
 		# 最后一轮乙醇仍覆盖磁珠时，补入 LA 洗脱所需 T2。
 		dispense_t2_to_pos7(23)
@@ -1817,6 +1815,7 @@ quantification_tube_operating_pos = 'M2_POS13'
 # 定量管操作位置,板位，起始列，样本必须从上到下，从左到右，从第一个开始
 quantification_tube_loc = [quantification_tube_operating_pos,1]
 
+import time
 #=====================定量浓度输出文件位置======================================
 # 获取当前日期和时间
 current_datetime = time.strftime("%Y%m%d_%H%M%S")
@@ -1954,9 +1953,24 @@ except:
 
 
 
+
 # 文库产物保留在 POS13 Col7-12，定量后仍从原孔取样。
 
+
+
+
+
+
+
+
+
+
+
+
+
+
 # pooling 前使用文库定量结果；DNB 制备在 pooling 之后进行。
+
 '''=====================================pooling（带混匀）====================================='''
 lang=get_lang()
 if lang==1:
@@ -2098,7 +2112,7 @@ if not Is_blank_pooling:
 # 按浓度计算 pooling 分组。
 sample_num = len(sample_concentration)
 if sample_num == 0:
-	raise Exception("过滤低浓度或空白样本后没有可 pooling 的有效样本，请检查定量结果和样本类型")
+	raise Exception("过滤低浓度或空白样本后没有可 pooling 的有效样本，请检查浓度和样本类型")
 
 def get_barcode_key(sample):
 	raw_barcode = sample.barcode.strip()

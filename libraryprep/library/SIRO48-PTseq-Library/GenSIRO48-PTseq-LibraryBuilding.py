@@ -1,6 +1,5 @@
 
 # -*- coding: utf-8 -*-
-
 #####################################################################
 # 脚本定位：GenSIRO48 PTseq 仅建库脚本。
 # 覆盖范围：从 POS8 提取产物板开始，完成 cDNA 合成、靶向扩增、文库扩增、
@@ -25,24 +24,29 @@ from library import *
 spxsiro = globals().get("library")
 set_siro(spxsiro)
 import math
+"""
+不要修改HEAD
+"""
 
 home()
 def blockA():
-	temp_set({"Name":"M2_tempC","Temp": 6.00, "Duration": -1})  # 6 C，POS17。
-	temp_set({"Name":"M2_tempB","Temp": 6.00, "Duration": -1})  # 6 C，POS10。
+	temp_set({"Name":"M2_tempC","Temp": 6.00, "Duration": -1})#6度，POS17
+	temp_set({"Name":"M2_tempB","Temp": 6.00, "Duration": -1})#6度，POS10
 
 a = parallel_block(blockA)
-# POS17/POS10 低温模块并行启动，后续液体处理立即继续执行。
+# 温控只在后台启动，用于保护 POS17/POS10 试剂；程序不等待温度到达，避免开局空等。
 
-'''=====================================枪头管理====================================='''
-# 管理可用枪头列、复用锁定列和备用枪头盒交换。
+'''==================================================================自动计算取枪头位置逻辑v6======================================================'''
+# 更新内容
+# 本版本新增reuse指令，可以生成n列没有被使用过的空枪头列，用来放回单根枪头返回值为板，列元组组成的列表
+# 本版本修复了自动取枪头枪头盒更换问题
 
 
 
 import sys
 class Tips:
 	def __init__(self,tip_pos,backup_tip_pos=[]):
-		self.transposition =  "M2_POS30"  # 交换枪头的中转板位
+		self.transposition =  "M2_POS30" # 交换枪头的中转板位
 		self.tip_pos = tip_pos
 		self.backup_tip_pos = backup_tip_pos
 		self.tip_list = []
@@ -116,7 +120,7 @@ class Tips:
 			res = []
 		return res
 
-#===========================================================================取放枪头封装=======================================================================
+#===========================================================================优化取枪头逻辑=======================================================================
 def p8_load_modified(loc):
 	p8_load_tips({"Position":loc[0],"Col":loc[1],"Row":loc[2],"Tips":8})
 def p8_unload_modified(loc):
@@ -133,6 +137,7 @@ def p8_load_modified_BubblePurge(loc):
 
 '''=====================================枪头位置====================================='''
 # 枪头盒布局：300 uL、1000 uL、50 uL 枪头均在这里统一定义。
+
 tip_300_loc = ['M2_POS5','M2_POS6']
 backup_tip_300_loc = ['M2_POS28','M2_POS29']
 tip_300 = Tips(tip_300_loc,backup_tip_300_loc)
@@ -180,7 +185,7 @@ def shaker_swap(target_plate_pos, operation_callback, current_shaker_occupant=No
 	if current_shaker_occupant:
 		transfer({"StartPosition":"M2_POS30","EndPosition":"M2_POS16","LoosenOffsetOfZ":0})
 
-#===========================================================================吸液封装=======================================================================
+#===========================================================================优化吸液逻辑=======================================================================
 
 
 def p8_aspirate_modified(Position,Row,Col,AspirateVolume,FirstSegmentSpeed=100,SpeedChangeOffsetOfZ=5,PreAirSpeed=100,SecondSegmentSpeed = 50,\
@@ -305,11 +310,16 @@ def report_low_throughput_branch(section_cn, section_en, direct_branch, sample_c
 		report({"Phase":"LOW_THROUGHPUT_P1_DIRECT","Step":message,"TaskType":"library","RemainingTime":None})
 
 
-'''=====================================样本信息读取====================================='''
+'''=====================================样本信息读取____建库仪====================================='''
+# 该代码用于读取样本信息文件，并将每一行数据存储为一个 Sample 对象
+# 该代码使用了 Python 的内置库，不需要额外安装任何库
+
 # 读取 D:/Pathogens/PTseq.csv，将有效记录保存为 Sample 对象，并据此计算样本列数和枪头数量。
-# 如果文件不存在或为空，则弹窗要求人工输入样本数。
+# ================================输入部分=============================================
+
+# 样本信息文件位置
 sample_info_file_path = r'D:/Pathogens/PTseq.csv'
-# is_filter=True 时会跳过 filtered_sample_qc_type 中定义的 QC 类型。
+# 是否有样本孔需要过滤，默认值位True，即有样本孔需要过滤，反之则设为 False
 is_filter = False
 # 提取过滤的样本质控类型（仅在 is_filter 为 True 时生效）
 filtered_sample_qc_type = {'N','P'}
@@ -328,12 +338,12 @@ class Sample:
 		volume_dict = {key:5 for key in sample_type_list}
 		default_volume = 35
 		self.sample_id = sample_id  # 样本编号
-		self.position = position  # 孔位
+		self.position = position    # 孔位
 		self.target_position = target_position
 		self.sample_type = sample_type  # 样本类型
 		self.sample_qc_type = sample_qc_type  # 样本质控类型
-		self.barcode = barcode  # 样本 barcode / index 信息
-		# 计算行列号
+		self.barcode = barcode      # 样本 barcode / index 信息
+		 # 计算行列号
 		self.row = ord(position[0].upper()) - ord('A') + 1  # 行号（1-based）
 		self.column = int(position[1:])  # 列号（1-based）
 		self.target_row = ord(self.target_position[0].upper()) - ord('A') + 1  # 行号（1-based）
@@ -361,7 +371,7 @@ def get_sample_info(sample_info_file_path, is_filter, filtered_sample_qc_type):
 
 		return samples
 
-	# 跳过表头；样本在自动化流程内按 A1-H1、A2-H2 的顺序重排到连续孔位。
+	# 遍历每一行数据（跳过表头）
 	for line in lines[1:]:
 		# 去掉行首行尾的空白字符（包括换行符）
 		line = line.strip()
@@ -374,8 +384,8 @@ def get_sample_info(sample_info_file_path, is_filter, filtered_sample_qc_type):
 		decoded_str = line.decode('utf-8')
 		columns = decoded_str.split(',')
 
-		# 输入 CSV 每行须包含 7 个字段。
-		if len(columns) < 7:
+		# 检查列数是否足够
+		if len(columns) < 7:  # 根据实际需要调整列数检查
 
 			continue
 
@@ -402,6 +412,12 @@ def get_sample_info(sample_info_file_path, is_filter, filtered_sample_qc_type):
 
 
 filtered_samples=get_sample_info(sample_info_file_path, False, filtered_sample_qc_type)
+# 中台在启动任务前生成 D:/Pathogens/PTseq.csv；脚本开局读取后立即检查 barcode。
+missing_barcode_sample_ids = [sample.sample_id for sample in filtered_samples if not sample.barcode.strip()]
+if missing_barcode_sample_ids:
+	missing_barcode_message = "以下样本缺少barcode，将忽略这些样本的barcode唯一性检查并继续运行：" + "、".join(missing_barcode_sample_ids)
+	print(f"[WARNING] {missing_barcode_message}")
+	report({"Phase":"样本信息检查","Step":missing_barcode_message,"TaskType":"library","RemainingTime":None})
 blank_samples = [sample for sample in filtered_samples if sample.sample_qc_type.upper() == BLANK_QC_TYPE]
 blank_positions = set()
 for blank_sample in blank_samples:
@@ -427,6 +443,12 @@ def blockB():
 	pcr_run_method({"Methods": ["PTseq_START"]})
 	pcr_run_method({"Methods": ["25-4"]})
 b = parallel_block(blockB)
+
+
+
+'''=====================================中转位====================================='''
+transposition = "M2_POS30"
+
 '''=====================================cDNA合成====================================='''
 # 计算样本占用列数。未满 8 个样本的最后一列只加载实际需要的枪头。
 Quotient8= SampleCount//8
@@ -537,7 +559,7 @@ lang=get_lang()
 if lang==1:
  report({"Phase": "cDNA合成", "Step": "cDNA一链合成反应体系", "TaskType": "library", "RemainingTime": None})
 elif lang==2:
- report({"Phase": "cDNA synthesis", "Step": "cDNA first-strand synthesis reaction system", "TaskType": "library", "RemainingTime": None})
+ report({"Phase": "cDNA synthesis", "Step": "cDNAFirst-strand synthesis reaction system", "TaskType": "library", "RemainingTime": None})
 
 # 配置一链反应试剂
 transfer({"StartPosition":"M2_POS17","EndPosition":"M2_POS27","LoosenOffsetOfZ":0})  # 打开 POS17 试剂盖板。
@@ -643,7 +665,7 @@ lang=get_lang()
 if lang==1:
  report({"Phase": "cDNA合成", "Step": "靶向扩增反应体系", "TaskType": "library", "RemainingTime": None})
 elif lang==2:
- report({"Phase": "cDNA synthesis", "Step": "Targeted amplification reaction system", "TaskType": "library", "RemainingTime": None})
+ report({"Phase": "cDNA synthesis", "Step": "Targeted Amplification reaction system", "TaskType": "library", "RemainingTime": None})
 
 
 # 配置靶向扩增反应试剂
@@ -891,7 +913,7 @@ lang=get_lang()
 if lang==1:
  report({"Phase": "文库扩增准备", "Step": "配置文库扩增反应液", "TaskType": "library", "RemainingTime": None})
 elif lang==2:
- report({"Phase": "Library amplification preparation", "Step": "Preparing library amplification reaction mixture", "TaskType": "library", "RemainingTime": None})
+ report({"Phase": "Library Amplification preparation", "Step": "Preparing Library Amplification reaction mixture", "TaskType": "library", "RemainingTime": None})
 
 '''=====================================文库扩增反应液====================================='''
 # LA/PCR Master Mix 配置。
@@ -993,7 +1015,7 @@ lang=get_lang()
 if lang==1:
  report({"Phase": "靶向扩增反应后纯化", "Step": "样本与磁珠结合", "TaskType": "library", "RemainingTime": None})
 elif lang==2:
- report({"Phase": "Targeted amplification purification", "Step": "Sample binding to magnetic beads", "TaskType": "library", "RemainingTime": None})
+ report({"Phase": "Targeted Amplification Purification", "Step": "Sample Binding to Magnetic Beads", "TaskType": "library", "RemainingTime": None})
 
 for i in range(col_num):
 	p8_load_modified(TA_purification_tips[i])
@@ -1054,7 +1076,7 @@ lang=get_lang()
 if lang==1:
  report({"Phase": "靶向扩增反应后纯化", "Step": "乙醇清洗", "TaskType": "library", "RemainingTime": None})
 elif lang==2:
- report({"Phase": "Targeted amplification purification", "Step": "Ethanol wash", "TaskType": "library", "RemainingTime": None})
+ report({"Phase": "Targeted Amplification Purification", "Step": "Ethanol Wash", "TaskType": "library", "RemainingTime": None})
 
 # 移除上清：结合体系约 100 uL（50 uL 磁珠 + 25 uL TA + 25 uL T2），吸走 110 uL 用于“弃多于打”的余量策略。
 # 废液按样本列 1:1 回收到 POS11 Col1-6。
@@ -1251,7 +1273,7 @@ lang=get_lang()
 if lang==1:
  report({"Phase": "文库扩增", "Step": "文库扩增后纯化准备", "TaskType": "library", "RemainingTime": None})
 elif lang==2:
- report({"Phase": "Library amplification", "Step": "Preparation for library amplification purification", "TaskType": "library", "RemainingTime": None})
+ report({"Phase": "Library Amplification", "Step": "Preparation for Library Amplification Purification", "TaskType": "library", "RemainingTime": None})
 
 
 delay({"Duration": 1800})
@@ -1356,7 +1378,7 @@ lang=get_lang()
 if lang==1:
  report({"Phase": "文库扩增反应", "Step": "文库扩增反应后纯化", "TaskType": "library", "RemainingTime": None})
 elif lang==2:
- report({"Phase": "Library amplification", "Step": "Library amplification purification", "TaskType": "library", "RemainingTime": None})
+ report({"Phase": "Library Amplification", "Step": "Library Amplification Purification", "TaskType": "library", "RemainingTime": None})
 
 transfer({"StartPosition":"M2_POS20","EndPosition":"M2_POS26","LoosenOffsetOfZ":0})  # 打开 POS20 PCR 盖板。
 
@@ -1410,7 +1432,7 @@ lang=get_lang()
 if lang==1:
  report({"Phase": "PCR前准备", "Step": "乙醇清洗", "TaskType": "library", "RemainingTime": None})
 elif lang==2:
- report({"Phase": "Pre-PCR", "Step": "Ethanol wash", "TaskType": "library", "RemainingTime": None})
+ report({"Phase": "Pre-PCR", "Step": "Ethanol Wash", "TaskType": "library", "RemainingTime": None})
 
 # LA 乙醇洗涤继续使用同列弃上清枪头。
 
