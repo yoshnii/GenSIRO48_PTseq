@@ -43,7 +43,6 @@ a = parallel_block(blockA)
 
 
 import sys
-import os
 import time
 class Tips:
 	def __init__(self,tip_pos,backup_tip_pos=[]):
@@ -517,20 +516,9 @@ def csv_field(value):
 def write_csv_row(file, values):
 	file.write(",".join(csv_field(value) for value in values) + "\r\n")
 
-def backup_existing_output(file_path):
-	# 将同名历史输出文件归档为带时间戳的备份文件。
-	if os.path.exists(file_path):
-		root, ext = os.path.splitext(file_path)
-		backup_path = f"{root}_backup_{time.strftime('%Y%m%d_%H%M%S')}{ext}"
-		os.rename(file_path, backup_path)
-
 NORMALIZATION_OUTPUT_FILE = r"D:\data\PTseq_normalization_info.csv"
 EXTRACTION_OUTPUT_FILE = r"D:\data\PTseq_Extraction.xlsx"
 LIBRARY_OUTPUT_FILE = r"D:\data\PTseq_Library.xlsx"
-
-# 流程开始前统一归档已有输出文件。
-for output_file in (NORMALIZATION_OUTPUT_FILE, EXTRACTION_OUTPUT_FILE, LIBRARY_OUTPUT_FILE):
-	backup_existing_output(output_file)
 
 def write_normalization_plan(plans):
 	file_path = NORMALIZATION_OUTPUT_FILE
